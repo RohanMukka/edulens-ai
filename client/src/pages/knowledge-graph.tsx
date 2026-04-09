@@ -185,7 +185,8 @@ export default function KnowledgeGraph() {
         })}
       </div>
 
-      <div className="flex-1" data-testid="graph-container" style={{ minHeight: "500px" }}>
+      <div className="flex-1 relative" data-testid="graph-container" style={{ minHeight: "500px" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -197,6 +198,7 @@ export default function KnowledgeGraph() {
           <Background gap={20} size={1} />
           <Controls />
         </ReactFlow>
+        </div>
       </div>
     </div>
   );
