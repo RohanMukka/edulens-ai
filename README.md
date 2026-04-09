@@ -5,7 +5,6 @@
 ### The Adaptive Learning Companion That Reads How You Think
 
 [![Nira Hackathon 2026](https://img.shields.io/badge/Nira_Hackathon-2026-6366f1?style=for-the-badge)](https://nira-hackathon.devpost.com/)
-[![Prize](https://img.shields.io/badge/Prize-$500-10b981?style=for-the-badge)]()
 [![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)](https://typescriptlang.org)
 [![Express](https://img.shields.io/badge/Express-4-000?style=flat-square&logo=express)](https://expressjs.com)
