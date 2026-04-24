@@ -58,10 +58,6 @@ This is the key differentiator: **EduLens reads HOW a student thinks, not just W
 
 ---
 
-## 🎬 Demo
-
-> 📹 *Demo video coming soon — will be uploaded before the May 2, 2026 deadline*
-
 ### Screenshots
 
 <details>
