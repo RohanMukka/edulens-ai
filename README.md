@@ -58,29 +58,7 @@ This is the key differentiator: **EduLens reads HOW a student thinks, not just W
 
 ---
 
-### Screenshots
 
-<details>
-<summary>Click to expand screenshots</summary>
-
-**Landing Page**
-> Registration and feature overview
-
-**Subject Selection**
-> Choose from Biology, Math, or History
-
-**Learning Interface**
-> Free-text response with NLP scoring and feedback
-
-**Knowledge Graph**
-> Interactive concept map with mastery visualization
-
-**Dashboard**
-> Progress analytics and session history
-
-</details>
-
----
 
 ## 🏗️ Architecture
 
