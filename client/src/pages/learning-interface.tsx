@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -277,9 +278,9 @@ export default function LearningInterface() {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">{currentConcept.name}</h3>
-                      <p className="text-sm" data-testid="text-question">
-                        {question || `Explain the key concepts of ${currentConcept.name} in your own words.`}
-                      </p>
+                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none" data-testid="text-question">
+                        <ReactMarkdown>{question || `Explain the key concepts of ${currentConcept.name} in your own words.`}</ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -337,7 +338,9 @@ export default function LearningInterface() {
                       </div>
                     </div>
 
-                    <p className="text-sm mb-4" data-testid="text-feedback">{lastScore.feedback}</p>
+                    <div className="text-sm mb-4 prose prose-sm dark:prose-invert max-w-none" data-testid="text-feedback">
+                      <ReactMarkdown>{lastScore.feedback}</ReactMarkdown>
+                    </div>
 
                     {lastScore.strengths.length > 0 && (
                       <div className="mb-3">
@@ -397,7 +400,9 @@ export default function LearningInterface() {
                         <Sparkles className="w-4 h-4 text-primary" />
                         <h4 className="font-semibold text-sm">AI Explanation</h4>
                       </div>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{explanation}</p>
+                      <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{explanation}</ReactMarkdown>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
