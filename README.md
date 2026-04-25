@@ -77,8 +77,8 @@ This is the key differentiator: **EduLens reads HOW a student thinks, not just W
            │                               │
            ▼                               ▼
 ┌─────────────────────┐     ┌─────────────────────────────┐
-│   SQLite + Drizzle  │     │        Groq API             │
-│   ORM Database      │     │   Llama 3.3 70B Versatile   │
+│ PostgreSQL (Neon)   │     │        Groq API             │
+│ + Drizzle ORM       │     │   Llama 3.3 70B Versatile   │
 │                     │     │                             │
 │  · students         │     │  · Score student responses  │
 │  · sessions         │     │  · Generate explanations    │
@@ -158,14 +158,30 @@ cd edulens-ai
 # Install dependencies
 npm install
 
-# Set your Groq API key (optional)
-export GROQ_API_KEY=your_api_key_here
+# Create a .env file and add your keys
+echo "GROQ_API_KEY=your_api_key_here" > .env
+echo "DATABASE_URL=postgresql://neondb_owner:password@ep-...aws.neon.tech/neondb?sslmode=require" >> .env
+
+# Push the database schema to your PostgreSQL database
+npm run db:push
 
 # Start the dev server
 npm run dev
 ```
 
 The app will be running at `http://localhost:5000`.
+
+### Deployment (Render)
+
+This project is configured to be easily deployed to [Render.com](https://render.com) as a Web Service.
+
+1. Connect your GitHub repository to Render as a **New Web Service**.
+2. Set Build Command: `npm install && npm run build`
+3. Set Start Command: `npm start`
+4. Add your Environment Variables (`GROQ_API_KEY` and `DATABASE_URL`).
+5. Deploy!
+
+*(Live Demo: https://edulens-ai-lep9.onrender.com)*
 
 ### Production Build
 
@@ -186,7 +202,7 @@ NODE_ENV=production node dist/index.cjs
 | **Data Viz** | React Flow (@xyflow/react) | Interactive knowledge graph |
 | **Charts** | Recharts | Dashboard analytics (radar, bar charts) |
 | **Backend** | Express.js 4 | REST API server |
-| **Database** | SQLite + Drizzle ORM | Data persistence with type-safe queries |
+| **Database** | PostgreSQL (Neon) + Drizzle | Data persistence with type-safe async queries |
 | **AI/NLP** | Groq API (Llama 3.3 70B) | Understanding scoring, explanations, questions |
 | **Validation** | Zod + drizzle-zod | Request/response schema validation |
 | **Build** | Vite 5 | Fast frontend bundling |
