@@ -12,33 +12,33 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Seed concepts on startup
-  seedConcepts();
+  await seedConcepts();
 
   // === Auth ===
-  app.post("/api/auth/register", (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       const { name, email } = req.body;
       if (!name || !email) {
         return res.status(400).json({ message: "Name and email are required" });
       }
-      const existing = storage.getStudentByEmail(email);
+      const existing = await storage.getStudentByEmail(email);
       if (existing) {
         return res.json(existing);
       }
-      const student = storage.createStudent({ name, email });
+      const student = await storage.createStudent({ name, email });
       res.json(student);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { email } = req.body;
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
-      const student = storage.getStudentByEmail(email);
+      const student = await storage.getStudentByEmail(email);
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
       }
@@ -49,33 +49,33 @@ export async function registerRoutes(
   });
 
   // === Sessions ===
-  app.post("/api/sessions", (req, res) => {
+  app.post("/api/sessions", async (req, res) => {
     try {
       const { studentId, subject } = req.body;
       if (!studentId || !subject) {
         return res.status(400).json({ message: "studentId and subject are required" });
       }
-      const session = storage.createSession({ studentId, subject });
+      const session = await storage.createSession({ studentId, subject });
       res.json(session);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.get("/api/sessions/:id", (req, res) => {
+  app.get("/api/sessions/:id", async (req, res) => {
     try {
-      const session = storage.getSession(Number(req.params.id));
+      const session = await storage.getSession(Number(req.params.id));
       if (!session) return res.status(404).json({ message: "Session not found" });
-      const interactions = storage.getSessionInteractions(session.id);
+      const interactions = await storage.getSessionInteractions(session.id);
       res.json({ ...session, interactions });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.post("/api/sessions/:id/end", (req, res) => {
+  app.post("/api/sessions/:id/end", async (req, res) => {
     try {
-      storage.endSession(Number(req.params.id));
+      await storage.endSession(Number(req.params.id));
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -90,27 +90,27 @@ export async function registerRoutes(
         return res.status(400).json({ message: "conceptId and studentResponse are required" });
       }
 
-      const concept = storage.getConcept(conceptId);
+      const concept = await storage.getConcept(conceptId);
       if (!concept) return res.status(404).json({ message: "Concept not found" });
 
-      const session = storage.getSession(sessionId);
+      const session = await storage.getSession(sessionId);
       if (!session) return res.status(404).json({ message: "Session not found" });
 
       // Create the interaction first
-      const interaction = storage.createInteraction({ sessionId, conceptId, studentResponse });
+      const interaction = await storage.createInteraction({ sessionId, conceptId, studentResponse });
 
       // Score with AI
       const scoreResult = await scoreResponse(studentResponse, concept.idealExplanation, concept.name);
 
       // Update interaction with score & feedback
-      const updated = storage.updateInteraction(interaction.id, scoreResult.score, scoreResult.feedback);
+      const updated = await storage.updateInteraction(interaction.id, scoreResult.score, scoreResult.feedback);
 
       // Update mastery score (weighted average with existing)
-      const existingMastery = storage.getMastery(session.studentId, conceptId);
+      const existingMastery = await storage.getMastery(session.studentId, conceptId);
       const newScore = existingMastery
         ? existingMastery.score * 0.4 + scoreResult.score * 0.6
         : scoreResult.score;
-      storage.upsertMastery(session.studentId, conceptId, newScore);
+      await storage.upsertMastery(session.studentId, conceptId, newScore);
 
       res.json({
         interaction: updated,
@@ -127,18 +127,18 @@ export async function registerRoutes(
   });
 
   // === Concepts ===
-  app.get("/api/concepts/:subject", (req, res) => {
+  app.get("/api/concepts/:subject", async (req, res) => {
     try {
-      const concepts = storage.getConceptsBySubject(req.params.subject);
+      const concepts = await storage.getConceptsBySubject(req.params.subject);
       res.json(concepts);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.get("/api/concepts/detail/:id", (req, res) => {
+  app.get("/api/concepts/detail/:id", async (req, res) => {
     try {
-      const concept = storage.getConcept(Number(req.params.id));
+      const concept = await storage.getConcept(Number(req.params.id));
       if (!concept) return res.status(404).json({ message: "Concept not found" });
       res.json(concept);
     } catch (e: any) {
@@ -147,30 +147,30 @@ export async function registerRoutes(
   });
 
   // === Student ===
-  app.get("/api/students/:id/mastery", (req, res) => {
+  app.get("/api/students/:id/mastery", async (req, res) => {
     try {
-      const mastery = storage.getStudentMastery(Number(req.params.id));
+      const mastery = await storage.getStudentMastery(Number(req.params.id));
       res.json(mastery);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.get("/api/students/:id/history", (req, res) => {
+  app.get("/api/students/:id/history", async (req, res) => {
     try {
-      const sessions = storage.getStudentSessions(Number(req.params.id));
+      const sessions = await storage.getStudentSessions(Number(req.params.id));
       res.json(sessions);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.get("/api/students/:id/stats", (req, res) => {
+  app.get("/api/students/:id/stats", async (req, res) => {
     try {
       const studentId = Number(req.params.id);
-      const sessions = storage.getStudentSessions(studentId);
-      const mastery = storage.getStudentMastery(studentId);
-      const interactions = storage.getStudentInteractions(studentId);
+      const sessions = await storage.getStudentSessions(studentId);
+      const mastery = await storage.getStudentMastery(studentId);
+      const interactions = await storage.getStudentInteractions(studentId);
 
       const totalSessions = sessions.length;
       const totalInteractions = interactions.length;
@@ -179,12 +179,12 @@ export async function registerRoutes(
         : 0;
       const conceptsMastered = mastery.filter(m => m.score >= 0.7).length;
       const totalConcepts = mastery.length;
-      const weakAreas = mastery
+      const weakAreas = await Promise.all(mastery
         .filter(m => m.score < 0.5)
-        .map(m => {
-          const concept = storage.getConcept(m.conceptId);
+        .map(async m => {
+          const concept = await storage.getConcept(m.conceptId);
           return { conceptId: m.conceptId, name: concept?.name || "Unknown", score: m.score };
-        });
+        }));
 
       res.json({
         totalSessions,
@@ -259,16 +259,7 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
         },
         {
           role: "user",
-          content: `Concept: ${conceptName}
-
-Ideal explanation: ${idealExplanation}
-
-Student's response: ${studentResponse}
-
-Score the student's understanding from 0 to 1 (0 = no understanding, 1 = perfect understanding). Identify knowledge gaps and strengths. Provide brief constructive feedback.
-
-Return JSON in this exact format:
-{"score": 0.0, "gaps": ["gap1", "gap2"], "strengths": ["strength1"], "feedback": "Brief constructive feedback"}`
+          content: `Concept: ${conceptName}\n\nIdeal explanation: ${idealExplanation}\n\nStudent's response: ${studentResponse}\n\nScore the student's understanding from 0 to 1 (0 = no understanding, 1 = perfect understanding). Identify knowledge gaps and strengths. Provide brief constructive feedback.\n\nReturn JSON in this exact format:\n{"score": 0.0, "gaps": ["gap1", "gap2"], "strengths": ["strength1"], "feedback": "Brief constructive feedback"}`
         }
       ],
       model: "llama-3.1-8b-instant",

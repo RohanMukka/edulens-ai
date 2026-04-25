@@ -5,124 +5,139 @@ import {
   type Interaction, type InsertInteraction, interactions,
   type MasteryScore, masteryScores,
 } from "@shared/schema";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
+const { Pool } = pg;
 import { eq, and, desc } from "drizzle-orm";
 
-const sqlite = new Database("data.db");
-sqlite.pragma("journal_mode = WAL");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/edulens",
+});
 
-export const db = drizzle(sqlite);
+export const db = drizzle(pool);
 
 export interface IStorage {
-  createStudent(student: InsertStudent): Student;
-  getStudent(id: number): Student | undefined;
-  getStudentByEmail(email: string): Student | undefined;
-  createSession(session: InsertSession): Session;
-  getSession(id: number): Session | undefined;
-  getStudentSessions(studentId: number): Session[];
-  endSession(id: number): void;
-  getConceptsBySubject(subject: string): Concept[];
-  getConcept(id: number): Concept | undefined;
-  createConcept(concept: InsertConcept): Concept;
-  getConceptCount(): number;
-  createInteraction(interaction: InsertInteraction): Interaction;
-  updateInteraction(id: number, score: number, feedback: string): Interaction | undefined;
-  getSessionInteractions(sessionId: number): Interaction[];
-  getStudentInteractions(studentId: number): Interaction[];
-  getMastery(studentId: number, conceptId: number): MasteryScore | undefined;
-  upsertMastery(studentId: number, conceptId: number, score: number): MasteryScore;
-  getStudentMastery(studentId: number): MasteryScore[];
+  createStudent(student: InsertStudent): Promise<Student>;
+  getStudent(id: number): Promise<Student | undefined>;
+  getStudentByEmail(email: string): Promise<Student | undefined>;
+  createSession(session: InsertSession): Promise<Session>;
+  getSession(id: number): Promise<Session | undefined>;
+  getStudentSessions(studentId: number): Promise<Session[]>;
+  endSession(id: number): Promise<void>;
+  getConceptsBySubject(subject: string): Promise<Concept[]>;
+  getConcept(id: number): Promise<Concept | undefined>;
+  createConcept(concept: InsertConcept): Promise<Concept>;
+  getConceptCount(): Promise<number>;
+  createInteraction(interaction: InsertInteraction): Promise<Interaction>;
+  updateInteraction(id: number, score: number, feedback: string): Promise<Interaction | undefined>;
+  getSessionInteractions(sessionId: number): Promise<Interaction[]>;
+  getStudentInteractions(studentId: number): Promise<Interaction[]>;
+  getMastery(studentId: number, conceptId: number): Promise<MasteryScore | undefined>;
+  upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore>;
+  getStudentMastery(studentId: number): Promise<MasteryScore[]>;
 }
 
 export class DatabaseStorage implements IStorage {
-  createStudent(student: InsertStudent): Student {
-    return db.insert(students).values({ ...student, createdAt: new Date().toISOString() }).returning().get();
+  async createStudent(student: InsertStudent): Promise<Student> {
+    const [res] = await db.insert(students).values({ ...student, createdAt: new Date().toISOString() }).returning();
+    return res;
   }
 
-  getStudent(id: number): Student | undefined {
-    return db.select().from(students).where(eq(students.id, id)).get();
+  async getStudent(id: number): Promise<Student | undefined> {
+    const [res] = await db.select().from(students).where(eq(students.id, id));
+    return res;
   }
 
-  getStudentByEmail(email: string): Student | undefined {
-    return db.select().from(students).where(eq(students.email, email)).get();
+  async getStudentByEmail(email: string): Promise<Student | undefined> {
+    const [res] = await db.select().from(students).where(eq(students.email, email));
+    return res;
   }
 
-  createSession(session: InsertSession): Session {
-    return db.insert(sessions).values({ ...session, startedAt: new Date().toISOString() }).returning().get();
+  async createSession(session: InsertSession): Promise<Session> {
+    const [res] = await db.insert(sessions).values({ ...session, startedAt: new Date().toISOString() }).returning();
+    return res;
   }
 
-  getSession(id: number): Session | undefined {
-    return db.select().from(sessions).where(eq(sessions.id, id)).get();
+  async getSession(id: number): Promise<Session | undefined> {
+    const [res] = await db.select().from(sessions).where(eq(sessions.id, id));
+    return res;
   }
 
-  getStudentSessions(studentId: number): Session[] {
-    return db.select().from(sessions).where(eq(sessions.studentId, studentId)).orderBy(desc(sessions.startedAt)).all();
+  async getStudentSessions(studentId: number): Promise<Session[]> {
+    return await db.select().from(sessions).where(eq(sessions.studentId, studentId)).orderBy(desc(sessions.startedAt));
   }
 
-  endSession(id: number): void {
-    db.update(sessions).set({ endedAt: new Date().toISOString() }).where(eq(sessions.id, id)).run();
+  async endSession(id: number): Promise<void> {
+    await db.update(sessions).set({ endedAt: new Date().toISOString() }).where(eq(sessions.id, id));
   }
 
-  getConceptsBySubject(subject: string): Concept[] {
-    return db.select().from(concepts).where(eq(concepts.subject, subject)).all();
+  async getConceptsBySubject(subject: string): Promise<Concept[]> {
+    return await db.select().from(concepts).where(eq(concepts.subject, subject));
   }
 
-  getConcept(id: number): Concept | undefined {
-    return db.select().from(concepts).where(eq(concepts.id, id)).get();
+  async getConcept(id: number): Promise<Concept | undefined> {
+    const [res] = await db.select().from(concepts).where(eq(concepts.id, id));
+    return res;
   }
 
-  createConcept(concept: InsertConcept): Concept {
-    return db.insert(concepts).values(concept).returning().get();
+  async createConcept(concept: InsertConcept): Promise<Concept> {
+    const [res] = await db.insert(concepts).values(concept).returning();
+    return res;
   }
 
-  getConceptCount(): number {
-    return db.select().from(concepts).all().length;
+  async getConceptCount(): Promise<number> {
+    const res = await db.select().from(concepts);
+    return res.length;
   }
 
-  createInteraction(interaction: InsertInteraction): Interaction {
-    return db.insert(interactions).values({ ...interaction, createdAt: new Date().toISOString() }).returning().get();
+  async createInteraction(interaction: InsertInteraction): Promise<Interaction> {
+    const [res] = await db.insert(interactions).values({ ...interaction, createdAt: new Date().toISOString() }).returning();
+    return res;
   }
 
-  updateInteraction(id: number, score: number, feedback: string): Interaction | undefined {
-    return db.update(interactions).set({ score, feedback }).where(eq(interactions.id, id)).returning().get();
+  async updateInteraction(id: number, score: number, feedback: string): Promise<Interaction | undefined> {
+    const [res] = await db.update(interactions).set({ score, feedback }).where(eq(interactions.id, id)).returning();
+    return res;
   }
 
-  getSessionInteractions(sessionId: number): Interaction[] {
-    return db.select().from(interactions).where(eq(interactions.sessionId, sessionId)).orderBy(desc(interactions.createdAt)).all();
+  async getSessionInteractions(sessionId: number): Promise<Interaction[]> {
+    return await db.select().from(interactions).where(eq(interactions.sessionId, sessionId)).orderBy(desc(interactions.createdAt));
   }
 
-  getStudentInteractions(studentId: number): Interaction[] {
-    const studentSessions = db.select().from(sessions).where(eq(sessions.studentId, studentId)).all();
+  async getStudentInteractions(studentId: number): Promise<Interaction[]> {
+    const studentSessions = await db.select().from(sessions).where(eq(sessions.studentId, studentId));
     if (studentSessions.length === 0) return [];
     const allInteractions: Interaction[] = [];
     for (const s of studentSessions) {
-      allInteractions.push(...db.select().from(interactions).where(eq(interactions.sessionId, s.id)).all());
+      const ints = await db.select().from(interactions).where(eq(interactions.sessionId, s.id));
+      allInteractions.push(...ints);
     }
     return allInteractions;
   }
 
-  getMastery(studentId: number, conceptId: number): MasteryScore | undefined {
-    return db.select().from(masteryScores)
-      .where(and(eq(masteryScores.studentId, studentId), eq(masteryScores.conceptId, conceptId)))
-      .get();
+  async getMastery(studentId: number, conceptId: number): Promise<MasteryScore | undefined> {
+    const [res] = await db.select().from(masteryScores)
+      .where(and(eq(masteryScores.studentId, studentId), eq(masteryScores.conceptId, conceptId)));
+    return res;
   }
 
-  upsertMastery(studentId: number, conceptId: number, score: number): MasteryScore {
-    const existing = this.getMastery(studentId, conceptId);
+  async upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore> {
+    const existing = await this.getMastery(studentId, conceptId);
     if (existing) {
-      return db.update(masteryScores)
+      const [updated] = await db.update(masteryScores)
         .set({ score, updatedAt: new Date().toISOString() })
         .where(eq(masteryScores.id, existing.id))
-        .returning().get()!;
+        .returning();
+      return updated;
     }
-    return db.insert(masteryScores)
+    const [inserted] = await db.insert(masteryScores)
       .values({ studentId, conceptId, score, updatedAt: new Date().toISOString() })
-      .returning().get();
+      .returning();
+    return inserted;
   }
 
-  getStudentMastery(studentId: number): MasteryScore[] {
-    return db.select().from(masteryScores).where(eq(masteryScores.studentId, studentId)).all();
+  async getStudentMastery(studentId: number): Promise<MasteryScore[]> {
+    return await db.select().from(masteryScores).where(eq(masteryScores.studentId, studentId));
   }
 }
 

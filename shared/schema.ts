@@ -1,16 +1,16 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, real, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const students = sqliteTable("students", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const students = pgTable("students", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   createdAt: text("created_at").notNull().default("now"),
 });
 
-export const sessions = sqliteTable("sessions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const sessions = pgTable("sessions", {
+  id: serial("id").primaryKey(),
   studentId: integer("student_id").notNull(),
   subject: text("subject").notNull(),
   topic: text("topic"),
@@ -18,8 +18,8 @@ export const sessions = sqliteTable("sessions", {
   endedAt: text("ended_at"),
 });
 
-export const concepts = sqliteTable("concepts", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const concepts = pgTable("concepts", {
+  id: serial("id").primaryKey(),
   subject: text("subject").notNull(),
   name: text("name").notNull(),
   description: text("description").notNull(),
@@ -27,8 +27,8 @@ export const concepts = sqliteTable("concepts", {
   idealExplanation: text("ideal_explanation").notNull(),
 });
 
-export const interactions = sqliteTable("interactions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const interactions = pgTable("interactions", {
+  id: serial("id").primaryKey(),
   sessionId: integer("session_id").notNull(),
   conceptId: integer("concept_id").notNull(),
   studentResponse: text("student_response").notNull(),
@@ -37,8 +37,8 @@ export const interactions = sqliteTable("interactions", {
   createdAt: text("created_at").notNull().default("now"),
 });
 
-export const masteryScores = sqliteTable("mastery_scores", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const masteryScores = pgTable("mastery_scores", {
+  id: serial("id").primaryKey(),
   studentId: integer("student_id").notNull(),
   conceptId: integer("concept_id").notNull(),
   score: real("score").notNull().default(0),

@@ -112,12 +112,12 @@ const conceptData: InsertConcept[] = [
   },
 ];
 
-export function seedConcepts() {
-  const count = storage.getConceptCount();
+export async function seedConcepts() {
+  const count = await storage.getConceptCount();
   if (count === 0) {
     console.log("Seeding concept data...");
     for (const concept of conceptData) {
-      storage.createConcept(concept);
+      await storage.createConcept(concept);
     }
     console.log(`Seeded ${conceptData.length} concepts.`);
   }
