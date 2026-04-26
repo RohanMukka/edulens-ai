@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MasteryScore, Concept, Classroom } from "@shared/schema";
-import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users } from "lucide-react";
+import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users, Code, Atom, FlaskConical, TrendingUp } from "lucide-react";
 
 const subjects = [
   {
@@ -31,6 +31,34 @@ const subjects = [
     color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     iconBg: "bg-amber-500/10",
     desc: "Ancient civilizations through Industrial Revolution",
+  },
+  {
+    name: "Computer Science",
+    icon: Code,
+    color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    iconBg: "bg-violet-500/10",
+    desc: "Variables, algorithms, data structures, and Big O",
+  },
+  {
+    name: "Physics",
+    icon: Atom,
+    color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+    iconBg: "bg-cyan-500/10",
+    desc: "Motion, forces, energy, waves, and circuits",
+  },
+  {
+    name: "Chemistry",
+    icon: FlaskConical,
+    color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+    iconBg: "bg-rose-500/10",
+    desc: "Atoms, bonding, reactions, and acid-base chemistry",
+  },
+  {
+    name: "Economics",
+    icon: TrendingUp,
+    color: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
+    iconBg: "bg-teal-500/10",
+    desc: "Supply & demand, GDP, inflation, and trade",
   },
 ];
 

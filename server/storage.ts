@@ -29,6 +29,7 @@ export interface IStorage {
   getConceptsBySubject(subject: string): Promise<Concept[]>;
   getConcept(id: number): Promise<Concept | undefined>;
   createConcept(concept: InsertConcept): Promise<Concept>;
+  getConceptByName(name: string, subject: string): Promise<Concept | undefined>;
   getConceptCount(): Promise<number>;
   createInteraction(interaction: InsertInteraction): Promise<Interaction>;
   updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null): Promise<Interaction | undefined>;
@@ -98,6 +99,12 @@ export class DatabaseStorage implements IStorage {
 
   async createConcept(concept: InsertConcept): Promise<Concept> {
     const [res] = await db.insert(concepts).values(concept).returning();
+    return res;
+  }
+
+  async getConceptByName(name: string, subject: string): Promise<Concept | undefined> {
+    const [res] = await db.select().from(concepts)
+      .where(and(eq(concepts.name, name), eq(concepts.subject, subject)));
     return res;
   }
 

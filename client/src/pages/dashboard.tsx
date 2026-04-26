@@ -14,7 +14,7 @@ import type { MasteryScore, Concept } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock,
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical,
 } from "lucide-react";
 
 interface StudentStats {
@@ -28,9 +28,13 @@ interface StudentStats {
 }
 
 const SUBJECT_META: Record<string, { icon: any; color: string; bg: string; ring: string }> = {
-  Biology:  { icon: Dna,       color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "#10b981" },
-  Math:     { icon: Calculator, color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-500/10",    ring: "#3b82f6" },
-  History:  { icon: Landmark,   color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-500/10",   ring: "#f59e0b" },
+  Biology:            { icon: Dna,           color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "#10b981" },
+  Math:               { icon: Calculator,     color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-500/10",    ring: "#3b82f6" },
+  History:            { icon: Landmark,       color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-500/10",   ring: "#f59e0b" },
+  "Computer Science": { icon: Code,           color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10", ring: "#8b5cf6" },
+  Physics:            { icon: Atom,           color: "text-cyan-600 dark:text-cyan-400",    bg: "bg-cyan-500/10",    ring: "#06b6d4" },
+  Chemistry:          { icon: FlaskConical,   color: "text-rose-600 dark:text-rose-400",    bg: "bg-rose-500/10",    ring: "#f43f5e" },
+  Economics:          { icon: TrendingUp,     color: "text-teal-600 dark:text-teal-400",    bg: "bg-teal-500/10",    ring: "#14b8a6" },
 };
 
 // SVG circular progress
@@ -68,7 +72,7 @@ export default function Dashboard() {
     queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/mastery`)).json(),
   });
 
-  const subjects = ["Biology", "Math", "History"];
+  const subjects = ["Biology", "Math", "History", "Computer Science", "Physics", "Chemistry", "Economics"];
   const conceptQueries = subjects.map(subject =>
     useQuery<Concept[]>({
       queryKey: ["/api/concepts", subject],

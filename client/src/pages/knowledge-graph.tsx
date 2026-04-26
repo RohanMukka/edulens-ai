@@ -60,7 +60,7 @@ export default function KnowledgeGraph() {
     return null;
   }
 
-  const subjects = ["Biology", "Math", "History"];
+  const subjects = ["Biology", "Math", "History", "Computer Science", "Physics", "Chemistry", "Economics"];
 
   const conceptQueries = subjects.map(subject =>
     useQuery<Concept[]>({
