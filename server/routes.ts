@@ -7,6 +7,13 @@ import Groq from "groq-sdk";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+
+// Never expose the password field to the client
+const safeStudent = (s: any) => {
+  const { password, ...safe } = s;
+  return safe;
+};
 
 declare module "express-session" {
   interface SessionData {
@@ -82,9 +89,10 @@ export async function registerRoutes(
       if (existing) {
         return res.status(400).json({ message: "Email already registered" });
       }
-      const student = await storage.createStudent({ name, email: normalizedEmail, password, role: role || "student" });
+      const hashedPassword = await bcrypt.hash(password, 12);
+      const student = await storage.createStudent({ name, email: normalizedEmail, password: hashedPassword, role: role || "student" });
       req.session.studentId = student.id;
-      res.json(student);
+      res.json(safeStudent(student));
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -99,13 +107,28 @@ export async function registerRoutes(
       const normalizedEmail = email.trim().toLowerCase();
       const student = await storage.getStudentByEmail(normalizedEmail);
       if (!student) {
-        return res.status(404).json({ message: "Invalid email or password" });
+        return res.status(401).json({ message: "Invalid email or password" });
       }
-      if (student.password !== password) {
+
+      // Support legacy plaintext passwords by detecting bcrypt hashes ($2a$/$2b$)
+      const isHashed = student.password.startsWith("$2");
+      let passwordMatch: boolean;
+      if (isHashed) {
+        passwordMatch = await bcrypt.compare(password, student.password);
+      } else {
+        // Legacy plaintext — compare directly, then migrate to hash
+        passwordMatch = student.password === password;
+        if (passwordMatch) {
+          const newHash = await bcrypt.hash(password, 12);
+          await storage.updateStudentPassword(student.id, newHash);
+        }
+      }
+
+      if (!passwordMatch) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
       req.session.studentId = student.id;
-      res.json(student);
+      res.json(safeStudent(student));
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -119,7 +142,7 @@ export async function registerRoutes(
     if (!student) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    res.json(student);
+    res.json(safeStudent(student));
   });
 
   app.post("/api/auth/logout", (req, res) => {

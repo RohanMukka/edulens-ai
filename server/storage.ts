@@ -38,6 +38,7 @@ export interface IStorage {
   upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore>;
   getStudentMastery(studentId: number): Promise<MasteryScore[]>;
   getAllStudents(): Promise<Student[]>;
+  updateStudentPassword(id: number, hashedPassword: string): Promise<void>;
 
   // Classroom methods
   createClassroom(classroom: InsertClassroom): Promise<Classroom>;
@@ -52,6 +53,10 @@ export class DatabaseStorage implements IStorage {
   async createStudent(student: InsertStudent): Promise<Student> {
     const [res] = await db.insert(students).values({ ...student, createdAt: new Date().toISOString() }).returning();
     return res;
+  }
+
+  async updateStudentPassword(id: number, hashedPassword: string): Promise<void> {
+    await db.update(students).set({ password: hashedPassword }).where(eq(students.id, id));
   }
 
   async getStudent(id: number): Promise<Student | undefined> {
