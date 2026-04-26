@@ -166,7 +166,7 @@ export default function TeacherDashboard() {
         </div>
 
         {/* ── STATS ROW ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             { label: "Enrolled Students", value: students?.length || 0,   icon: Users,          color: "text-primary",       bg: "bg-primary/10" },
             { label: "Class Avg Score",   value: `${Math.round(avgClassScore * 100)}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-500/10" },
@@ -410,15 +410,15 @@ export default function TeacherDashboard() {
                             className="p-4 rounded-xl border border-border/50 bg-muted/20 flex flex-col gap-2"
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold shrink-0">
                                   {update.name.charAt(0)}
                                 </div>
-                                <span className="font-bold text-sm">{update.name}</span>
-                                <span className="text-xs text-muted-foreground">just answered</span>
-                                <Badge variant="outline" className="text-[10px] py-0">{update.concept}</Badge>
+                                <span className="font-bold text-sm whitespace-nowrap">{update.name}</span>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">just answered</span>
+                                <Badge variant="outline" className="text-[10px] py-0 shrink-0">{update.concept}</Badge>
                                 {update.bloomLevel && (
-                                  <Badge className={`text-[10px] py-0 border-none ${BLOOMS_MAP[update.bloomLevel]?.bg} ${BLOOMS_MAP[update.bloomLevel]?.color}`}>
+                                  <Badge className={`text-[10px] py-0 border-none shrink-0 ${BLOOMS_MAP[update.bloomLevel]?.bg} ${BLOOMS_MAP[update.bloomLevel]?.color}`}>
                                     {BLOOMS_MAP[update.bloomLevel]?.label}
                                   </Badge>
                                 )}

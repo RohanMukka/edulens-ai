@@ -373,7 +373,7 @@ export default function LearningInterface() {
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} data-testid="button-back">
               <ArrowLeft className="w-4 h-4" />
@@ -396,7 +396,7 @@ export default function LearningInterface() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-6 space-y-5">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         {currentConcept && (
           <>
             {/* Concept Introduction */}
