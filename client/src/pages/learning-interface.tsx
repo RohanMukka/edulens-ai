@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import confetti from "canvas-confetti";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -36,6 +37,17 @@ export default function LearningInterface() {
   const [explanation, setExplanation] = useState("");
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"intro" | "question" | "responding" | "feedback" | "complete">("intro");
+
+  useEffect(() => {
+    if (phase === "feedback" && lastScore && lastScore.score >= 0.8) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#34d399', '#059669', '#f59e0b', '#fbbf24']
+      });
+    }
+  }, [phase, lastScore]);
 
   if (!student) {
     setLocation("/");
