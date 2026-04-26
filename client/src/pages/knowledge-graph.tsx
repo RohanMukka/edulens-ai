@@ -155,8 +155,8 @@ export default function KnowledgeGraph() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm px-6 py-3 flex items-center justify-between shrink-0">
+    <div className="min-h-screen bg-background flex flex-col overflow-hidden pb-12 sm:pb-0">
+      <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm px-6 py-3 flex flex-wrap items-center justify-between shrink-0 gap-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} data-testid="button-back">
             <ArrowLeft className="w-4 h-4" />
@@ -166,17 +166,17 @@ export default function KnowledgeGraph() {
             <h1 className="font-bold">Knowledge Graph</h1>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /> Mastered
           </Badge>
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-2">
             <span className="w-2 h-2 rounded-full bg-amber-500" /> Learning
           </Badge>
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-2">
             <span className="w-2 h-2 rounded-full bg-rose-500" /> Needs Work
           </Badge>
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-2">
             <span className="w-2 h-2 rounded-full bg-muted-foreground" /> Not Started
           </Badge>
         </div>
@@ -218,7 +218,7 @@ export default function KnowledgeGraph() {
         })}
       </div>
 
-      <div className="flex-1 relative" data-testid="graph-container">
+      <div className="flex-1 relative mb-16 sm:mb-0" data-testid="graph-container">
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
         <ReactFlow
           nodes={nodes}
@@ -230,7 +230,10 @@ export default function KnowledgeGraph() {
           colorMode={theme}
         >
           <Background gap={20} size={1} />
-          <Controls className="!bg-card !border-border !fill-foreground [&_button]:!border-border/40 [&_svg]:!fill-foreground" />
+          <Controls 
+            position="bottom-right"
+            className="!bg-card !border-border !fill-foreground [&_button]:!border-border/40 [&_svg]:!fill-foreground mb-4" 
+          />
         </ReactFlow>
         </div>
       </div>
