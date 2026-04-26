@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Brain, BarChart3, Network, BookOpen, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/lib/theme";
+import { Moon, Sun } from "lucide-react";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const { student, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   if (location === "/") {
     return <>{children}</>;
@@ -65,6 +68,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Button>
               </>
             )}
+            
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="w-9 h-9 rounded-full">
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-primary" />}
+            </Button>
+            
+            <div className="w-px h-6 bg-border/40 mx-1 hidden sm:block" />
+            
             <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }}>
               <LogOut className="w-4 h-4 sm:mr-2 text-muted-foreground" />
               <span className="hidden sm:inline-block text-muted-foreground">Log out</span>

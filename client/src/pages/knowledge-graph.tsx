@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Brain, Loader2, Sparkles, CheckCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/lib/theme";
 import type { Concept, MasteryScore } from "@shared/schema";
 
 function ConceptNode({ data }: { data: { label: string; mastery: number; subject: string } }) {
@@ -62,6 +63,7 @@ const nodeTypes = { concept: ConceptNode };
 export default function KnowledgeGraph() {
   const [, setLocation] = useLocation();
   const { student } = useAuth();
+  const { theme } = useTheme();
 
   if (!student) {
     setLocation("/");
@@ -225,9 +227,10 @@ export default function KnowledgeGraph() {
           fitView
           attributionPosition="bottom-left"
           proOptions={{ hideAttribution: true }}
+          colorMode={theme}
         >
           <Background gap={20} size={1} />
-          <Controls />
+          <Controls className="!bg-card !border-border !fill-foreground [&_button]:!border-border/40 [&_svg]:!fill-foreground" />
         </ReactFlow>
         </div>
       </div>
