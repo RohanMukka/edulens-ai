@@ -7,13 +7,13 @@
 [![Nira Hackathon 2026](https://img.shields.io/badge/Nira_Hackathon-2026-6366f1?style=for-the-badge)](https://nira-hackathon.devpost.com/)
 [![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)](https://typescriptlang.org)
-[![Express](https://img.shields.io/badge/Express-4-000?style=flat-square&logo=express)](https://expressjs.com)
-[![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-f55036?style=flat-square)](https://groq.com)
-[![Tailwind](https://img.shields.io/badge/Tailwind_CSS-3-06b6d4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com)
+[![Express](https://img.shields.io/badge/Express-5-000?style=flat-square&logo=express)](https://expressjs.com)
+[![Groq](https://img.shields.io/badge/Groq-Llama_3.1-f55036?style=flat-square)](https://groq.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle_ORM-4169e1?style=flat-square&logo=postgresql)](https://www.postgresql.org)
 
-An adaptive learning companion that uses NLP to analyze **free-text student responses** — not just multiple choice — to understand how a student thinks, identify knowledge gaps, and create personalized learning paths in real time.
+**An AI-powered adaptive learning platform that analyzes free-text student responses — not multiple choice — to understand how a student thinks, identify knowledge gaps, and create personalized learning paths in real time.**
 
-[Demo Video](#demo) · [How It Works](#how-it-works) · [Getting Started](#getting-started) · [Tech Stack](#tech-stack)
+[🚀 Live Demo](#) · [📹 Demo Video](#) · [⚙️ Getting Started](#getting-started)
 
 </div>
 
@@ -21,191 +21,239 @@ An adaptive learning companion that uses NLP to analyze **free-text student resp
 
 ## 📌 The Problem
 
+Education technology has a fundamental flaw: it measures what students *click*, not what they *understand*.
+
 | Statistic | Source |
 |-----------|--------|
-| 1-on-1 tutoring improves student performance by **2 standard deviations** | [Bloom's 2-Sigma Problem](https://en.wikipedia.org/wiki/Bloom%27s_2_sigma_problem) |
-| **258 million** children and youth lack access to education worldwide | [UNESCO](https://www.unesco.org/gem-report/en) |
+| 1-on-1 tutoring improves outcomes by **2 standard deviations** | [Bloom's 2-Sigma Problem](https://en.wikipedia.org/wiki/Bloom%27s_2_sigma_problem) |
+| **258 million** children lack access to quality education | [UNESCO 2023](https://www.unesco.org/gem-report/en) |
 | Average student-to-teacher ratio is **1:23** across OECD countries | [OECD Education at a Glance](https://www.oecd.org/education/) |
-| Only **10%** of students in developing countries have access to personalized learning tools | World Bank |
+| Only **10%** of students in developing countries have access to personalized learning | World Bank |
 
-The most effective form of learning — 1-on-1 personalized tutoring — is inaccessible to the vast majority of students. Traditional ed-tech platforms rely on multiple-choice quizzes that test *recall*, not *understanding*. They can tell you a student got the answer wrong, but not *why* they're confused.
+When a student picks the wrong answer on a multiple-choice quiz, the platform knows they got it wrong — but has no idea **why** they're confused. Neither does the student.
+
+**EduLens fixes this.**
+
+---
 
 ## 💡 Our Solution
 
-EduLens AI closes this gap by analyzing **free-text explanations** from students using NLP. Instead of asking "What is the powerhouse of the cell? (A) Nucleus (B) Mitochondria," we ask students to **explain concepts in their own words** — then our AI reads their response to understand:
+EduLens AI closes the gap between mass education and personalized tutoring by replacing multiple-choice quizzes with **free-text explanations** analyzed by a large language model.
 
-- ✅ **What they understand** — strengths identified from semantic analysis
+Instead of asking:
+> *"What is the powerhouse of the cell? (A) Nucleus (B) Mitochondria (C) Ribosome"*
+
+EduLens asks:
+> *"In your own words, explain what mitochondria do and why they matter to the cell."*
+
+Then our AI reads the response to understand:
+
+- ✅ **What the student understands** — strengths identified from semantic analysis
 - ⚠️ **What they're missing** — specific knowledge gaps detected
-- 📊 **How well they understand** — 0-100% mastery score
+- 📊 **How well they understand it** — 0–100% mastery score
 - 🎯 **What to do next** — adaptive path that re-teaches gaps or advances to new concepts
 
-This is the key differentiator: **EduLens reads HOW a student thinks, not just WHAT they click.**
+> **EduLens reads HOW a student thinks, not just WHAT they click.**
 
 ---
 
 ## ✨ Key Features
 
+### 🎓 Pedagogical Design
 | Feature | Description |
 |---------|-------------|
-| 🔄 **Adaptive Learning Loop** | Concept intro → free-text response → NLP scoring → personalized feedback → adaptive next step |
-| 🧠 **NLP-Powered Scoring** | Uses Groq Llama 3.3 70B to analyze student explanations and return structured scores, strengths, and gaps |
-| 🗺️ **Interactive Knowledge Graph** | React Flow visualization showing all concepts with prerequisite chains, color-coded by mastery level |
-| 📊 **Student Dashboard** | Progress analytics with radar charts (subject mastery), bar charts (concept mastery), weak areas, session history |
-| 📚 **3 Subjects, 15 Concepts** | Biology, Math, and History with 5 concepts each, linked by prerequisite chains |
-| 🤖 **AI Explanations** | On-demand AI-generated explanations tailored to the student's specific knowledge gaps |
-| ❓ **AI Question Generation** | Dynamic practice questions generated by AI for each concept |
-| 🌙 **Dark Mode** | Full dark mode support with education-themed color palette |
+| **Teach-First Flow** | Every concept starts with a Mini-Lesson before assessment — students learn *before* being tested, not after |
+| **Scaffolded Retries** | Low scores trigger simpler follow-up questions, not repetition — building understanding step by step |
+| **Adaptive Difficulty** | The system tracks mastery and adjusts question difficulty dynamically (easy / medium / hard) |
+| **AI Explanations** | Students can request a personalized re-explanation targeting their specific knowledge gaps |
+
+### 🔒 Security & Architecture
+| Feature | Description |
+|---------|-------------|
+| **Session Authentication** | `express-session` with HTTP-only cookies — no tokens stored in `localStorage` |
+| **bcrypt Password Hashing** | All passwords hashed with bcrypt (cost factor 12) — plaintext never stored or returned |
+| **API Authorization Middleware** | `requireAuth`, `requireStudentOrEducator`, `requireEducator` guards on every sensitive endpoint |
+| **Cross-User Data Isolation** | Students can only access their own data; educators only see enrolled students |
+| **AI Input Sanitization** | Student responses wrapped in `<student_answer>` tags to prevent prompt injection |
+
+### 🏫 Multi-Tenancy Classroom Model
+| Feature | Description |
+|---------|-------------|
+| **Classroom Creation** | Educators create named classrooms with auto-generated 6-character join codes |
+| **Student Enrollment** | Students join via code — immediately appear on the educator's roster |
+| **Isolated Rosters** | Teacher dashboards only show students from *their* classrooms, never the entire user base |
+| **Real-Time Analytics** | Educators see avg score, interactions, and mastered concepts per enrolled student |
+
+### 🤖 AI Reliability (Hardened)
+| Feature | Description |
+|---------|-------------|
+| **Zod Schema Validation** | All AI JSON responses validated with strict Zod schemas — hallucinated fields are rejected |
+| **Relevance Pre-Check** | A lightweight classifier runs *before* scoring to detect off-topic or gibberish answers |
+| **Graceful Fallbacks** | Every AI call has a keyword-overlap fallback if Groq is unavailable |
+| **Dynamic Concept Generation** | Any topic can be turned into a structured concept with AI-generated lesson + question |
+
+### 📊 Student Experience
+| Feature | Description |
+|---------|-------------|
+| **Knowledge Graph** | Interactive React Flow visualization of concept dependencies and mastery levels |
+| **Progress Dashboard** | SVG progress ring, per-subject breakdowns, radar chart, concept bar chart |
+| **Gamification** | Trophy case with 6 achievement badges (locked/unlocked states) |
+| **Subject Selection** | Biology, Math, History — plus AI-generated custom topics on the fly |
 
 ---
-
-
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Client (React)                      │
-│  Landing · Subjects · Learning · Knowledge Graph · Dash  │
-└──────────────────────┬──────────────────────────────────┘
-                       │ API Requests
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│                   Express.js Server                      │
-│              /api/auth · /api/sessions                   │
-│          /api/concepts · /api/students · /api/ai         │
-└──────────┬───────────────────────────────┬──────────────┘
-           │                               │
-           ▼                               ▼
-┌─────────────────────┐     ┌─────────────────────────────┐
-│ PostgreSQL (Neon)   │     │        Groq API             │
-│ + Drizzle ORM       │     │   Llama 3.3 70B Versatile   │
-│                     │     │                             │
-│  · students         │     │  · Score student responses  │
-│  · sessions         │     │  · Generate explanations    │
-│  · concepts         │     │  · Create practice questions│
-│  · interactions     │     │                             │
-│  · mastery_scores   │     │  Fallback: keyword-based    │
-└─────────────────────┘     │  scorer (no API key needed) │
-                            └─────────────────────────────┘
-```
-
----
-
-## 🔬 How It Works
-
-### The Adaptive Learning Loop
-
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  1. Pick a   │────▶│  2. Read the │────▶│  3. Explain  │
-│   Subject    │     │   Concept    │     │  in your own │
-│              │     │              │     │    words     │
-└──────────────┘     └──────────────┘     └──────┬───────┘
-                                                  │
-                     ┌────────────────────────────┘
-                     ▼
-              ┌──────────────┐     ┌──────────────┐
-              │  4. AI scores│────▶│  5. See your │
-              │  your under- │     │  strengths & │
-              │  standing    │     │  gaps        │
-              └──────────────┘     └──────┬───────┘
-                                          │
-                     ┌────────────────────┘
-                     ▼
-         ┌───────────────────────┐
-         │  6. Adaptive Next:    │
-         │  Score < 40% → Retry  │
-         │  Score ≥ 40% → Next   │
-         │        concept        │
-         └───────────────────────┘
-```
-
-### NLP Scoring Pipeline
-
-1. Student submits a free-text explanation
-2. The response is sent to Groq Llama 3.3 70B with the concept's ideal explanation
-3. The AI returns a structured JSON:
-   ```json
-   {
-     "score": 0.73,
-     "strengths": ["Correctly identified the role of the nucleus", "Mentioned DNA storage"],
-     "gaps": ["Missing explanation of mitochondria's role in ATP production"],
-     "feedback": "Strong understanding of nuclear function. Review how mitochondria convert glucose to ATP."
-   }
-   ```
-4. If no Groq API key is set, a smart keyword-matching fallback runs:
-   - Tokenizes both responses
-   - Calculates weighted overlap (80+ domain terms weighted 2x)
-   - Returns concept-specific strengths and gaps
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-- [Groq API Key](https://console.groq.com) (free — optional, keyword fallback works without it)
-
-### Installation
-
-```bash
-# Clone the repo
-git clone https://github.com/RohanMukka/edulens-ai.git
-cd edulens-ai
-
-# Install dependencies
-npm install
-
-# Create a .env file and add your keys
-echo "GROQ_API_KEY=your_api_key_here" > .env
-echo "DATABASE_URL=postgresql://neondb_owner:password@ep-...aws.neon.tech/neondb?sslmode=require" >> .env
-
-# Push the database schema to your PostgreSQL database
-npm run db:push
-
-# Start the dev server
-npm run dev
-```
-
-The app will be running at `http://localhost:5000`.
-
-### Deployment (Render)
-
-This project is configured to be easily deployed to [Render.com](https://render.com) as a Web Service.
-
-1. Connect your GitHub repository to Render as a **New Web Service**.
-2. Set Build Command: `npm install && npm run build`
-3. Set Start Command: `npm start`
-4. Add your Environment Variables (`GROQ_API_KEY` and `DATABASE_URL`).
-5. Deploy!
-
-*(Live Demo: https://edulens-ai-lep9.onrender.com)*
-
-### Production Build
-
-```bash
-npm run build
-NODE_ENV=production node dist/index.cjs
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT (React + Vite)                   │
+│  Landing → Auth → Subject Selection → Learning Interface         │
+│  Dashboard → Knowledge Graph → Teacher Dashboard                 │
+└────────────────────┬────────────────────────────────────────────┘
+                     │ HTTP + Session Cookie
+┌────────────────────▼────────────────────────────────────────────┐
+│                      SERVER (Express 5 + TypeScript)            │
+│                                                                  │
+│  /api/auth/*      Session auth + bcrypt                         │
+│  /api/sessions/*  requireAuth middleware                        │
+│  /api/students/*  requireStudentOrEducator middleware           │
+│  /api/teacher/*   requireEducator middleware                    │
+│  /api/classrooms/* requireAuth / requireEducator               │
+│  /api/ai/*        Groq → Zod validation → fallback             │
+└────────────┬────────────────────┬───────────────────────────────┘
+             │                    │
+┌────────────▼──────┐  ┌──────────▼─────────────────────────────┐
+│  PostgreSQL (Neon)│  │  Groq (Llama 3.1-8b-instant)           │
+│  Drizzle ORM      │  │  • scoreResponse (+ relevance pre-check)│
+│                   │  │  • generateQuestion (adaptive diff.)    │
+│  students         │  │  • generateExplanation (gap-targeted)   │
+│  sessions         │  │  • generateDynamicConcept (Zod-parsed)  │
+│  concepts         │  └────────────────────────────────────────┘
+│  interactions     │
+│  mastery_scores   │
+│  classrooms       │
+│  classroom_students│
+└───────────────────┘
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | React 18, TypeScript | UI components and routing |
-| **Styling** | Tailwind CSS 3, shadcn/ui | Design system and components |
-| **Routing** | Wouter | Lightweight hash-based routing |
-| **Data Viz** | React Flow (@xyflow/react) | Interactive knowledge graph |
-| **Charts** | Recharts | Dashboard analytics (radar, bar charts) |
-| **Backend** | Express.js 4 | REST API server |
-| **Database** | PostgreSQL (Neon) + Drizzle | Data persistence with type-safe async queries |
-| **AI/NLP** | Groq API (Llama 3.3 70B) | Understanding scoring, explanations, questions |
-| **Validation** | Zod + drizzle-zod | Request/response schema validation |
-| **Build** | Vite 5 | Fast frontend bundling |
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
+| **Routing** | Wouter |
+| **State / Data Fetching** | TanStack Query v5 |
+| **Charts** | Recharts, React Flow (knowledge graph) |
+| **Backend** | Express 5, TypeScript, tsx |
+| **Database** | PostgreSQL (Neon), Drizzle ORM |
+| **Authentication** | express-session, bcryptjs |
+| **AI / LLM** | Groq SDK (Llama 3.1-8b-instant) |
+| **Validation** | Zod (API + AI output schemas) |
+| **Deployment** | Render.com |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database (or [Neon](https://neon.tech) free tier)
+- [Groq API key](https://console.groq.com) (free)
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/RohanMukka/edulens-ai.git
+cd edulens-ai
+npm install
+```
+
+### 2. Configure Environment
+
+Create a `.env` file in the root:
+
+```env
+DATABASE_URL=postgresql://user:password@host/dbname
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+SESSION_SECRET=your-long-random-secret-string
+NODE_ENV=development
+```
+
+### 3. Push Database Schema
+
+```bash
+npm run db:push
+```
+
+### 4. Run the App
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:5000](http://localhost:5000)
+
+---
+
+## 👥 Roles & Demo Access
+
+| Role | How to Register | Access |
+|------|----------------|--------|
+| **Student** | Select "Student" on signup | Learning interface, dashboard, knowledge graph |
+| **Educator** | Select "Educator" + enter access code | Teacher dashboard, classroom management, student analytics |
+
+> 📝 Contact the project admin for the educator access code.
+
+---
+
+## 📐 Database Schema
+
+```
+students            classrooms           classroom_students
+├── id              ├── id               ├── id
+├── name            ├── name             ├── classroomId
+├── email (unique)  ├── teacherId        ├── studentId
+├── password (hash) ├── code (unique)    └── joinedAt
+├── role            └── createdAt
+└── createdAt
+
+sessions            interactions         mastery_scores      concepts
+├── id              ├── id               ├── id              ├── id
+├── studentId       ├── sessionId        ├── studentId       ├── subject
+├── subject         ├── conceptId        ├── conceptId       ├── name
+├── startedAt       ├── studentResponse  ├── score           ├── description
+└── endedAt         ├── score            └── updatedAt       ├── idealExplanation
+                    ├── feedback                             └── prerequisites
+                    └── createdAt
+```
+
+---
+
+## 🔑 Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `GROQ_API_KEY` | ✅ | Groq API key for LLM inference |
+| `SESSION_SECRET` | ✅ | Secret for signing session cookies |
+| `NODE_ENV` | Optional | `development` or `production` |
+| `PORT` | Optional | Server port (default: 5000) |
+
+---
+
+## 🎯 Hackathon Alignment
+
+**Theme: Transforming the Future of Education**
+
+| Criterion | EduLens Response |
+|-----------|-----------------|
+| **Improving access to learning** | Democratizes 1-on-1 tutoring at scale — any student, any topic, instant personalized feedback |
+| **Enhancing classroom experiences** | Multi-tenant classrooms with real-time educator analytics |
+| **Engaging & inclusive** | Free-text over multiple-choice reduces test anxiety; gamified badges encourage persistence |
+| **AI-powered** | Groq LLM for scoring, explanation generation, question generation, and dynamic concept creation |
+| **Creativity** | Knowledge graph visualization, adaptive difficulty, teach-first pedagogy |
 
 ---
 
@@ -213,63 +261,33 @@ NODE_ENV=production node dist/index.cjs
 
 ```
 edulens-ai/
-├── client/
+├── client/                  # React frontend
 │   └── src/
 │       ├── pages/
-│       │   ├── landing.tsx          # Hero + registration
-│       │   ├── home.tsx             # Post-login home screen
-│       │   ├── subjects.tsx         # Subject selection grid
-│       │   ├── learning.tsx         # Core adaptive learning loop
-│       │   ├── knowledge-graph.tsx  # Interactive concept graph
-│       │   └── dashboard.tsx        # Progress analytics
-│       ├── lib/
-│       │   ├── auth.tsx             # Auth context provider
-│       │   └── queryClient.ts       # TanStack Query setup
-│       ├── App.tsx                  # Router + layout
-│       └── index.css                # Tailwind + custom theme
+│       │   ├── landing.tsx          # Redesigned hero + auth
+│       │   ├── subject-selection.tsx # Subjects + classroom join
+│       │   ├── learning-interface.tsx # Adaptive learning loop
+│       │   ├── dashboard.tsx        # Student analytics
+│       │   ├── knowledge-graph.tsx  # React Flow graph
+│       │   └── teacher-dashboard.tsx # Educator view
+│       └── lib/
+│           ├── auth.tsx             # Session-based auth context
+│           └── queryClient.ts       # API client + error handling
 ├── server/
-│   ├── routes.ts                    # API endpoints + Groq integration
-│   ├── storage.ts                   # Database CRUD operations
-│   ├── seed.ts                      # Concept seed data (15 concepts)
-│   └── index.ts                     # Express server setup
-├── shared/
-│   └── schema.ts                    # Drizzle ORM schema + Zod types
-└── package.json
+│   ├── routes.ts            # All API endpoints + middleware
+│   ├── storage.ts           # Drizzle ORM queries
+│   ├── seed.ts              # Initial concept seeding
+│   └── index.ts             # Express app entry
+└── shared/
+    └── schema.ts            # Drizzle + Zod schemas (shared)
 ```
-
----
-
-## 🏆 Judging Criteria Alignment
-
-| Criterion | Weight | How EduLens AI Addresses It |
-|-----------|--------|----------------------------|
-| **Innovation & Creativity** | 20% | Free-text NLP analysis instead of multiple choice — analyzes *how* students think, not just what they click. Interactive knowledge graph for visual learning paths. |
-| **Impact on Education** | — | Addresses Bloom's 2-Sigma problem by providing personalized 1-on-1 tutoring at scale. Targets the 258M students without education access. |
-| **Technical Implementation** | — | Full-stack app with Groq Llama 3.3 70B integration, structured prompt engineering for reliable JSON scoring, smart keyword fallback, SQLite persistence. |
-| **Design & User Experience** | — | Clean education-themed UI (indigo/emerald palette), adaptive learning loop with instant feedback, interactive knowledge graph, progress dashboard with charts. |
-| **Presentation Quality** | — | Polished demo with clear problem→solution narrative, real education statistics, working prototype with 15 seeded concepts across 3 subjects. |
-| **Completeness** | 10% | Working prototype with registration, learning loop, scoring, knowledge graph, dashboard, AI explanations, and question generation. All submission assets ready. |
-
----
-
-## 👤 Team
-
-**Rohan Mukka**  
-MS Computer Science, University of Oklahoma  
-[GitHub](https://github.com/RohanMukka) · [LinkedIn](https://linkedin.com/in/rohanmukka)
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
 
-Built with ❤️ for the [Nira Hackathon 2026](https://nira-hackathon.devpost.com/)
+Built with ❤️ for the **Nira Hackathon 2026 · Transforming the Future of Education**
 
-*Reimagining education, one explanation at a time.*
+*Powered by React · Express · Groq · PostgreSQL · Drizzle ORM*
 
 </div>
