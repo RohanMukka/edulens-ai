@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import type { MasteryScore, Concept } from "@shared/schema";
-import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap } from "lucide-react";
+import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut } from "lucide-react";
 
 const subjects = [
   {
@@ -36,7 +36,7 @@ const subjects = [
 
 export default function SubjectSelection() {
   const [, setLocation] = useLocation();
-  const { student } = useAuth();
+  const { student, logout } = useAuth();
   const [newTopic, setNewTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -103,6 +103,9 @@ export default function SubjectSelection() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-dashboard">
               Dashboard
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }} className="text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4 mr-1" /> Sign Out
             </Button>
           </div>
         </div>

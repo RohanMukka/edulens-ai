@@ -3,7 +3,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, GraduationCap, Activity } from "lucide-react";
+import { ArrowLeft, Users, GraduationCap, Activity, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 type StudentStat = {
   id: number;
@@ -16,6 +17,7 @@ type StudentStat = {
 
 export default function TeacherDashboard() {
   const [, setLocation] = useLocation();
+  const { logout } = useAuth();
 
   const { data: students, isLoading } = useQuery<StudentStat[]>({
     queryKey: ["/api/teacher/students"],
@@ -50,6 +52,11 @@ export default function TeacherDashboard() {
             <p className="text-muted-foreground mt-1">
               Monitor your students' real-time mastery and AI interactions.
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }} className="text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4 mr-1" /> Sign Out
+            </Button>
           </div>
         </div>
 

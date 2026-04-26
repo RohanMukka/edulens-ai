@@ -142,7 +142,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllStudents(): Promise<Student[]> {
-    return await db.select().from(students).orderBy(desc(students.createdAt));
+    return await db.select().from(students).where(eq(students.role, "student")).orderBy(desc(students.createdAt));
   }
 }
 

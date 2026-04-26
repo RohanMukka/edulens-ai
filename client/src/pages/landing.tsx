@@ -9,7 +9,7 @@ import { Brain, Sparkles, BarChart3, Network, ArrowRight, BookOpen, Lightbulb, T
 
 export default function Landing() {
   const [, setLocation] = useLocation();
-  const { student, login, register } = useAuth();
+  const { student, login, register, logout } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("student");
@@ -28,6 +28,16 @@ export default function Landing() {
         else setLocation("/subjects");
       } else {
         if (!name.trim()) { setError("Name is required"); setLoading(false); return; }
+        
+        if (role === "educator") {
+          const code = prompt("Please enter the Educator Verification Code (Hint: 1234):");
+          if (code !== "1234") {
+            setError("Invalid Educator Code. Please try again.");
+            setLoading(false);
+            return;
+          }
+        }
+
         const user = await register(name, email, role);
         if (user.role === "educator") setLocation("/teacher");
         else setLocation("/subjects");
@@ -63,6 +73,9 @@ export default function Landing() {
               </Button>
             </>
           )}
+          <Button variant="ghost" onClick={() => logout()} size="lg" className="text-muted-foreground">
+            Sign Out
+          </Button>
         </div>
       </div>
     );
