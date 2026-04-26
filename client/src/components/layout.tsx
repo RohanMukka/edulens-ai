@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Brain, BarChart3, Network, BookOpen, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -13,7 +14,8 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col premium-gradient relative overflow-x-hidden">
+      <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
       <header className="border-b border-border/60 bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div 
@@ -70,9 +72,18 @@ export function Layout({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="flex-1">
-        {children}
-      </main>
+      <AnimatePresence mode="wait">
+        <motion.main 
+          key={location}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="flex-1"
+        >
+          {children}
+        </motion.main>
+      </AnimatePresence>
     </div>
   );
 }

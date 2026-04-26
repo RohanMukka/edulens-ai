@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Users, GraduationCap, Activity, LogOut, Plus, Copy,
-  ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck
+  ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck, AlertTriangle
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -162,23 +163,30 @@ export default function TeacherDashboard() {
             { label: "Class Avg Score",   value: `${Math.round(avgClassScore * 100)}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-500/10" },
             { label: "AI Interactions",   value: totalInteractions,        icon: Activity,       color: "text-blue-600",      bg: "bg-blue-500/10" },
             { label: "Concepts Mastered", value: totalMastered,            icon: CheckCheck,     color: "text-violet-600",    bg: "bg-violet-500/10" },
-          ].map(stat => (
-            <Card key={stat.label} className="border border-border/50">
-              <CardContent className="pt-5 pb-4">
-                <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <p className="text-xs text-muted-foreground font-medium mb-0.5">{stat.label}</p>
-                <p className="text-2xl font-black">{stat.value}</p>
-              </CardContent>
-            </Card>
+          ].map((stat, idx) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+            >
+              <Card className="glass-card border border-border/40 hover:shadow-lg hover:shadow-primary/5 transition-all">
+                <CardContent className="pt-5 pb-4">
+                  <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
+                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium mb-0.5">{stat.label}</p>
+                  <p className="text-2xl font-black">{stat.value}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           {/* ── CLASSROOMS ── */}
           <div className="lg:col-span-1">
-            <Card className="border border-border/50 h-full">
+            <Card className="glass-card border border-border/40 h-full">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">My Classrooms</CardTitle>
                 <CardDescription>Share the code with your students</CardDescription>
@@ -190,9 +198,9 @@ export default function TeacherDashboard() {
                     value={newClassName}
                     onChange={e => setNewClassName(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
-                    className="text-sm"
+                    className="text-sm bg-background/50"
                   />
-                  <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()}>
+                  <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="shadow-lg shadow-primary/20">
                     {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   </Button>
                 </div>
@@ -200,32 +208,33 @@ export default function TeacherDashboard() {
                 {classrooms && classrooms.length > 0 ? (
                   <div className="space-y-3">
                     {classrooms.map((c) => (
-                      <div key={c.id} className="p-3 border border-border/50 rounded-xl bg-muted/20">
-                        <p className="font-semibold text-sm mb-2 truncate">{c.name}</p>
-                        <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2 border border-border/40">
+                      <div key={c.id} className="p-4 border border-border/40 rounded-2xl bg-muted/20 backdrop-blur-sm group hover:border-primary/30 transition-all">
+                        <p className="font-bold text-sm mb-3 truncate group-hover:text-primary transition-colors">{c.name}</p>
+                        <div className="flex items-center justify-between bg-background/60 rounded-xl px-3 py-2 border border-border/30">
                           <code className="text-xl font-black tracking-[0.3em] text-primary">{c.code}</code>
                           <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-xs gap-1.5"
-                            onClick={() => handleCopy(c.code)}
-                          >
-                            {copied === c.code ? <CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                            {c.code}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-2 text-xs gap-1.5 border-primary/30 hover:bg-primary/5 text-primary"
-                            onClick={() => {
-                              setLiveUpdates([]);
-                              setActiveLiveRoom(c);
-                            }}
-                          >
-                            <Activity className="w-3.5 h-3.5" />
-                            Go Live
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-3 text-xs gap-1.5 font-bold hover:bg-primary/10 transition-all"
+                              onClick={() => handleCopy(c.code)}
+                            >
+                              {copied === c.code ? <CheckCheck className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                              Copy
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-3 text-xs gap-1.5 border-primary/40 hover:bg-primary hover:text-primary-foreground font-bold shadow-sm transition-all relative overflow-hidden group/btn"
+                              onClick={() => {
+                                setLiveUpdates([]);
+                                setActiveLiveRoom(c);
+                              }}
+                            >
+                              <div className="absolute inset-0 bg-primary/10 animate-pulse group-hover/btn:hidden" />
+                              <Activity className="w-4 h-4 relative z-10" />
+                              <span className="relative z-10">Go Live</span>
+                            </Button>
                           </div>
                         </div>
                       </div>

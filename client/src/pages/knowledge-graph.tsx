@@ -17,35 +17,43 @@ import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Brain, Loader2 } from "lucide-react";
+import { ArrowLeft, Brain, Loader2, Sparkles, CheckCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Concept, MasteryScore } from "@shared/schema";
 
 function ConceptNode({ data }: { data: { label: string; mastery: number; subject: string } }) {
   const masteryColor = data.mastery >= 0.7
-    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40"
+    ? "border-emerald-500/50 bg-emerald-500/10"
     : data.mastery >= 0.4
-      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40"
+      ? "border-amber-500/50 bg-amber-500/10"
       : data.mastery > 0
-        ? "border-rose-500 bg-rose-50 dark:bg-rose-950/40"
-        : "border-border bg-card";
+        ? "border-rose-500/50 bg-rose-500/10"
+        : "border-border/40 bg-card/60";
 
-  const masteryText = data.mastery >= 0.7
-    ? "text-emerald-700 dark:text-emerald-300"
+  const glowColor = data.mastery >= 0.7
+    ? "shadow-emerald-500/20"
     : data.mastery >= 0.4
-      ? "text-amber-700 dark:text-amber-300"
+      ? "shadow-amber-500/20"
       : data.mastery > 0
-        ? "text-rose-700 dark:text-rose-300"
-        : "text-muted-foreground";
+        ? "shadow-rose-500/20"
+        : "shadow-none";
 
   return (
-    <div className={`px-4 py-3 rounded-lg border-2 shadow-sm min-w-[140px] text-center ${masteryColor}`}>
-      <Handle type="target" position={Position.Top} className="!bg-muted-foreground !w-2 !h-2" />
-      <div className="font-semibold text-sm mb-1">{data.label}</div>
-      <div className={`text-xs ${masteryText}`}>
-        {data.mastery > 0 ? `${Math.round(data.mastery * 100)}% mastery` : "Not started"}
+    <motion.div 
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={`px-5 py-4 rounded-2xl border backdrop-blur-md shadow-xl min-w-[160px] text-center transition-all hover:scale-105 hover:border-primary/50 ${masteryColor} ${glowColor}`}
+    >
+      <Handle type="target" position={Position.Top} className="!bg-primary/40 !w-2.5 !h-2.5 !border-0" />
+      <div className="font-bold text-sm mb-1.5 tracking-tight">{data.label}</div>
+      <div className="flex items-center justify-center gap-1.5">
+        <div className={`text-[10px] font-black uppercase tracking-widest ${data.mastery > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+          {data.mastery > 0 ? `${Math.round(data.mastery * 100)}% Mastery` : "Not Started"}
+        </div>
+        {data.mastery >= 0.7 && <CheckCheck className="w-3 h-3 text-emerald-500" />}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-muted-foreground !w-2 !h-2" />
-    </div>
+      <Handle type="source" position={Position.Bottom} className="!bg-primary/40 !w-2.5 !h-2.5 !border-0" />
+    </motion.div>
   );
 }
 
@@ -96,17 +104,20 @@ export default function KnowledgeGraph() {
   const { nodes, edges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
-    const subjectOffsets: Record<string, number> = { Biology: 0, Math: 400, History: 800 };
+    const subjectOffsets: Record<string, number> = { 
+      Biology: 0, Math: 450, History: 900, "Computer Science": 1350, 
+      Physics: 1800, Chemistry: 2250, Economics: 2700 
+    };
 
     for (const concept of allConcepts) {
-      const xOffset = subjectOffsets[concept.subject] || 0;
+      const xOffset = subjectOffsets[concept.subject] ?? 0;
       const subjectConcepts = allConcepts.filter(c => c.subject === concept.subject);
       const idx = subjectConcepts.findIndex(c => c.id === concept.id);
 
       nodes.push({
         id: String(concept.id),
         type: "concept",
-        position: { x: xOffset + (idx % 2) * 180, y: 80 + Math.floor(idx / 1) * 100 + idx * 20 },
+        position: { x: xOffset + (idx % 2) * 200, y: 120 + Math.floor(idx / 2) * 140 },
         data: {
           label: concept.name,
           mastery: masteryMap[concept.id] || 0,
@@ -122,9 +133,9 @@ export default function KnowledgeGraph() {
             id: `${prereqConcept.id}-${concept.id}`,
             source: String(prereqConcept.id),
             target: String(concept.id),
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { stroke: "hsl(239 84% 67%)", strokeWidth: 2 },
-            animated: true,
+            markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(239 84% 67%)" },
+            style: { stroke: "hsl(239 84% 67% / 0.4)", strokeWidth: 3 },
+            animated: (masteryMap[prereqConcept.id] || 0) >= 0.7,
           });
         }
       }
@@ -170,17 +181,37 @@ export default function KnowledgeGraph() {
       </div>
 
       {/* Subject headers */}
-      <div className="px-6 py-3 flex gap-4 shrink-0 overflow-x-auto">
-        {subjects.map(subject => {
+      <div className="px-6 py-4 flex gap-4 shrink-0 overflow-x-auto no-scrollbar">
+        {subjects.map((subject, idx) => {
           const subjectConcepts = allConcepts.filter(c => c.subject === subject);
           const masteredCount = subjectConcepts.filter(c => (masteryMap[c.id] || 0) >= 0.7).length;
+          const progress = subjectConcepts.length > 0 ? (masteredCount / subjectConcepts.length) * 100 : 0;
+          
           return (
-            <Card key={subject} className="flex-1 border border-border/60">
-              <CardContent className="py-3 px-4">
-                <div className="font-semibold text-sm">{subject}</div>
-                <div className="text-xs text-muted-foreground">{masteredCount}/{subjectConcepts.length} mastered</div>
-              </CardContent>
-            </Card>
+            <motion.div
+              key={subject}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className="min-w-[200px]"
+            >
+              <Card className="glass-card border border-border/40 hover:border-primary/40 transition-all overflow-hidden">
+                <CardContent className="py-4 px-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-bold text-sm tracking-tight">{subject}</div>
+                    <Badge variant="outline" className="text-[10px] font-black">{Math.round(progress)}%</Badge>
+                  </div>
+                  <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      className="h-full bg-primary"
+                    />
+                  </div>
+                  <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">{masteredCount}/{subjectConcepts.length} Concepts Mastered</div>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>

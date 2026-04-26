@@ -79,16 +79,28 @@ export async function seedDemoData() {
 
   // Create an Educator Demo too
   const teacherEmail = "teacher@edulens.ai";
-  const existingTeacher = await storage.getStudentByEmail(teacherEmail);
-  if (!existingTeacher) {
+  let teacher = await storage.getStudentByEmail(teacherEmail);
+  if (!teacher) {
     console.log("Creating demo teacher...");
-    await storage.createStudent({
+    teacher = await storage.createStudent({
       name: "Dr. Aris",
       email: teacherEmail,
       password: hashedPassword,
-      isEducator: true,
+      role: "educator", // Explicitly set role
     });
   }
+
+  // Create a Demo Classroom
+  console.log("Creating demo classroom...");
+  const classroom = await storage.createClassroom({
+    name: "Hackathon Demo Class",
+    teacherId: teacher.id,
+    code: "DEMO26",
+  });
+
+  // Join Alex to the classroom
+  await storage.joinClassroom(student.id, classroom.id);
+  console.log("Joined Alex to DEMO26.");
 
   console.log("✅ Demo seeding complete!");
   console.log(`Student: ${demoEmail} / Password: demo1234`);

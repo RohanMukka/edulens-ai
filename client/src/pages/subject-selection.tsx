@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
+import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users, Code, Atom, FlaskConical, TrendingUp } from "lucide-react";
+import { SubjectSkeleton } from "@/components/ui/skeleton-screen";
 
 const subjects = [
   {
@@ -88,6 +90,10 @@ export default function SubjectSelection() {
       return res.json();
     },
   });
+
+  if (mastery === undefined) {
+    return <SubjectSkeleton />;
+  }
 
   if (!student) {
     setLocation("/");
@@ -183,27 +189,35 @@ export default function SubjectSelection() {
         )}
 
         <div className="grid gap-4">
-          {subjects.map((subject) => (
-            <Card
+          {subjects.map((subject, idx) => (
+            <motion.div
               key={subject.name}
-              className="border border-border/60 hover:border-primary/30 transition-colors cursor-pointer group"
-              onClick={() => startSession(subject.name)}
-              data-testid={`card-subject-${subject.name.toLowerCase()}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.05 }}
             >
-              <CardContent className="py-5 px-5 flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl ${subject.iconBg} flex items-center justify-center shrink-0`}>
-                  <subject.icon className={`w-6 h-6 ${subject.color.split(" ").slice(1).join(" ")}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-semibold">{subject.name}</h3>
-                    <Badge variant="secondary" className="text-xs">5 concepts</Badge>
+              <Card
+                className="glass-card border border-border/40 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-0.5"
+                onClick={() => startSession(subject.name)}
+                data-testid={`card-subject-${subject.name.toLowerCase()}`}
+              >
+                <CardContent className="py-6 px-6 flex items-center gap-5">
+                  <div className={`w-14 h-14 rounded-2xl ${subject.iconBg} flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform`}>
+                    <subject.icon className={`w-7 h-7 ${subject.color.split(" ").slice(1).join(" ")}`} />
                   </div>
-                  <p className="text-sm text-muted-foreground">{subject.desc}</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </CardContent>
-            </Card>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">{subject.name}</h3>
+                      <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-widest bg-primary/5 text-primary/70 border-primary/10">5 Concepts</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">{subject.desc}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                    <ChevronRight className="w-5 h-5" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
