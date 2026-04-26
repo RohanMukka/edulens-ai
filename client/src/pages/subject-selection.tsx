@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import type { MasteryScore, Concept } from "@shared/schema";
-import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen } from "lucide-react";
+import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap } from "lucide-react";
 
 const subjects = [
   {
@@ -35,6 +37,8 @@ const subjects = [
 export default function SubjectSelection() {
   const [, setLocation] = useLocation();
   const { student } = useAuth();
+  const [newTopic, setNewTopic] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: mastery } = useQuery<MasteryScore[]>({
     queryKey: ["/api/students", student?.id, "mastery"],
@@ -60,6 +64,20 @@ export default function SubjectSelection() {
     }
   };
 
+  const handleGenerateConcept = async () => {
+    if (!newTopic.trim()) return;
+    setIsGenerating(true);
+    try {
+      const res = await apiRequest("POST", "/api/concepts/generate", { subject: "Custom", topic: newTopic });
+      const concept = await res.json();
+      startSession(concept.subject);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const getMasteryForSubject = (subjectName: string) => {
     if (!mastery) return null;
     // We'd need concepts to map, so just show total mastery count
@@ -80,6 +98,9 @@ export default function SubjectSelection() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setLocation("/teacher")} data-testid="button-teacher" className="border-primary/50 hover:bg-primary/10">
+              <GraduationCap className="w-4 h-4 mr-1 text-primary" /> Educator Mode
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} data-testid="button-knowledge-graph">
               <BookOpen className="w-4 h-4 mr-1" /> Knowledge Graph
             </Button>
@@ -112,6 +133,35 @@ export default function SubjectSelection() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Dynamic Knowledge Expansion
+          </h2>
+          <Card className="border border-primary/20 bg-primary/5">
+            <CardContent className="py-5 px-5">
+              <p className="text-sm text-muted-foreground mb-4">
+                Want to learn something not on the list? Type any topic below, and our AI will generate a custom learning concept for you on the fly.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input 
+                  placeholder="e.g., Quantum Physics, Black Holes, AI..." 
+                  value={newTopic}
+                  onChange={(e) => setNewTopic(e.target.value)}
+                  className="flex-1 bg-background"
+                />
+                <Button onClick={handleGenerateConcept} disabled={isGenerating || !newTopic.trim()}>
+                  {isGenerating ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                  ) : (
+                    <><Plus className="w-4 h-4 mr-2" /> Generate & Learn</>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

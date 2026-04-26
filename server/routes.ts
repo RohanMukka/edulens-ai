@@ -146,6 +146,18 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/concepts/generate", async (req, res) => {
+    try {
+      const { subject, topic } = req.body;
+      if (!subject || !topic) return res.status(400).json({ message: "subject and topic are required" });
+      const concept = await generateDynamicConcept(subject, topic);
+      const inserted = await storage.createConcept(concept);
+      res.json(inserted);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // === Student ===
   app.get("/api/students/:id/mastery", async (req, res) => {
     try {
@@ -195,6 +207,31 @@ export async function registerRoutes(
         weakAreas,
         recentSessions: sessions.slice(0, 5),
       });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // === Teacher ===
+  app.get("/api/teacher/students", async (req, res) => {
+    try {
+      const allStudents = await storage.getAllStudents();
+      const studentStats = await Promise.all(allStudents.map(async (s) => {
+        const mastery = await storage.getStudentMastery(s.id);
+        const interactions = await storage.getStudentInteractions(s.id);
+        const avgScore = interactions.length > 0 
+          ? interactions.reduce((sum, i) => sum + (i.score || 0), 0) / interactions.length 
+          : 0;
+        return {
+          id: s.id,
+          name: s.name,
+          email: s.email,
+          totalInteractions: interactions.length,
+          avgScore,
+          masteryCount: mastery.filter(m => m.score >= 0.7).length
+        };
+      }));
+      res.json(studentStats);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -360,4 +397,44 @@ async function generateQuestion(conceptName: string, subject?: string, difficult
   } catch {
     return `Explain the key concepts and relationships involved in ${conceptName}.`;
   }
+}
+
+async function generateDynamicConcept(subject: string, topic: string) {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY required for dynamic generation");
+  }
+
+  const completion = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: `You are an educational curriculum designer. Create a concept definition for the given topic in the given subject. Return ONLY JSON in the following format:
+{
+  "name": "Concept Name",
+  "subject": "Subject Name",
+  "description": "A 1-sentence description.",
+  "idealExplanation": "A 2-3 sentence perfect explanation.",
+  "prerequisites": "[\"Prereq 1\", \"Prereq 2\"]"
+}`
+      },
+      {
+        role: "user",
+        content: `Generate a concept for the topic "${topic}" in the subject "${subject}".`
+      }
+    ],
+    model: "llama-3.1-8b-instant",
+    temperature: 0.7,
+  });
+
+  const content = completion.choices[0]?.message?.content || "";
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Failed to generate concept JSON");
+  const parsed = JSON.parse(jsonMatch[0]);
+  return {
+    subject: parsed.subject || subject,
+    name: parsed.name || topic,
+    description: parsed.description || "Generated concept.",
+    idealExplanation: parsed.idealExplanation || "No explanation provided.",
+    prerequisites: typeof parsed.prerequisites === "string" ? parsed.prerequisites : JSON.stringify(parsed.prerequisites || [])
+  };
 }

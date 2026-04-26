@@ -35,6 +35,7 @@ export interface IStorage {
   getMastery(studentId: number, conceptId: number): Promise<MasteryScore | undefined>;
   upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore>;
   getStudentMastery(studentId: number): Promise<MasteryScore[]>;
+  getAllStudents(): Promise<Student[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -138,6 +139,10 @@ export class DatabaseStorage implements IStorage {
 
   async getStudentMastery(studentId: number): Promise<MasteryScore[]> {
     return await db.select().from(masteryScores).where(eq(masteryScores.studentId, studentId));
+  }
+
+  async getAllStudents(): Promise<Student[]> {
+    return await db.select().from(students).orderBy(desc(students.createdAt));
   }
 }
 

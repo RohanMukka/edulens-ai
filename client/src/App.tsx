@@ -11,6 +11,7 @@ import SubjectSelection from "@/pages/subject-selection";
 import LearningInterface from "@/pages/learning-interface";
 import KnowledgeGraph from "@/pages/knowledge-graph";
 import Dashboard from "@/pages/dashboard";
+import TeacherDashboard from "@/pages/teacher-dashboard";
 import NotFound from "@/pages/not-found";
 
 function AppRouter() {
@@ -21,6 +22,7 @@ function AppRouter() {
       <Route path="/learn/:sessionId" component={LearningInterface} />
       <Route path="/graph" component={KnowledgeGraph} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/teacher" component={TeacherDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
