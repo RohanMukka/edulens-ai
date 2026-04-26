@@ -23,38 +23,45 @@ import { useTheme } from "@/lib/theme";
 import type { Concept, MasteryScore } from "@shared/schema";
 
 function ConceptNode({ data }: { data: { label: string; mastery: number; subject: string } }) {
-  const masteryColor = data.mastery >= 0.7
-    ? "border-emerald-500/50 bg-emerald-500/10"
-    : data.mastery >= 0.4
-      ? "border-amber-500/50 bg-amber-500/10"
-      : data.mastery > 0
-        ? "border-rose-500/50 bg-rose-500/10 shadow-rose-500/10"
-        : "border-border/80 border-dashed bg-card/40 shadow-none";
-
-  const glowColor = data.mastery >= 0.7
-    ? "shadow-emerald-500/20"
-    : data.mastery >= 0.4
-      ? "shadow-amber-500/20"
-      : data.mastery > 0
-        ? "shadow-rose-500/20"
-        : "shadow-none";
-
+  const pct = Math.round(data.mastery * 100);
+  const color = data.mastery >= 0.7 ? "#10b981" : data.mastery >= 0.4 ? "#f59e0b" : data.mastery > 0 ? "#f43f5e" : "#64748b";
+  
   return (
-    <motion.div 
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className={`px-5 py-4 rounded-2xl border backdrop-blur-md shadow-xl min-w-[160px] text-center transition-all hover:scale-105 hover:border-primary/50 ${masteryColor} ${glowColor}`}
-    >
-      <Handle type="target" position={Position.Top} className="!bg-primary/40 !w-2.5 !h-2.5 !border-0" />
-      <div className="font-bold text-sm mb-1.5 tracking-tight">{data.label}</div>
-      <div className="flex items-center justify-center gap-1.5">
-        <div className={`text-[10px] font-black uppercase tracking-widest ${data.mastery > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-          {data.mastery > 0 ? `${Math.round(data.mastery * 100)}% Mastery` : "Not Started"}
+    <div className="relative group">
+      {/* Background Glow */}
+      <div 
+        className="absolute inset-0 rounded-full blur-xl opacity-20 transition-opacity group-hover:opacity-40"
+        style={{ backgroundColor: color }}
+      />
+      
+      <motion.div 
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="relative w-24 h-24 rounded-full bg-card/60 backdrop-blur-md border border-white/10 flex flex-col items-center justify-center p-2 text-center shadow-2xl hover:scale-110 transition-transform cursor-pointer overflow-visible"
+      >
+        <Handle type="target" position={Position.Top} className="!opacity-0 !top-0" />
+        
+        {/* Progress Circle SVG */}
+        <svg className="absolute inset-0 w-full h-full -rotate-90">
+          <circle cx="48" cy="48" r="44" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/5" />
+          <motion.circle 
+            cx="48" cy="48" r="44" fill="none" stroke={color} strokeWidth="3" 
+            strokeDasharray={2 * Math.PI * 44}
+            initial={{ strokeDashoffset: 2 * Math.PI * 44 }}
+            animate={{ strokeDashoffset: 2 * Math.PI * 44 * (1 - data.mastery) }}
+            transition={{ duration: 1.5, delay: 0.5 }}
+            strokeLinecap="round"
+          />
+        </svg>
+
+        <div className="relative z-10 px-1">
+          <div className="text-[9px] font-black leading-tight uppercase tracking-tighter line-clamp-2 mb-0.5">{data.label}</div>
+          <div className="text-[10px] font-bold" style={{ color }}>{pct}%</div>
         </div>
-        {data.mastery >= 0.7 && <CheckCheck className="w-3 h-3 text-emerald-500" />}
-      </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-primary/40 !w-2.5 !h-2.5 !border-0" />
-    </motion.div>
+
+        <Handle type="source" position={Position.Bottom} className="!opacity-0 !bottom-0" />
+      </motion.div>
+    </div>
   );
 }
 
@@ -120,8 +127,8 @@ export default function KnowledgeGraph() {
         id: String(concept.id),
         type: "concept",
         position: { 
-          x: xOffset + (idx % 2) * 220, 
-          y: 120 + Math.floor(idx / 2) * 180 + (idx % 2 === 0 ? 0 : 40) 
+          x: xOffset + (idx % 2) * 280 + Math.sin(idx) * 40, 
+          y: 120 + Math.floor(idx / 2) * 220 + (idx % 2 === 0 ? 0 : 60) 
         },
         data: {
           label: concept.name,
@@ -138,9 +145,10 @@ export default function KnowledgeGraph() {
             id: `${prereqConcept.id}-${concept.id}`,
             source: String(prereqConcept.id),
             target: String(concept.id),
-            markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(239 84% 67%)", width: 20, height: 20 },
-            style: { stroke: "hsl(239 84% 67% / 0.6)", strokeWidth: 4 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "currentColor", width: 10, height: 10 },
+            style: { stroke: "currentColor", strokeWidth: 1.5, opacity: 0.2 },
             animated: (masteryMap[prereqConcept.id] || 0) >= 0.7,
+            type: "smoothstep",
           });
         }
       }
