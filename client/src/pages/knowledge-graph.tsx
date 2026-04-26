@@ -28,8 +28,8 @@ function ConceptNode({ data }: { data: { label: string; mastery: number; subject
     : data.mastery >= 0.4
       ? "border-amber-500/50 bg-amber-500/10"
       : data.mastery > 0
-        ? "border-rose-500/50 bg-rose-500/10"
-        : "border-border/40 bg-card/60";
+        ? "border-rose-500/50 bg-rose-500/10 shadow-rose-500/10"
+        : "border-border/80 border-dashed bg-card/40 shadow-none";
 
   const glowColor = data.mastery >= 0.7
     ? "shadow-emerald-500/20"
@@ -107,8 +107,8 @@ export default function KnowledgeGraph() {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     const subjectOffsets: Record<string, number> = { 
-      Biology: 0, Math: 450, History: 900, "Computer Science": 1350, 
-      Physics: 1800, Chemistry: 2250, Economics: 2700 
+      Biology: 0, Math: 550, History: 1100, "Computer Science": 1650, 
+      Physics: 2200, Chemistry: 2750, Economics: 3300 
     };
 
     for (const concept of allConcepts) {
@@ -119,7 +119,10 @@ export default function KnowledgeGraph() {
       nodes.push({
         id: String(concept.id),
         type: "concept",
-        position: { x: xOffset + (idx % 2) * 200, y: 120 + Math.floor(idx / 2) * 140 },
+        position: { 
+          x: xOffset + (idx % 2) * 220, 
+          y: 120 + Math.floor(idx / 2) * 180 + (idx % 2 === 0 ? 0 : 40) 
+        },
         data: {
           label: concept.name,
           mastery: masteryMap[concept.id] || 0,
@@ -135,8 +138,8 @@ export default function KnowledgeGraph() {
             id: `${prereqConcept.id}-${concept.id}`,
             source: String(prereqConcept.id),
             target: String(concept.id),
-            markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(239 84% 67%)" },
-            style: { stroke: "hsl(239 84% 67% / 0.4)", strokeWidth: 3 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(239 84% 67%)", width: 20, height: 20 },
+            style: { stroke: "hsl(239 84% 67% / 0.6)", strokeWidth: 4 },
             animated: (masteryMap[prereqConcept.id] || 0) >= 0.7,
           });
         }
