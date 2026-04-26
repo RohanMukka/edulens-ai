@@ -17,7 +17,7 @@ export async function registerRoutes(
   // === Auth ===
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { name, email } = req.body;
+      const { name, email, role } = req.body;
       if (!name || !email) {
         return res.status(400).json({ message: "Name and email are required" });
       }
@@ -26,7 +26,7 @@ export async function registerRoutes(
       if (existing) {
         return res.json(existing);
       }
-      const student = await storage.createStudent({ name, email: normalizedEmail });
+      const student = await storage.createStudent({ name, email: normalizedEmail, role: role || "student" });
       res.json(student);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

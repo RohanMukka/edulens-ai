@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { Brain, Sparkles, BarChart3, Network, ArrowRight, BookOpen, Lightbulb, TrendingUp } from "lucide-react";
 
@@ -11,6 +12,7 @@ export default function Landing() {
   const { student, login, register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("student");
   const [isLogin, setIsLogin] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,12 +23,15 @@ export default function Landing() {
     setLoading(true);
     try {
       if (isLogin) {
-        await login(email);
+        const user = await login(email);
+        if (user.role === "educator") setLocation("/teacher");
+        else setLocation("/subjects");
       } else {
         if (!name.trim()) { setError("Name is required"); setLoading(false); return; }
-        await register(name, email);
+        const user = await register(name, email, role);
+        if (user.role === "educator") setLocation("/teacher");
+        else setLocation("/subjects");
       }
-      setLocation("/subjects");
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     }
@@ -44,12 +49,20 @@ export default function Landing() {
           <h1 className="text-xl font-bold mb-2">Ready to learn?</h1>
         </div>
         <div className="flex gap-3">
-          <Button data-testid="button-start-learning" onClick={() => setLocation("/subjects")} size="lg">
-            Start Learning <ArrowRight className="ml-2 w-4 h-4" />
-          </Button>
-          <Button data-testid="button-dashboard" variant="outline" onClick={() => setLocation("/dashboard")} size="lg">
-            <BarChart3 className="mr-2 w-4 h-4" /> Dashboard
-          </Button>
+          {student.role === "educator" ? (
+            <Button onClick={() => setLocation("/teacher")} size="lg">
+              Educator Dashboard <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          ) : (
+            <>
+              <Button data-testid="button-start-learning" onClick={() => setLocation("/subjects")} size="lg">
+                Start Learning <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+              <Button data-testid="button-dashboard" variant="outline" onClick={() => setLocation("/dashboard")} size="lg">
+                <BarChart3 className="mr-2 w-4 h-4" /> Dashboard
+              </Button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -107,12 +120,23 @@ export default function Landing() {
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-3">
                   {!isLogin && (
-                    <Input
-                      data-testid="input-name"
-                      placeholder="Your name"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                    />
+                    <>
+                      <Input
+                        data-testid="input-name"
+                        placeholder="Your name"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                      />
+                      <Select value={role} onValueChange={setRole}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="educator">Educator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
                   )}
                   <Input
                     data-testid="input-email"

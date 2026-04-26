@@ -5,7 +5,7 @@ import { apiRequest } from "./queryClient";
 interface AuthContextType {
   student: Student | null;
   login: (email: string) => Promise<Student>;
-  register: (name: string, email: string) => Promise<Student>;
+  register: (name: string, email: string, role: string) => Promise<Student>;
   logout: () => void;
 }
 
@@ -21,8 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data;
   }, []);
 
-  const register = useCallback(async (name: string, email: string) => {
-    const res = await apiRequest("POST", "/api/auth/register", { name, email });
+  const register = useCallback(async (name: string, email: string, role: string) => {
+    const res = await apiRequest("POST", "/api/auth/register", { name, email, role });
     const data = await res.json();
     setStudent(data);
     return data;
