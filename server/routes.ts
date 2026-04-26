@@ -289,9 +289,9 @@ function fallbackScore(studentResponse: string, idealExplanation: string) {
   const studentWords = new Set(studentResponse.toLowerCase().split(/\W+/).filter(w => w.length > 3));
   const idealWords = new Set(idealExplanation.toLowerCase().split(/\W+/).filter(w => w.length > 3));
   let matches = 0;
-  for (const w of studentWords) {
+  studentWords.forEach((w) => {
     if (idealWords.has(w)) matches++;
-  }
+  });
   const score = Math.min(1, (matches / Math.max(idealWords.size, 1)) * 1.5);
   const gaps = score < 0.5 ? ["Consider reviewing the key terms and relationships"] : [];
   const strengths = score > 0.3 ? ["Shows some understanding of the topic"] : [];
