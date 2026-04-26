@@ -143,7 +143,7 @@ export default function Landing() {
 
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Brain className="w-4 h-4 text-primary-foreground" />
@@ -152,7 +152,8 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => setIsLogin(true)}>Sign in</Button>
-            <Button size="sm" onClick={() => setIsLogin(false)}>Get Started Free</Button>
+            <Button size="sm" className="hidden sm:flex" onClick={() => setIsLogin(false)}>Get Started Free</Button>
+            <Button size="sm" className="sm:hidden" onClick={() => setIsLogin(false)}>Join</Button>
           </div>
         </div>
       </nav>
@@ -172,7 +173,7 @@ export default function Landing() {
               Nira Hackathon 2026 · Transforming Education
             </div>
 
-            <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-5">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] mb-5">
               The AI that reads{" "}
               <span className="relative">
                 <span className="bg-gradient-to-r from-primary via-violet-500 to-cyan-500 bg-clip-text text-transparent">
@@ -195,10 +196,10 @@ export default function Landing() {
             </div>
 
             {/* Trust badges */}
-            <div className="flex items-center gap-5 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
               {["No credit card required", "Free to use", "Groq-powered (< 2s responses)"].map(t => (
                 <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> {t}
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> {t}
                 </span>
               ))}
             </div>
@@ -295,7 +296,7 @@ export default function Landing() {
 
       {/* ── STATS BANNER ── */}
       <section className="border-y border-border/50 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map(s => (
             <div key={s.value} className="text-center">
               <div className="text-4xl font-black text-primary mb-1">{s.value}</div>
@@ -311,7 +312,7 @@ export default function Landing() {
         <div className="inline-flex items-center gap-2 bg-destructive/10 text-destructive rounded-full px-3 py-1.5 mb-6 text-xs font-semibold uppercase tracking-wider">
           The Problem
         </div>
-        <h2 className="text-4xl font-bold mb-6">
+        <h2 className="text-3xl sm:text-4xl font-bold mb-6">
           Traditional ed-tech tests recall.<br />
           <span className="text-muted-foreground">Not understanding.</span>
         </h2>
@@ -352,7 +353,7 @@ export default function Landing() {
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-3 py-1.5 mb-4 text-xs font-semibold uppercase tracking-wider">
               How It Works
             </div>
-            <h2 className="text-4xl font-bold">Four steps to genuine mastery</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold">Four steps to genuine mastery</h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {howItWorks.map((step, i) => (
@@ -379,7 +380,7 @@ export default function Landing() {
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-3 py-1.5 mb-4 text-xs font-semibold uppercase tracking-wider">
             Features
           </div>
-          <h2 className="text-4xl font-bold">Everything you need to learn — and teach — better</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold">Everything you need to learn — and teach — better</h2>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map(f => (
@@ -400,7 +401,7 @@ export default function Landing() {
       <section className="relative overflow-hidden border-t border-border/40">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-violet-500/10 to-cyan-500/10 pointer-events-none" />
         <div className="relative max-w-3xl mx-auto px-6 py-24 text-center">
-          <h2 className="text-4xl font-extrabold mb-4">
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
             The future of learning is personal.<br />Start today — it's free.
           </h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
