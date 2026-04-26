@@ -118,8 +118,14 @@ export class DatabaseStorage implements IStorage {
     return res;
   }
 
-  async updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null): Promise<Interaction | undefined> {
-    const [res] = await db.update(interactions).set({ score, feedback, misconceptionType: misconceptionType ?? undefined, misconceptionDetail: misconceptionDetail ?? undefined }).where(eq(interactions.id, id)).returning();
+  async updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null, bloomsLevel?: string | null): Promise<Interaction | undefined> {
+    const [res] = await db.update(interactions).set({ 
+      score, 
+      feedback, 
+      misconceptionType: misconceptionType ?? undefined, 
+      misconceptionDetail: misconceptionDetail ?? undefined,
+      bloomsLevel: bloomsLevel ?? undefined 
+    }).where(eq(interactions.id, id)).returning();
     return res;
   }
 

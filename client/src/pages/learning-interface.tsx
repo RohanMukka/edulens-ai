@@ -75,6 +75,15 @@ const MISCONCEPTION_META: Record<string, { label: string; emoji: string; color: 
   }
 };
 
+const BLOOMS_META: Record<string, { label: string; color: string; bg: string }> = {
+  REMEMBERING: { label: "Remembering", color: "text-rose-500", bg: "bg-rose-500/10" },
+  UNDERSTANDING: { label: "Understanding", color: "text-amber-500", bg: "bg-amber-500/10" },
+  APPLYING: { label: "Applying", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  ANALYZING: { label: "Analyzing", color: "text-blue-500", bg: "bg-blue-500/10" },
+  EVALUATING: { label: "Evaluating", color: "text-violet-500", bg: "bg-violet-500/10" },
+  CREATING: { label: "Creating", color: "text-cyan-500", bg: "bg-cyan-500/10" },
+};
+
 export default function LearningInterface() {
   const params = useParams<{ sessionId: string }>();
   const [, setLocation] = useLocation();
@@ -218,7 +227,8 @@ export default function LearningInterface() {
             score: data.score,
             concept: currentConcept?.name,
             misconception: data.misconceptionType,
-            feedback: data.feedback
+            feedback: data.feedback,
+            bloomLevel: data.bloomLevel
           }
         });
       }
@@ -495,6 +505,11 @@ export default function LearningInterface() {
                             {Math.round(lastScore.score * 100)}%
                           </span>
                           <span className="text-sm text-muted-foreground">understanding</span>
+                          {lastScore.bloomLevel && (
+                            <Badge className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel]?.bg} ${BLOOMS_META[lastScore.bloomLevel]?.color} border-none text-[10px] uppercase font-black tracking-widest`}>
+                              {BLOOMS_META[lastScore.bloomLevel]?.label}
+                            </Badge>
+                          )}
                         </div>
                         <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                           <motion.div

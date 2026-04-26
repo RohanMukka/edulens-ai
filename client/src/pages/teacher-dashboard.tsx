@@ -28,6 +28,15 @@ type StudentStat = {
   masteryCount: number;
 };
 
+const BLOOMS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  REMEMBERING: { label: "Remembering", color: "text-rose-500", bg: "bg-rose-500/10" },
+  UNDERSTANDING: { label: "Understanding", color: "text-amber-500", bg: "bg-amber-500/10" },
+  APPLYING: { label: "Applying", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  ANALYZING: { label: "Analyzing", color: "text-blue-500", bg: "bg-blue-500/10" },
+  EVALUATING: { label: "Evaluating", color: "text-violet-500", bg: "bg-violet-500/10" },
+  CREATING: { label: "Creating", color: "text-cyan-500", bg: "bg-cyan-500/10" },
+};
+
 type Classroom = {
   id: number;
   name: string;
@@ -408,6 +417,11 @@ export default function TeacherDashboard() {
                                 <span className="font-bold text-sm">{update.name}</span>
                                 <span className="text-xs text-muted-foreground">just answered</span>
                                 <Badge variant="outline" className="text-[10px] py-0">{update.concept}</Badge>
+                                {update.bloomLevel && (
+                                  <Badge className={`text-[10px] py-0 border-none ${BLOOMS_MAP[update.bloomLevel]?.bg} ${BLOOMS_MAP[update.bloomLevel]?.color}`}>
+                                    {BLOOMS_MAP[update.bloomLevel]?.label}
+                                  </Badge>
+                                )}
                               </div>
                               <ScorePill score={update.score} />
                             </div>
