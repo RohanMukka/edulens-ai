@@ -9,6 +9,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { WebSocketServer, WebSocket } from "ws";
 
 // Never expose the password field to the client
 const safeStudent = (s: any) => {
@@ -28,6 +29,81 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // WebSocket Server setup
+  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+  const rooms = new Map<string, Set<WebSocket>>();
+
+  wss.on("connection", (ws) => {
+    let currentRoom: string | null = null;
+    let userId: number | null = null;
+    let userRole: "student" | "teacher" | null = null;
+
+    ws.on("message", (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        switch (message.type) {
+          case "join":
+            // join room by classroom code
+            const { room, id, role } = message;
+            currentRoom = room;
+            userId = id;
+            userRole = role;
+            
+            if (!rooms.has(room)) {
+              rooms.set(room, new Set());
+            }
+            rooms.get(room)!.add(ws);
+            console.log(`User ${id} (${role}) joined room ${room}`);
+            break;
+
+          case "student_update":
+            // student sends their progress/response
+            if (currentRoom && rooms.has(currentRoom)) {
+              const payload = JSON.stringify({
+                type: "live_update",
+                studentId: userId,
+                ...message.data
+              });
+              // Send to everyone in room (teacher will listen)
+              rooms.get(currentRoom)!.forEach(client => {
+                if (client !== ws && client.readyState === WebSocket.OPEN) {
+                  client.send(payload);
+                }
+              });
+            }
+            break;
+
+          case "teacher_broadcast":
+            // teacher sends a command (e.g. "change concept")
+            if (currentRoom && rooms.has(currentRoom)) {
+              const payload = JSON.stringify({
+                type: "broadcast",
+                ...message.data
+              });
+              rooms.get(currentRoom)!.forEach(client => {
+                if (client !== ws && client.readyState === WebSocket.OPEN) {
+                  client.send(payload);
+                }
+              });
+            }
+            break;
+        }
+      } catch (e) {
+        console.error("WS Message Error:", e);
+      }
+    });
+
+    ws.on("close", () => {
+      if (currentRoom && rooms.has(currentRoom)) {
+        rooms.get(currentRoom)!.delete(ws);
+        if (rooms.get(currentRoom)!.size === 0) {
+          rooms.delete(currentRoom);
+        }
+      }
+    });
+  });
+
   // Seed concepts on startup
   await seedConcepts();
   await seedDemoData();

@@ -11,7 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import type { Concept, Session, Interaction } from "@shared/schema";
+import type { Concept, Session, Interaction, Classroom } from "@shared/schema";
+import { classroomSocket } from "@/lib/socket";
 import {
   ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
   AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
@@ -158,13 +159,25 @@ export default function LearningInterface() {
 
   const sessionId = Number(params.sessionId);
 
-  const { data: session } = useQuery<Session & { interactions: Interaction[] }>({
-    queryKey: ["/api/sessions", sessionId],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/sessions/${sessionId}`);
-      return res.json();
-    },
+  const { data: session, isLoading: sessionLoading } = useQuery<Session & { interactions: Interaction[] }>({
+    queryKey: [`/api/sessions/${params.sessionId}`],
+    queryFn: async () => (await apiRequest("GET", `/api/sessions/${params.sessionId}`)).json(),
   });
+
+  const { data: classrooms } = useQuery<Classroom[]>({
+    queryKey: ["/api/classrooms"],
+    enabled: !!student,
+    queryFn: async () => (await apiRequest("GET", "/api/classrooms")).json(),
+  });
+
+  useEffect(() => {
+    if (student && classrooms && classrooms.length > 0) {
+      // For now, join the first classroom's live room
+      const room = classrooms[0].code;
+      classroomSocket.connect(room, student.id, "student");
+      return () => classroomSocket.disconnect();
+    }
+  }, [student, classrooms]);
 
   const { data: concepts } = useQuery<Concept[]>({
     queryKey: ["/api/concepts", session?.subject],
@@ -183,10 +196,32 @@ export default function LearningInterface() {
     onSuccess: (data) => {
       setLastScore(data);
       setPhase("feedback");
-      qc.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
+      if (data.score >= 0.7) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#6366f1", "#a855f7", "#ec4899"]
+        });
+      }
+      qc.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}`] });
       qc.invalidateQueries({ queryKey: ["/api/students", student.id, "mastery"] });
       qc.invalidateQueries({ queryKey: ["/api/students", student.id, "stats"] });
-      qc.invalidateQueries({ queryKey: ["/api/students", student.id, "history"] });
+      
+      // Emit live update
+      if (classrooms && classrooms.length > 0) {
+        classroomSocket.send({
+          type: "student_update",
+          room: classrooms[0].code,
+          data: {
+            name: student?.name,
+            score: data.score,
+            concept: currentConcept?.name,
+            misconception: data.misconceptionType,
+            feedback: data.feedback
+          }
+        });
+      }
     },
   });
 
