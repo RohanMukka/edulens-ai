@@ -143,8 +143,9 @@ export default function Landing() {
                         placeholder="Your name"
                         value={name}
                         onChange={e => setName(e.target.value)}
+                        disabled={loading}
                       />
-                      <Select value={role} onValueChange={setRole}>
+                      <Select value={role} onValueChange={setRole} disabled={loading}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
@@ -159,6 +160,7 @@ export default function Landing() {
                           placeholder="Educator Code (Hint: 1234)"
                           value={educatorCode}
                           onChange={e => setEducatorCode(e.target.value)}
+                          disabled={loading}
                         />
                       )}
                     </>
@@ -170,6 +172,7 @@ export default function Landing() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                   <Input
                     type="password"
@@ -177,6 +180,7 @@ export default function Landing() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
+                    disabled={loading}
                   />
                   {error && <p className="text-sm text-destructive" data-testid="text-error">{error}</p>}
                   <Button data-testid="button-submit-auth" type="submit" className="w-full" disabled={loading}>
