@@ -78,6 +78,15 @@ export default function SubjectSelection() {
     }
   };
 
+  const handleTeacherClick = () => {
+    const pin = prompt("Enter Educator PIN (Hint: 1234):");
+    if (pin === "1234") {
+      setLocation("/teacher");
+    } else if (pin !== null) {
+      alert("Invalid PIN. Only educators can access this dashboard.");
+    }
+  };
+
   const getMasteryForSubject = (subjectName: string) => {
     if (!mastery) return null;
     // We'd need concepts to map, so just show total mastery count
@@ -98,7 +107,7 @@ export default function SubjectSelection() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setLocation("/teacher")} data-testid="button-teacher" className="border-primary/50 hover:bg-primary/10">
+            <Button variant="outline" size="sm" onClick={handleTeacherClick} data-testid="button-teacher" className="border-primary/50 hover:bg-primary/10">
               <GraduationCap className="w-4 h-4 mr-1 text-primary" /> Educator Mode
             </Button>
             <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} data-testid="button-knowledge-graph">

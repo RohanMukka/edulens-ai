@@ -21,11 +21,12 @@ export async function registerRoutes(
       if (!name || !email) {
         return res.status(400).json({ message: "Name and email are required" });
       }
-      const existing = await storage.getStudentByEmail(email);
+      const normalizedEmail = email.trim().toLowerCase();
+      const existing = await storage.getStudentByEmail(normalizedEmail);
       if (existing) {
         return res.json(existing);
       }
-      const student = await storage.createStudent({ name, email });
+      const student = await storage.createStudent({ name, email: normalizedEmail });
       res.json(student);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -38,7 +39,8 @@ export async function registerRoutes(
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
-      const student = await storage.getStudentByEmail(email);
+      const normalizedEmail = email.trim().toLowerCase();
+      const student = await storage.getStudentByEmail(normalizedEmail);
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
       }
