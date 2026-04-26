@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import confetti from "canvas-confetti";
 import { useLocation, useParams } from "wouter";
@@ -11,9 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import type { Concept, Session, Interaction } from "@shared/schema";
-import {
   ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
-  AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb
+  AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
+  Mic, MicOff
 } from "lucide-react";
 
 interface ScoreResult {
@@ -37,6 +37,59 @@ export default function LearningInterface() {
   const [explanation, setExplanation] = useState("");
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"intro" | "question" | "responding" | "feedback" | "complete">("intro");
+
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    // Initialize speech recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event: any) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
+          }
+        }
+        if (finalTranscript) {
+          setResponse((prev) => prev + (prev && !prev.endsWith(" ") ? " " : "") + finalTranscript);
+        }
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+  }, []);
+
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in this browser. Try Chrome or Edge.");
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsRecording(true);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 
   useEffect(() => {
     if (phase === "feedback" && lastScore && lastScore.score >= 0.8) {
@@ -305,21 +358,30 @@ export default function LearningInterface() {
                       className="resize-none"
                       disabled={respondMutation.isPending}
                     />
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-muted-foreground">
-                        {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} words` : "Start typing..."}
+                        {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} words` : "Start typing or speaking..."}
                       </span>
-                      <Button
-                        data-testid="button-submit-response"
-                        onClick={handleSubmitResponse}
-                        disabled={!response.trim() || respondMutation.isPending}
-                      >
-                        {respondMutation.isPending ? (
-                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scoring...</>
-                        ) : (
-                          <><Send className="w-4 h-4 mr-2" /> Submit</>
-                        )}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={isRecording ? "destructive" : "secondary"}
+                          onClick={toggleRecording}
+                          title={isRecording ? "Stop recording" : "Start recording"}
+                        >
+                          {isRecording ? <><MicOff className="w-4 h-4 mr-2" /> Stop</> : <><Mic className="w-4 h-4 mr-2" /> Speak</>}
+                        </Button>
+                        <Button
+                          data-testid="button-submit-response"
+                          onClick={handleSubmitResponse}
+                          disabled={!response.trim() || respondMutation.isPending}
+                        >
+                          {respondMutation.isPending ? (
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scoring...</>
+                          ) : (
+                            <><Send className="w-4 h-4 mr-2" /> Submit</>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
