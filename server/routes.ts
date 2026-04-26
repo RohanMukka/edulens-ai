@@ -634,8 +634,18 @@ export function sm2(quality: number, easeFactor: number, interval: number, reps:
   };
 }
 
+interface ScoreResult {
+  score: number;
+  gaps: string[];
+  strengths: string[];
+  feedback: string;
+  misconceptionType: string | null;
+  misconceptionDetail: string | null;
+  bloomLevel: string;
+}
+
 // AI helper functions
-async function scoreResponse(studentResponse: string, idealExplanation: string, conceptName: string, question?: string) {
+async function scoreResponse(studentResponse: string, idealExplanation: string, conceptName: string, question?: string): Promise<ScoreResult> {
   // Fallback if no API key
   if (!process.env.GROQ_API_KEY) {
     return fallbackScore(studentResponse, idealExplanation);
@@ -672,8 +682,9 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
         gaps: ["The response appears to be off-topic or gibberish."],
         strengths: [],
         feedback: "Your response did not address the question. Please try again and focus on the concept.",
-        misconceptionType: null,
-        misconceptionDetail: null,
+        misconceptionType: "SURFACE_LEVEL",
+        misconceptionDetail: "The response was identified as off-topic or irrelevant to the lesson.",
+        bloomLevel: "REMEMBERING",
       };
     }
 
@@ -735,7 +746,7 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
   }
 }
 
-function fallbackScore(studentResponse: string, idealExplanation: string) {
+function fallbackScore(studentResponse: string, idealExplanation: string): ScoreResult {
   const studentWords = new Set(studentResponse.toLowerCase().split(/\W+/).filter(w => w.length > 3));
   const idealWords = new Set(idealExplanation.toLowerCase().split(/\W+/).filter(w => w.length > 3));
   let matches = 0;
