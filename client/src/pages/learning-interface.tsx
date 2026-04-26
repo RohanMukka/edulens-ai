@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import type { Concept, Session, Interaction } from "@shared/schema";
+import {
   ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
   AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
   Mic, MicOff
@@ -127,7 +128,7 @@ export default function LearningInterface() {
   });
 
   const respondMutation = useMutation({
-    mutationFn: async (data: { conceptId: number; studentResponse: string }) => {
+    mutationFn: async (data: { conceptId: number; studentResponse: string; question: string }) => {
       const res = await apiRequest("POST", `/api/sessions/${sessionId}/respond`, data);
       return res.json() as Promise<ScoreResult>;
     },
@@ -175,7 +176,7 @@ export default function LearningInterface() {
 
   const handleSubmitResponse = () => {
     if (!currentConcept || !response.trim()) return;
-    respondMutation.mutate({ conceptId: currentConcept.id, studentResponse: response });
+    respondMutation.mutate({ conceptId: currentConcept.id, studentResponse: response, question });
   };
 
   const handleNext = () => {

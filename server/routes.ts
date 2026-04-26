@@ -85,7 +85,7 @@ export async function registerRoutes(
   app.post("/api/sessions/:id/respond", async (req, res) => {
     try {
       const sessionId = Number(req.params.id);
-      const { conceptId, studentResponse } = req.body;
+      const { conceptId, studentResponse, question } = req.body;
       if (!conceptId || !studentResponse) {
         return res.status(400).json({ message: "conceptId and studentResponse are required" });
       }
@@ -100,7 +100,7 @@ export async function registerRoutes(
       const interaction = await storage.createInteraction({ sessionId, conceptId, studentResponse });
 
       // Score with AI
-      const scoreResult = await scoreResponse(studentResponse, concept.idealExplanation, concept.name);
+      const scoreResult = await scoreResponse(studentResponse, concept.idealExplanation, concept.name, question);
 
       // Update interaction with score & feedback
       const updated = await storage.updateInteraction(interaction.id, scoreResult.score, scoreResult.feedback);
@@ -203,11 +203,11 @@ export async function registerRoutes(
   // === AI endpoints ===
   app.post("/api/ai/score", async (req, res) => {
     try {
-      const { studentResponse, idealExplanation, conceptName } = req.body;
+      const { studentResponse, idealExplanation, conceptName, question } = req.body;
       if (!studentResponse || !idealExplanation) {
         return res.status(400).json({ message: "studentResponse and idealExplanation are required" });
       }
-      const result = await scoreResponse(studentResponse, idealExplanation, conceptName || "concept");
+      const result = await scoreResponse(studentResponse, idealExplanation, conceptName || "concept", question);
       res.json(result);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -244,7 +244,7 @@ export async function registerRoutes(
 }
 
 // AI helper functions
-async function scoreResponse(studentResponse: string, idealExplanation: string, conceptName: string) {
+async function scoreResponse(studentResponse: string, idealExplanation: string, conceptName: string, question?: string) {
   // Fallback if no API key
   if (!process.env.GROQ_API_KEY) {
     return fallbackScore(studentResponse, idealExplanation);
@@ -259,7 +259,7 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
         },
         {
           role: "user",
-          content: `Concept: ${conceptName}\n\nIdeal explanation: ${idealExplanation}\n\nStudent's response: ${studentResponse}\n\nScore the student's understanding from 0 to 1 (0 = no understanding, 1 = perfect understanding). Identify knowledge gaps and strengths. Provide brief constructive feedback.\n\nReturn JSON in this exact format:\n{"score": 0.0, "gaps": ["gap1", "gap2"], "strengths": ["strength1"], "feedback": "Brief constructive feedback"}`
+          content: `Concept: ${conceptName}\n\nIdeal explanation of concept: ${idealExplanation}\n\nQuestion asked to student: ${question || "Explain the concept."}\n\nStudent's response: ${studentResponse}\n\nScore the student's understanding from 0 to 1. Determine if they answered the specific question asked, using the ideal explanation as the source of truth. Identify knowledge gaps and strengths. Provide brief constructive feedback.\n\nReturn JSON in this exact format:\n{"score": 0.0, "gaps": ["gap1", "gap2"], "strengths": ["strength1"], "feedback": "Brief constructive feedback"}`
         }
       ],
       model: "llama-3.1-8b-instant",
