@@ -80,7 +80,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Name, email, and password are required" });
       }
 
-      if (role === "educator" && educatorCode !== "1234") {
+      const validCode = process.env.EDUCATOR_ACCESS_CODE || "EDULENS2026";
+      if (role === "educator" && educatorCode !== validCode) {
         return res.status(401).json({ message: "Invalid Educator Code" });
       }
 
@@ -395,7 +396,7 @@ export async function registerRoutes(
   });
 
   // === AI endpoints ===
-  app.post("/api/ai/score", async (req, res) => {
+  app.post("/api/ai/score", requireAuth, async (req, res) => {
     try {
       const { studentResponse, idealExplanation, conceptName, question } = req.body;
       if (!studentResponse || !idealExplanation) {
@@ -408,7 +409,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/ai/explain", async (req, res) => {
+  app.post("/api/ai/explain", requireAuth, async (req, res) => {
     try {
       const { conceptName, subject, studentLevel, gaps } = req.body;
       if (!conceptName) {
@@ -421,7 +422,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/ai/question", async (req, res) => {
+  app.post("/api/ai/question", requireAuth, async (req, res) => {
     try {
       const { conceptName, subject, difficulty } = req.body;
       if (!conceptName) {
@@ -517,7 +518,6 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
       console.error("Zod/JSON parse error for score:", e);
       return fallbackScore(studentResponse, idealExplanation);
     }
-    return fallbackScore(studentResponse, idealExplanation);
   } catch (err) {
     console.error("Groq scoring error:", err);
     return fallbackScore(studentResponse, idealExplanation);
