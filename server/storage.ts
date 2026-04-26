@@ -4,6 +4,8 @@ import {
   type Concept, type InsertConcept, concepts,
   type Interaction, type InsertInteraction, interactions,
   type MasteryScore, masteryScores,
+  type Classroom, type InsertClassroom, classrooms,
+  type ClassroomStudent, type InsertClassroomStudent, classroomStudents,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -36,6 +38,14 @@ export interface IStorage {
   upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore>;
   getStudentMastery(studentId: number): Promise<MasteryScore[]>;
   getAllStudents(): Promise<Student[]>;
+
+  // Classroom methods
+  createClassroom(classroom: InsertClassroom): Promise<Classroom>;
+  getClassroomByCode(code: string): Promise<Classroom | undefined>;
+  getTeacherClassrooms(teacherId: number): Promise<Classroom[]>;
+  joinClassroom(studentId: number, classroomId: number): Promise<ClassroomStudent>;
+  getStudentClassrooms(studentId: number): Promise<Classroom[]>;
+  getClassroomStudents(classroomId: number): Promise<Student[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -143,6 +153,55 @@ export class DatabaseStorage implements IStorage {
 
   async getAllStudents(): Promise<Student[]> {
     return await db.select().from(students).where(eq(students.role, "student")).orderBy(desc(students.createdAt));
+  }
+
+  // Classroom Methods
+  async createClassroom(classroom: InsertClassroom): Promise<Classroom> {
+    const [res] = await db.insert(classrooms).values({ ...classroom, createdAt: new Date().toISOString() }).returning();
+    return res;
+  }
+
+  async getClassroomByCode(code: string): Promise<Classroom | undefined> {
+    const [res] = await db.select().from(classrooms).where(eq(classrooms.code, code));
+    return res;
+  }
+
+  async getTeacherClassrooms(teacherId: number): Promise<Classroom[]> {
+    return await db.select().from(classrooms).where(eq(classrooms.teacherId, teacherId)).orderBy(desc(classrooms.createdAt));
+  }
+
+  async joinClassroom(studentId: number, classroomId: number): Promise<ClassroomStudent> {
+    // Check if already joined
+    const [existing] = await db.select().from(classroomStudents)
+      .where(and(eq(classroomStudents.studentId, studentId), eq(classroomStudents.classroomId, classroomId)));
+    if (existing) return existing;
+
+    const [res] = await db.insert(classroomStudents).values({ studentId, classroomId, joinedAt: new Date().toISOString() }).returning();
+    return res;
+  }
+
+  async getStudentClassrooms(studentId: number): Promise<Classroom[]> {
+    const joined = await db.select().from(classroomStudents).where(eq(classroomStudents.studentId, studentId));
+    if (joined.length === 0) return [];
+    
+    const rooms = [];
+    for (const j of joined) {
+      const [room] = await db.select().from(classrooms).where(eq(classrooms.id, j.classroomId));
+      if (room) rooms.push(room);
+    }
+    return rooms;
+  }
+
+  async getClassroomStudents(classroomId: number): Promise<Student[]> {
+    const joined = await db.select().from(classroomStudents).where(eq(classroomStudents.classroomId, classroomId));
+    if (joined.length === 0) return [];
+    
+    const studentsList = [];
+    for (const j of joined) {
+      const [student] = await db.select().from(students).where(eq(students.id, j.studentId));
+      if (student) studentsList.push(student);
+    }
+    return studentsList;
   }
 }
 

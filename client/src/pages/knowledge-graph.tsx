@@ -142,8 +142,8 @@ export default function KnowledgeGraph() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm px-6 py-3 flex items-center justify-between">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} data-testid="button-back">
             <ArrowLeft className="w-4 h-4" />
@@ -170,7 +170,7 @@ export default function KnowledgeGraph() {
       </div>
 
       {/* Subject headers */}
-      <div className="px-6 py-3 flex gap-4">
+      <div className="px-6 py-3 flex gap-4 shrink-0 overflow-x-auto">
         {subjects.map(subject => {
           const subjectConcepts = allConcepts.filter(c => c.subject === subject);
           const masteredCount = subjectConcepts.filter(c => (masteryMap[c.id] || 0) >= 0.7).length;
@@ -185,7 +185,7 @@ export default function KnowledgeGraph() {
         })}
       </div>
 
-      <div className="flex-1 relative" data-testid="graph-container" style={{ minHeight: "500px" }}>
+      <div className="flex-1 relative" data-testid="graph-container">
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
         <ReactFlow
           nodes={nodes}

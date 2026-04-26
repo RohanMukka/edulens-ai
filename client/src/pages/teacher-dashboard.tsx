@@ -3,8 +3,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, GraduationCap, Activity, LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Users, GraduationCap, Activity, LogOut, Plus, Copy } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 type StudentStat = {
   id: number;
@@ -18,6 +21,17 @@ type StudentStat = {
 export default function TeacherDashboard() {
   const [, setLocation] = useLocation();
   const { logout } = useAuth();
+  const qc = useQueryClient();
+  const [newClassName, setNewClassName] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const { data: classrooms, isLoading: classroomsLoading } = useQuery({
+    queryKey: ["/api/classrooms"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/classrooms");
+      return res.json();
+    },
+  });
 
   const { data: students, isLoading } = useQuery<StudentStat[]>({
     queryKey: ["/api/teacher/students"],
@@ -26,6 +40,19 @@ export default function TeacherDashboard() {
       return res.json();
     },
   });
+
+  const handleCreateClassroom = async () => {
+    if (!newClassName.trim()) return;
+    setCreating(true);
+    try {
+      await apiRequest("POST", "/api/classrooms", { name: newClassName });
+      setNewClassName("");
+      qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
+    } catch (e) {
+      console.error(e);
+    }
+    setCreating(false);
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading dashboard...</div>;
@@ -58,6 +85,46 @@ export default function TeacherDashboard() {
               <LogOut className="w-4 h-4 mr-1" /> Sign Out
             </Button>
           </div>
+        </div>
+
+        <div className="mb-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>My Classrooms</CardTitle>
+              <CardDescription>Create classrooms and share the code with your students</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3 mb-6">
+                <Input 
+                  placeholder="e.g. Bio 101 - Fall 2026" 
+                  value={newClassName} 
+                  onChange={e => setNewClassName(e.target.value)}
+                  className="max-w-sm"
+                />
+                <Button onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()}>
+                  <Plus className="w-4 h-4 mr-2" /> Create Class
+                </Button>
+              </div>
+
+              {classrooms && classrooms.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {classrooms.map((c: any) => (
+                    <div key={c.id} className="p-4 border rounded-lg bg-card flex flex-col justify-between">
+                      <h3 className="font-bold mb-2">{c.name}</h3>
+                      <div className="bg-muted px-3 py-2 rounded flex justify-between items-center">
+                        <code className="text-lg font-mono font-bold tracking-widest text-primary">{c.code}</code>
+                        <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(c.code)}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted-foreground text-sm italic">You haven't created any classrooms yet.</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

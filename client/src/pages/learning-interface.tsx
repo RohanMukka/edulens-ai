@@ -317,7 +317,14 @@ export default function LearningInterface() {
                     </div>
                     <div>
                       <h2 className="font-bold text-lg">{currentConcept.name}</h2>
-                      <p className="text-muted-foreground text-sm mt-1">{currentConcept.description}</p>
+                      <p className="text-muted-foreground text-sm mt-1 mb-4">{currentConcept.description}</p>
+                      
+                      <div className="bg-primary/5 border border-primary/20 rounded-lg p-5 mb-4 prose dark:prose-invert prose-sm max-w-none text-left">
+                        <h3 className="flex items-center gap-2 text-md font-semibold mt-0 mb-2">
+                          <BookOpen className="w-4 h-4 text-primary" /> Mini-Lesson
+                        </h3>
+                        <ReactMarkdown>{currentConcept.idealExplanation}</ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                   {JSON.parse(currentConcept.prerequisites).length > 0 && (
@@ -491,7 +498,7 @@ export default function LearningInterface() {
                 <div className="flex gap-3">
                   {lastScore.score < 0.6 && (
                     <Button variant="outline" onClick={handleRetry} className="flex-1" data-testid="button-retry">
-                      Try Again
+                      Try a Simpler Question
                     </Button>
                   )}
                   <Button onClick={handleNext} className="flex-1" data-testid="button-next">

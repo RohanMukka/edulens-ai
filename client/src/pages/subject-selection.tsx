@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
-import type { MasteryScore, Concept } from "@shared/schema";
-import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { MasteryScore, Concept, Classroom } from "@shared/schema";
+import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users } from "lucide-react";
 
 const subjects = [
   {
@@ -38,7 +38,19 @@ export default function SubjectSelection() {
   const [, setLocation] = useLocation();
   const { student, logout } = useAuth();
   const [newTopic, setNewTopic] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const qc = useQueryClient();
+
+  const { data: classrooms } = useQuery<Classroom[]>({
+    queryKey: ["/api/classrooms"],
+    enabled: !!student,
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/classrooms");
+      return res.json();
+    },
+  });
 
   const { data: mastery } = useQuery<MasteryScore[]>({
     queryKey: ["/api/students", student?.id, "mastery"],
@@ -78,6 +90,20 @@ export default function SubjectSelection() {
     }
   };
 
+  const handleJoinClassroom = async () => {
+    if (!joinCode.trim()) return;
+    setIsJoining(true);
+    try {
+      await apiRequest("POST", "/api/classrooms/join", { code: joinCode });
+      setJoinCode("");
+      qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   const getMasteryForSubject = (subjectName: string) => {
     if (!mastery) return null;
     // We'd need concepts to map, so just show total mastery count
@@ -110,6 +136,24 @@ export default function SubjectSelection() {
           </div>
         </div>
 
+        {classrooms && classrooms.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-primary" /> My Classrooms
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {classrooms.map(c => (
+                <Card key={c.id} className="border border-border/60">
+                  <CardContent className="py-4 px-5">
+                    <h3 className="font-bold">{c.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Code: {c.code}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-4">
           {subjects.map((subject) => (
             <Card
@@ -135,9 +179,10 @@ export default function SubjectSelection() {
           ))}
         </div>
 
-        <div className="mt-8">
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
+        <div className="mt-8 grid md:grid-cols-2 gap-6">
+          <div>
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
             Dynamic Knowledge Expansion
           </h2>
           <Card className="border border-primary/20 bg-primary/5">
@@ -162,6 +207,35 @@ export default function SubjectSelection() {
               </div>
             </CardContent>
           </Card>
+        </div>
+          <div>
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" /> Join Classroom
+            </h2>
+            <Card className="border border-border/60 bg-muted/20 h-full">
+              <CardContent className="py-5 px-5 flex flex-col justify-center h-full">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Have a code from your teacher? Join their classroom here.
+                </p>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Enter 6-char code" 
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    maxLength={6}
+                    className="font-mono text-center uppercase bg-background"
+                  />
+                  <Button 
+                    onClick={handleJoinClassroom} 
+                    disabled={isJoining || joinCode.length !== 6}
+                    className="shrink-0"
+                  >
+                    {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

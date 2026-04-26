@@ -11,6 +11,21 @@ export const students = pgTable("students", {
   createdAt: text("created_at").notNull().default("now"),
 });
 
+export const classrooms = pgTable("classrooms", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  teacherId: integer("teacher_id").notNull(),
+  code: text("code").notNull().unique(),
+  createdAt: text("created_at").notNull().default("now"),
+});
+
+export const classroomStudents = pgTable("classroom_students", {
+  id: serial("id").primaryKey(),
+  classroomId: integer("classroom_id").notNull(),
+  studentId: integer("student_id").notNull(),
+  joinedAt: text("joined_at").notNull().default("now"),
+});
+
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
   studentId: integer("student_id").notNull(),
@@ -57,6 +72,12 @@ export const insertMasteryScoreSchema = createInsertSchema(masteryScores).omit({
 // Types
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
+export const insertClassroomSchema = createInsertSchema(classrooms).omit({ id: true, createdAt: true });
+export const insertClassroomStudentSchema = createInsertSchema(classroomStudents).omit({ id: true, joinedAt: true });
+export type Classroom = typeof classrooms.$inferSelect;
+export type InsertClassroom = z.infer<typeof insertClassroomSchema>;
+export type ClassroomStudent = typeof classroomStudents.$inferSelect;
+export type InsertClassroomStudent = z.infer<typeof insertClassroomStudentSchema>;
 export type Session = typeof sessions.$inferSelect;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Concept = typeof concepts.$inferSelect;

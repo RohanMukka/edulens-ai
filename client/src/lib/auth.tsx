@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { Student } from "@shared/schema";
 import { apiRequest } from "./queryClient";
 
@@ -14,6 +14,14 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [student, setStudent] = useState<Student | null>(null);
 
+  // Restore session on mount
+  useEffect(() => {
+    apiRequest("GET", "/api/auth/me")
+      .then(res => res.json())
+      .then(data => setStudent(data))
+      .catch(() => {});
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await apiRequest("POST", "/api/auth/login", { email, password });
     const data = await res.json();
@@ -28,7 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data;
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
     setStudent(null);
   }, []);
 

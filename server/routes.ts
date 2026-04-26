@@ -4,6 +4,15 @@ import { storage } from "./storage";
 import { seedConcepts } from "./seed";
 import { insertStudentSchema, insertSessionSchema } from "@shared/schema";
 import Groq from "groq-sdk";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+import { z } from "zod";
+
+declare module "express-session" {
+  interface SessionData {
+    studentId: number;
+  }
+}
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
@@ -13,6 +22,48 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Seed concepts on startup
   await seedConcepts();
+
+  const MemoryStore = createMemoryStore(session);
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "edulens-super-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    store: new MemoryStore({ checkPeriod: 86400000 }),
+    cookie: { maxAge: 86400000 }
+  }));
+
+  // Auth Middleware
+  const requireAuth = (req: any, res: any, next: any) => {
+    if (!req.session?.studentId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+
+  const requireStudentOrEducator = async (req: any, res: any, next: any) => {
+    if (!req.session?.studentId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const requestedId = parseInt(req.params.id, 10);
+    if (req.session.studentId !== requestedId) {
+      const student = await storage.getStudent(req.session.studentId);
+      if (!student || student.role !== "educator") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+    }
+    next();
+  };
+
+  const requireEducator = async (req: any, res: any, next: any) => {
+    if (!req.session?.studentId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const student = await storage.getStudent(req.session.studentId);
+    if (!student || student.role !== "educator") {
+      return res.status(403).json({ message: "Forbidden: Educators only" });
+    }
+    next();
+  };
 
   // === Auth ===
   app.post("/api/auth/register", async (req, res) => {
@@ -32,6 +83,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Email already registered" });
       }
       const student = await storage.createStudent({ name, email: normalizedEmail, password, role: role || "student" });
+      req.session.studentId = student.id;
       res.json(student);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -52,18 +104,39 @@ export async function registerRoutes(
       if (student.password !== password) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
+      req.session.studentId = student.id;
       res.json(student);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
+  app.get("/api/auth/me", async (req, res) => {
+    if (!req.session?.studentId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const student = await storage.getStudent(req.session.studentId);
+    if (!student) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    res.json(student);
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ message: "Logged out" });
+    });
+  });
+
   // === Sessions ===
-  app.post("/api/sessions", async (req, res) => {
+  app.post("/api/sessions", requireAuth, async (req, res) => {
     try {
       const { studentId, subject } = req.body;
       if (!studentId || !subject) {
         return res.status(400).json({ message: "studentId and subject are required" });
+      }
+      if (req.session.studentId !== studentId) {
+        return res.status(403).json({ message: "Forbidden" });
       }
       const session = await storage.createSession({ studentId, subject });
       res.json(session);
@@ -169,7 +242,7 @@ export async function registerRoutes(
   });
 
   // === Student ===
-  app.get("/api/students/:id/mastery", async (req, res) => {
+  app.get("/api/students/:id/mastery", requireStudentOrEducator, async (req, res) => {
     try {
       const mastery = await storage.getStudentMastery(Number(req.params.id));
       res.json(mastery);
@@ -178,7 +251,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/students/:id/history", async (req, res) => {
+  app.get("/api/students/:id/history", requireStudentOrEducator, async (req, res) => {
     try {
       const sessions = await storage.getStudentSessions(Number(req.params.id));
       res.json(sessions);
@@ -187,7 +260,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/students/:id/stats", async (req, res) => {
+  app.get("/api/students/:id/stats", requireStudentOrEducator, async (req, res) => {
     try {
       const studentId = Number(req.params.id);
       const sessions = await storage.getStudentSessions(studentId);
@@ -222,11 +295,62 @@ export async function registerRoutes(
     }
   });
 
-  // === Teacher ===
-  app.get("/api/teacher/students", async (req, res) => {
+  // === Classrooms ===
+  app.post("/api/classrooms", requireEducator, async (req, res) => {
     try {
-      const allStudents = await storage.getAllStudents();
-      const studentStats = await Promise.all(allStudents.map(async (s) => {
+      const { name } = req.body;
+      if (!name) return res.status(400).json({ message: "Classroom name is required" });
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const classroom = await storage.createClassroom({ name, teacherId: req.session.studentId!, code });
+      res.json(classroom);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/classrooms/join", requireAuth, async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ message: "Classroom code is required" });
+      const classroom = await storage.getClassroomByCode(code.toUpperCase());
+      if (!classroom) return res.status(404).json({ message: "Invalid classroom code" });
+      const joined = await storage.joinClassroom(req.session.studentId!, classroom.id);
+      res.json(joined);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/classrooms", requireAuth, async (req, res) => {
+    try {
+      const student = await storage.getStudent(req.session.studentId!);
+      if (student?.role === "educator") {
+        const classrooms = await storage.getTeacherClassrooms(req.session.studentId!);
+        res.json(classrooms);
+      } else {
+        const classrooms = await storage.getStudentClassrooms(req.session.studentId!);
+        res.json(classrooms);
+      }
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // === Teacher ===
+  app.get("/api/teacher/students", requireEducator, async (req, res) => {
+    try {
+      const classrooms = await storage.getTeacherClassrooms(req.session.studentId!);
+      let allStudents: any[] = [];
+      for (const classroom of classrooms) {
+        const students = await storage.getClassroomStudents(classroom.id);
+        allStudents = allStudents.concat(students);
+      }
+      
+      const uniqueStudentsMap = new Map();
+      allStudents.forEach(s => uniqueStudentsMap.set(s.id, s));
+      const uniqueStudents = Array.from(uniqueStudentsMap.values());
+
+      const studentStats = await Promise.all(uniqueStudents.map(async (s) => {
         const mastery = await storage.getStudentMastery(s.id);
         const interactions = await storage.getStudentInteractions(s.id);
         const avgScore = interactions.length > 0 
@@ -298,6 +422,39 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
   }
 
   try {
+    // Phase 4.2: Relevance Pre-check
+    const relevanceCheck = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI assistant. Determine if the student's answer is completely off-topic, gibberish, or inappropriate for the question. Reply with a valid JSON object: {\"isOffTopic\": true} or {\"isOffTopic\": false}."
+        },
+        {
+          role: "user",
+          content: `Question: ${question || "Explain the concept."}\nStudent Answer: ${studentResponse}`
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.1,
+      max_tokens: 150,
+      response_format: { type: "json_object" }
+    });
+    
+    let isOffTopic = false;
+    try {
+      const relevanceParsed = JSON.parse(relevanceCheck.choices[0]?.message?.content || "{}");
+      isOffTopic = relevanceParsed.isOffTopic === true;
+    } catch(e) {}
+
+    if (isOffTopic) {
+      return {
+        score: 0,
+        gaps: ["The response appears to be off-topic or gibberish."],
+        strengths: [],
+        feedback: "Your response did not address the question. Please try again and focus on the concept."
+      };
+    }
+
     const completion = await groq.chat.completions.create({
       messages: [
         {
@@ -316,16 +473,25 @@ async function scoreResponse(studentResponse: string, idealExplanation: string, 
     });
 
     const content = completion.choices[0]?.message?.content || "{}";
+    
+    const scoreSchema = z.object({
+      score: z.number(),
+      gaps: z.array(z.string()).default([]),
+      strengths: z.array(z.string()).default([]),
+      feedback: z.string().default("Keep practicing!"),
+    });
+
     try {
       const parsed = JSON.parse(content);
+      const validated = scoreSchema.parse(parsed);
       return {
-        score: Math.min(1, Math.max(0, parsed.score || 0)),
-        gaps: parsed.gaps || [],
-        strengths: parsed.strengths || [],
-        feedback: parsed.feedback || "Keep practicing!",
+        score: Math.min(1, Math.max(0, validated.score)),
+        gaps: validated.gaps,
+        strengths: validated.strengths,
+        feedback: validated.feedback,
       };
     } catch (e) {
-      console.error("JSON parse error:", e);
+      console.error("Zod/JSON parse error for score:", e);
       return fallbackScore(studentResponse, idealExplanation);
     }
     return fallbackScore(studentResponse, idealExplanation);
@@ -447,12 +613,33 @@ async function generateDynamicConcept(subject: string, topic: string) {
   });
 
   const content = completion.choices[0]?.message?.content || "{}";
-  const parsed = JSON.parse(content);
-  return {
-    subject: parsed.subject || subject,
-    name: parsed.name || topic,
-    description: parsed.description || "Generated concept.",
-    idealExplanation: parsed.idealExplanation || "No explanation provided.",
-    prerequisites: typeof parsed.prerequisites === "string" ? parsed.prerequisites : JSON.stringify(parsed.prerequisites || [])
-  };
+  
+  const conceptSchema = z.object({
+    subject: z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    idealExplanation: z.string().optional(),
+    prerequisites: z.union([z.string(), z.array(z.string())]).optional()
+  });
+
+  try {
+    const parsed = JSON.parse(content);
+    const validated = conceptSchema.parse(parsed);
+    return {
+      subject: validated.subject || subject,
+      name: validated.name || topic,
+      description: validated.description || "Generated concept.",
+      idealExplanation: validated.idealExplanation || "No explanation provided.",
+      prerequisites: typeof validated.prerequisites === "string" ? validated.prerequisites : JSON.stringify(validated.prerequisites || [])
+    };
+  } catch (e) {
+    console.error("Zod/JSON parse error for concept generation:", e);
+    return {
+      subject: subject || "Custom Subject",
+      name: topic || "Custom Concept",
+      description: `A dynamically generated concept about ${topic}.`,
+      idealExplanation: `This is a fallback explanation for ${topic} because validation failed.`,
+      prerequisites: JSON.stringify([])
+    };
+  }
 }
