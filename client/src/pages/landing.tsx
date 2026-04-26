@@ -12,7 +12,9 @@ export default function Landing() {
   const { student, login, register, logout } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
+  const [educatorCode, setEducatorCode] = useState("");
   const [isLogin, setIsLogin] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,22 +25,24 @@ export default function Landing() {
     setLoading(true);
     try {
       if (isLogin) {
-        const user = await login(email);
+        if (!email || !password) { setError("Email and password are required"); setLoading(false); return; }
+        const user = await login(email, password);
         if (user.role === "educator") setLocation("/teacher");
         else setLocation("/subjects");
       } else {
         if (!name.trim()) { setError("Name is required"); setLoading(false); return; }
         
         if (role === "educator") {
-          const code = prompt("Please enter the Educator Verification Code (Hint: 1234):");
-          if (code !== "1234") {
-            setError("Invalid Educator Code. Please try again.");
+          if (!educatorCode) {
+            setError("Educator code is required");
             setLoading(false);
             return;
           }
         }
 
-        const user = await register(name, email, role);
+        if (!password) { setError("Password is required"); setLoading(false); return; }
+
+        const user = await register(name, email, password, role, educatorCode);
         if (user.role === "educator") setLocation("/teacher");
         else setLocation("/subjects");
       }
@@ -149,6 +153,14 @@ export default function Landing() {
                           <SelectItem value="educator">Educator</SelectItem>
                         </SelectContent>
                       </Select>
+                      {role === "educator" && (
+                        <Input
+                          type="password"
+                          placeholder="Educator Code (Hint: 1234)"
+                          value={educatorCode}
+                          onChange={e => setEducatorCode(e.target.value)}
+                        />
+                      )}
                     </>
                   )}
                   <Input
@@ -157,6 +169,13 @@ export default function Landing() {
                     placeholder="Email address"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
+                    required
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                     required
                   />
                   {error && <p className="text-sm text-destructive" data-testid="text-error">{error}</p>}

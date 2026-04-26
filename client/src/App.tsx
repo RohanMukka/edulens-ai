@@ -14,17 +14,21 @@ import Dashboard from "@/pages/dashboard";
 import TeacherDashboard from "@/pages/teacher-dashboard";
 import NotFound from "@/pages/not-found";
 
+import { Layout } from "@/components/layout";
+
 function AppRouter() {
   return (
-    <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/subjects" component={SubjectSelection} />
-      <Route path="/learn/:sessionId" component={LearningInterface} />
-      <Route path="/graph" component={KnowledgeGraph} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/teacher" component={TeacherDashboard} />
-      <Route component={NotFound} />
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/subjects" component={SubjectSelection} />
+        <Route path="/learn/:sessionId" component={LearningInterface} />
+        <Route path="/graph" component={KnowledgeGraph} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/teacher" component={TeacherDashboard} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 

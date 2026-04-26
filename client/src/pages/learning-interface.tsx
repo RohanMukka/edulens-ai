@@ -138,6 +138,8 @@ export default function LearningInterface() {
       setPhase("feedback");
       qc.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
       qc.invalidateQueries({ queryKey: ["/api/students", student.id, "mastery"] });
+      qc.invalidateQueries({ queryKey: ["/api/students", student.id, "stats"] });
+      qc.invalidateQueries({ queryKey: ["/api/students", student.id, "history"] });
     },
   });
 
