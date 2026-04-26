@@ -13,7 +13,7 @@ import {
 import type { MasteryScore, Concept } from "@shared/schema";
 import {
   ArrowLeft, BarChart3, Brain, BookOpen, Target, TrendingUp,
-  Clock, Loader2, Award, AlertTriangle
+  Clock, Loader2, Award, AlertTriangle, Dna, Calculator, Sparkles, Flame, Trophy
 } from "lucide-react";
 
 interface StudentStats {
@@ -88,6 +88,19 @@ export default function Dashboard() {
     return { subject, mastery: Math.round(avg * 100) };
   });
 
+  // Calculate Badges
+  const totalConceptsMastered = stats?.conceptsMastered || 0;
+  const isBiologyWhiz = barData.some(d => d.subject === "Biology" && d.mastery >= 70);
+  const isMathWhiz = barData.some(d => d.subject === "Math" && d.mastery >= 70);
+  const hasCustom = barData.some(d => !["Biology", "Math", "History"].includes(d.subject));
+  
+  const badges = [];
+  if (totalConceptsMastered > 0) badges.push({ name: "First Steps", desc: "Mastered your first concept", icon: Target, color: "text-blue-500", bg: "bg-blue-500/10" });
+  if (isBiologyWhiz) badges.push({ name: "Darwin's Heir", desc: "Mastered a Biology concept", icon: Dna, color: "text-emerald-500", bg: "bg-emerald-500/10" });
+  if (isMathWhiz) badges.push({ name: "Euler's Protege", desc: "Mastered a Math concept", icon: Calculator, color: "text-rose-500", bg: "bg-rose-500/10" });
+  if (hasCustom) badges.push({ name: "Knowledge Pioneer", desc: "Generated a custom topic", icon: Sparkles, color: "text-purple-500", bg: "bg-purple-500/10" });
+  if (stats && stats.totalInteractions >= 5) badges.push({ name: "Consistent Learner", desc: "Answered 5+ questions", icon: Flame, color: "text-orange-500", bg: "bg-orange-500/10" });
+
   if (statsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -135,6 +148,28 @@ export default function Dashboard() {
             </Card>
           ))}
         </div>
+
+        {/* Gamification Trophy Case */}
+        {badges.length > 0 && (
+          <Card className="border border-border/60 mb-6 bg-gradient-to-r from-primary/5 via-background to-background">
+            <CardContent className="pt-5 pb-5">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" /> Trophy Case
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {badges.map((badge, i) => (
+                  <div key={i} className="flex flex-col items-center justify-center p-3 rounded-xl border border-border/40 bg-card hover:bg-muted/50 transition-colors text-center">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${badge.bg}`}>
+                      <badge.icon className={`w-6 h-6 ${badge.color}`} />
+                    </div>
+                    <span className="font-semibold text-xs mb-1">{badge.name}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">{badge.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-2 gap-5 mb-6">
           {/* Mastery by Subject (Radar) */}

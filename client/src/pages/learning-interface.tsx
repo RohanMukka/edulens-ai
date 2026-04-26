@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import confetti from "canvas-confetti";
+import { motion } from "framer-motion";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -405,9 +406,11 @@ export default function LearningInterface() {
                           <span className="text-sm text-muted-foreground">understanding</span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${scoreBg(lastScore.score)}`}
-                            style={{ width: `${lastScore.score * 100}%` }}
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${lastScore.score * 100}%` }}
+                            transition={{ duration: 1.2, ease: "easeOut" }}
+                            className={`h-full rounded-full ${scoreBg(lastScore.score)}`}
                           />
                         </div>
                       </div>
