@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { seedConcepts } from "./seed";
+import { seedDemoData } from "./seed_demo";
 import { insertStudentSchema, insertSessionSchema } from "@shared/schema";
 import Groq from "groq-sdk";
 import session from "express-session";
@@ -29,6 +30,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Seed concepts on startup
   await seedConcepts();
+  await seedDemoData();
 
   const MemoryStore = createMemoryStore(session);
   app.use(session({
@@ -497,7 +499,7 @@ const MISCONCEPTION_TYPES: Record<string, { label: string; emoji: string; remedi
 };
 
 // === SM-2 Spaced Repetition Algorithm ===
-function sm2(quality: number, easeFactor: number, interval: number, reps: number) {
+export function sm2(quality: number, easeFactor: number, interval: number, reps: number) {
   const q = Math.min(5, Math.max(0, Math.round(quality * 5)));
 
   let newEF = easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
