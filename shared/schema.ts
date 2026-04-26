@@ -51,6 +51,9 @@ export const interactions = pgTable("interactions", {
   studentResponse: text("student_response").notNull(),
   score: real("score"),
   feedback: text("feedback"),
+  misconceptionType: text("misconception_type"),
+  misconceptionDetail: text("misconception_detail"),
+  bloomsLevel: text("blooms_level"),
   createdAt: text("created_at").notNull().default("now"),
 });
 
@@ -59,6 +62,10 @@ export const masteryScores = pgTable("mastery_scores", {
   studentId: integer("student_id").notNull(),
   conceptId: integer("concept_id").notNull(),
   score: real("score").notNull().default(0),
+  easeFactor: real("ease_factor").notNull().default(2.5),
+  interval: integer("interval").notNull().default(0),
+  repetitions: integer("repetitions").notNull().default(0),
+  nextReviewAt: text("next_review_at"),
   updatedAt: text("updated_at").notNull().default("now"),
 });
 

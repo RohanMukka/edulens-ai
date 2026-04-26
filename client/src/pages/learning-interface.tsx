@@ -15,7 +15,7 @@ import type { Concept, Session, Interaction } from "@shared/schema";
 import {
   ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
   AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
-  Mic, MicOff
+  Mic, MicOff, Search, Shuffle, MessageSquare, Layers
 } from "lucide-react";
 
 interface ScoreResult {
@@ -24,8 +24,55 @@ interface ScoreResult {
   gaps: string[];
   strengths: string[];
   feedback: string;
+  misconceptionType: string | null;
+  misconceptionDetail: string | null;
   mastery: number;
 }
+
+const MISCONCEPTION_META: Record<string, { label: string; emoji: string; color: string; bg: string; border: string; remediation: string }> = {
+  PROCESS_CONFUSION: {
+    label: "Process Confusion", emoji: "🔄",
+    color: "text-orange-600 dark:text-orange-400",
+    bg: "bg-orange-500/10", border: "border-orange-500/30",
+    remediation: "You may be mixing up two related but distinct processes. Let's compare them side by side."
+  },
+  INCOMPLETE_UNDERSTANDING: {
+    label: "Partial Understanding", emoji: "🧩",
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-500/10", border: "border-blue-500/30",
+    remediation: "You've grasped the core idea but are missing some critical components."
+  },
+  OVERGENERALIZATION: {
+    label: "Overgeneralization", emoji: "🎯",
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-500/10", border: "border-purple-500/30",
+    remediation: "You're applying a rule too broadly — there are important exceptions to consider."
+  },
+  CAUSE_EFFECT_REVERSAL: {
+    label: "Cause-Effect Reversal", emoji: "↔️",
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-500/10", border: "border-rose-500/30",
+    remediation: "You've identified the right concepts but inverted the causal direction."
+  },
+  TERMINOLOGY_CONFUSION: {
+    label: "Vocabulary Confusion", emoji: "📝",
+    color: "text-cyan-600 dark:text-cyan-400",
+    bg: "bg-cyan-500/10", border: "border-cyan-500/30",
+    remediation: "Some technical terms are being used interchangeably — let's clarify what each one means."
+  },
+  SURFACE_LEVEL: {
+    label: "Surface-Level Response", emoji: "🏊",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-500/10", border: "border-amber-500/30",
+    remediation: "Your answer stays at a high level. Try to go deeper into the mechanism or reasoning."
+  },
+  NO_MISCONCEPTION: {
+    label: "Strong Understanding", emoji: "✅",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-500/10", border: "border-emerald-500/30",
+    remediation: ""
+  }
+};
 
 export default function LearningInterface() {
   const params = useParams<{ sessionId: string }>();
@@ -428,6 +475,40 @@ export default function LearningInterface() {
                     <div className="text-sm mb-4 prose prose-sm dark:prose-invert max-w-none" data-testid="text-feedback">
                       <ReactMarkdown>{lastScore.feedback}</ReactMarkdown>
                     </div>
+
+                    {/* Misconception Diagnostic Card */}
+                    {lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION" && (() => {
+                      const mc = MISCONCEPTION_META[lastScore.misconceptionType] || MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING;
+                      return (
+                        <div className={`rounded-xl border ${mc.border} ${mc.bg} p-4 mb-4`} data-testid="card-misconception">
+                          <div className="flex items-start gap-3">
+                            <div className="text-2xl leading-none mt-0.5">{mc.emoji}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-xs font-bold uppercase tracking-wider ${mc.color}`}>Misconception Detected</span>
+                              </div>
+                              <h4 className={`font-bold text-sm ${mc.color}`}>{mc.label}</h4>
+                              {lastScore.misconceptionDetail && (
+                                <p className="text-sm text-muted-foreground mt-1">{lastScore.misconceptionDetail}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2 italic">
+                                💡 {mc.remediation}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {lastScore.misconceptionType === "NO_MISCONCEPTION" && (
+                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 mb-4 flex items-center gap-3" data-testid="card-no-misconception">
+                        <span className="text-xl">✅</span>
+                        <div>
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No Misconceptions Detected</span>
+                          <p className="text-xs text-muted-foreground">Your response demonstrates accurate conceptual understanding.</p>
+                        </div>
+                      </div>
+                    )}
 
                     {lastScore.strengths.length > 0 && (
                       <div className="mb-3">

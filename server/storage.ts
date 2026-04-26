@@ -31,11 +31,11 @@ export interface IStorage {
   createConcept(concept: InsertConcept): Promise<Concept>;
   getConceptCount(): Promise<number>;
   createInteraction(interaction: InsertInteraction): Promise<Interaction>;
-  updateInteraction(id: number, score: number, feedback: string): Promise<Interaction | undefined>;
+  updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null): Promise<Interaction | undefined>;
   getSessionInteractions(sessionId: number): Promise<Interaction[]>;
   getStudentInteractions(studentId: number): Promise<Interaction[]>;
   getMastery(studentId: number, conceptId: number): Promise<MasteryScore | undefined>;
-  upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore>;
+  upsertMastery(studentId: number, conceptId: number, score: number, sm2Data?: { easeFactor: number; interval: number; repetitions: number; nextReviewAt: string }): Promise<MasteryScore>;
   getStudentMastery(studentId: number): Promise<MasteryScore[]>;
   getAllStudents(): Promise<Student[]>;
   updateStudentPassword(id: number, hashedPassword: string): Promise<void>;
@@ -111,8 +111,8 @@ export class DatabaseStorage implements IStorage {
     return res;
   }
 
-  async updateInteraction(id: number, score: number, feedback: string): Promise<Interaction | undefined> {
-    const [res] = await db.update(interactions).set({ score, feedback }).where(eq(interactions.id, id)).returning();
+  async updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null): Promise<Interaction | undefined> {
+    const [res] = await db.update(interactions).set({ score, feedback, misconceptionType: misconceptionType ?? undefined, misconceptionDetail: misconceptionDetail ?? undefined }).where(eq(interactions.id, id)).returning();
     return res;
   }
 
@@ -137,17 +137,27 @@ export class DatabaseStorage implements IStorage {
     return res;
   }
 
-  async upsertMastery(studentId: number, conceptId: number, score: number): Promise<MasteryScore> {
+  async upsertMastery(studentId: number, conceptId: number, score: number, sm2Data?: { easeFactor: number; interval: number; repetitions: number; nextReviewAt: string }): Promise<MasteryScore> {
     const existing = await this.getMastery(studentId, conceptId);
+    const updates = {
+      score,
+      updatedAt: new Date().toISOString(),
+      ...(sm2Data ? {
+        easeFactor: sm2Data.easeFactor,
+        interval: sm2Data.interval,
+        repetitions: sm2Data.repetitions,
+        nextReviewAt: sm2Data.nextReviewAt,
+      } : {})
+    };
     if (existing) {
       const [updated] = await db.update(masteryScores)
-        .set({ score, updatedAt: new Date().toISOString() })
+        .set(updates)
         .where(eq(masteryScores.id, existing.id))
         .returning();
       return updated;
     }
     const [inserted] = await db.insert(masteryScores)
-      .values({ studentId, conceptId, score, updatedAt: new Date().toISOString() })
+      .values({ studentId, conceptId, ...updates })
       .returning();
     return inserted;
   }
