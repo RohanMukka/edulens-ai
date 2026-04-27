@@ -51,6 +51,8 @@ export interface IStorage {
   getClassroomStudents(classroomId: number): Promise<Student[]>;
   deleteClassroom(id: number): Promise<void>;
   leaveClassroom(studentId: number, classroomId: number): Promise<void>;
+  createReflection(reflection: InsertReflection): Promise<Reflection>;
+  getStudentReflections(studentId: number): Promise<Reflection[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -257,6 +259,15 @@ export class DatabaseStorage implements IStorage {
         eq(classroomStudents.classroomId, classroomId)
       )
     );
+  }
+
+  async createReflection(reflection: InsertReflection): Promise<Reflection> {
+    const [res] = await db.insert(reflections).values({ ...reflection, createdAt: new Date().toISOString() }).returning();
+    return res;
+  }
+
+  async getStudentReflections(studentId: number): Promise<Reflection[]> {
+    return await db.select().from(reflections).where(eq(reflections.studentId, studentId)).orderBy(desc(reflections.createdAt));
   }
 }
 

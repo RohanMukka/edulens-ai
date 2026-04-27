@@ -58,7 +58,9 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Quote,
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
@@ -315,6 +317,10 @@ export default function LearningInterface() {
     null,
   );
 
+  const [showReflection, setShowReflection] = useState(false);
+  const [reflectionText, setReflectionText] = useState("");
+  const [prevMastery, setPrevMastery] = useState<number | null>(null);
+
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
@@ -455,10 +461,19 @@ export default function LearningInterface() {
       );
       return res.json() as Promise<ScoreResult>;
     },
+    onMutate: async (variables) => {
+      const currentMastery = studentMastery?.find(m => m.conceptId === variables.conceptId)?.score || 0;
+      setPrevMastery(currentMastery);
+    },
     onSuccess: (data) => {
       setLastScore(data);
       setPhase("feedback");
       setPrerequisiteRedirect(null);
+
+      if (prevMastery !== null && prevMastery < 0.5 && data.score >= 0.7) {
+        setShowReflection(true);
+      }
+
       if (data.score >= 0.7) {
         confetti({
           particleCount: 100,
@@ -613,6 +628,18 @@ export default function LearningInterface() {
       console.error("Question generation failed:", error);
       setQuestion("Explain the key concepts of this topic in your own words.");
       setPhase("question");
+    },
+  });
+
+  const reflectionMutation = useMutation({
+    mutationFn: async (data: { conceptId: number; content: string }) => {
+      const res = await apiRequest("POST", "/api/reflections", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      setShowReflection(false);
+      setReflectionText("");
+      qc.invalidateQueries({ queryKey: ["/api/students", student.id, "reflections"] });
     },
   });
 
@@ -1104,6 +1131,69 @@ export default function LearningInterface() {
             {/* Feedback */}
             {phase === "feedback" && lastScore && (
               <div className="space-y-4">
+                {/* ── REFLECTION PROMPT (Metacognition Loop) ── */}
+                <AnimatePresence>
+                  {showReflection && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      className="mb-6"
+                    >
+                      <Card className="border-primary/40 bg-primary/5 shadow-xl shadow-primary/10 overflow-hidden">
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                              <Sparkles className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-primary">Your understanding jumped! 🚀</h3>
+                              <p className="text-xs text-muted-foreground">Take a moment to reflect on what changed in your thinking.</p>
+                            </div>
+                          </div>
+
+                          <div className="relative mb-4">
+                            <Quote className="absolute -top-1 -left-1 w-8 h-8 text-primary/10 -scale-x-100" />
+                            <Textarea 
+                              placeholder="What clicked for you? How would you explain this differently now?"
+                              className="min-h-[100px] bg-background/50 border-primary/20 focus:border-primary/40 relative z-10"
+                              value={reflectionText}
+                              onChange={(e) => setReflectionText(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setShowReflection(false)}
+                            >
+                              Skip
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              disabled={!reflectionText.trim() || reflectionMutation.isPending}
+                              onClick={() => {
+                                if (currentConcept) {
+                                  reflectionMutation.mutate({
+                                    conceptId: currentConcept.id,
+                                    content: reflectionText
+                                  });
+                                }
+                              }}
+                            >
+                              {reflectionMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                "Save Reflection"
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Score Header Card */}
                 <Card
                   className="border border-border/60 overflow-hidden"

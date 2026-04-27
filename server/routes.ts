@@ -545,6 +545,94 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/students/:id/misconception-history", requireStudentOrEducator, async (req, res) => {
+    try {
+      const studentId = Number(req.params.id);
+      const student = await storage.getStudent(studentId);
+      if (!student) return res.status(404).json({ message: "Student not found" });
+      const allIds = await storage.getStudentIdsByEmail(student.email);
+      
+      const allInteractions: any[] = [];
+      for (const sid of allIds) {
+        const ints = await storage.getStudentInteractions(sid);
+        allInteractions.push(...ints);
+      }
+
+      const history: Record<string, { type: string, label: string, emoji: string, count: number, concepts: Set<string> }> = {};
+      
+      for (const i of allInteractions) {
+        if (i.misconceptionType && i.misconceptionType !== "NO_MISCONCEPTION") {
+          if (!history[i.misconceptionType]) {
+            const meta = MISCONCEPTION_TYPES[i.misconceptionType];
+            history[i.misconceptionType] = {
+              type: i.misconceptionType,
+              label: meta?.label || i.misconceptionType,
+              emoji: meta?.emoji || "⚠️",
+              count: 0,
+              concepts: new Set()
+            };
+          }
+          history[i.misconceptionType].count++;
+          const concept = await storage.getConcept(i.conceptId);
+          if (concept) history[i.misconceptionType].concepts.add(concept.name);
+        }
+      }
+      
+      // Convert sets to arrays for JSON
+      const result = Object.values(history).map(h => ({
+        ...h,
+        concepts: Array.from(h.concepts)
+      })).sort((a, b) => b.count - a.count);
+      
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/students/:id/reflections", requireStudentOrEducator, async (req, res) => {
+    try {
+      const studentId = Number(req.params.id);
+      const student = await storage.getStudent(studentId);
+      if (!student) return res.status(404).json({ message: "Student not found" });
+      const allIds = await storage.getStudentIdsByEmail(student.email);
+      
+      const allReflections = [];
+      for (const sid of allIds) {
+        const studentReflections = await storage.getStudentReflections(sid);
+        for (const r of studentReflections) {
+          const concept = await storage.getConcept(r.conceptId);
+          allReflections.push({
+            ...r,
+            conceptName: concept?.name || "Unknown Concept"
+          });
+        }
+      }
+      
+      allReflections.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      res.json(allReflections);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/reflections", requireAuth, async (req, res) => {
+    try {
+      const { conceptId, content } = req.body;
+      if (!conceptId || !content) {
+        return res.status(400).json({ message: "conceptId and content are required" });
+      }
+      const reflection = await storage.createReflection({
+        studentId: req.session.studentId!,
+        conceptId,
+        content
+      });
+      res.json(reflection);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // === Classrooms ===
   app.post("/api/classrooms", requireEducator, async (req, res) => {
     try {

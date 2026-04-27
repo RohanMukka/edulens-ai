@@ -69,12 +69,21 @@ export const masteryScores = pgTable("mastery_scores", {
   updatedAt: text("updated_at").notNull().default("now"),
 });
 
+export const reflections = pgTable("reflections", {
+  id: serial("id").primaryKey(),
+  studentId: integer("student_id").notNull(),
+  conceptId: integer("concept_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull().default("now"),
+});
+
 // Insert schemas
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true, createdAt: true });
 export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, startedAt: true, endedAt: true });
 export const insertConceptSchema = createInsertSchema(concepts).omit({ id: true });
 export const insertInteractionSchema = createInsertSchema(interactions).omit({ id: true, createdAt: true, score: true, feedback: true });
 export const insertMasteryScoreSchema = createInsertSchema(masteryScores).omit({ id: true, updatedAt: true });
+export const insertReflectionSchema = createInsertSchema(reflections).omit({ id: true, createdAt: true });
 
 // Types
 export type Student = typeof students.$inferSelect;
@@ -93,3 +102,5 @@ export type Interaction = typeof interactions.$inferSelect;
 export type InsertInteraction = z.infer<typeof insertInteractionSchema>;
 export type MasteryScore = typeof masteryScores.$inferSelect;
 export type InsertMasteryScore = z.infer<typeof insertMasteryScoreSchema>;
+export type Reflection = typeof reflections.$inferSelect;
+export type InsertReflection = z.infer<typeof insertReflectionSchema>;

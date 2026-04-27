@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { classroomSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
+import { TeacherDashboardSkeleton } from "@/components/ui/skeleton-screen";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from "recharts";
@@ -509,11 +510,7 @@ export default function TeacherDashboard() {
   };
 
   if (isLoading || classroomsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <TeacherDashboardSkeleton />;
   }
 
   const avgClassScore = students && students.length > 0

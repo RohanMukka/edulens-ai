@@ -20,7 +20,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Brain, Loader2, Sparkles, CheckCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/lib/theme";
+import { useState } from "react";
+import { GraphSkeleton } from "@/components/ui/skeleton-screen";
 import type { Concept, MasteryScore } from "@shared/schema";
+import { Lock, Unlock, ArrowRight, Activity, Target } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 function ConceptNode({ data }: { data: { label: string; mastery: number; subject: string } }) {
   const pct = Math.round(data.mastery * 100);
@@ -100,6 +104,8 @@ export default function KnowledgeGraph() {
   const allConcepts = conceptQueries.flatMap(q => q.data || []);
   const isLoading = conceptQueries.some(q => q.isLoading);
 
+  const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
+
   const masteryMap = useMemo(() => {
     const map: Record<number, number> = {};
     if (mastery) {
@@ -162,12 +168,29 @@ export default function KnowledgeGraph() {
     return { nodes, edges };
   }, [allConcepts, masteryMap]);
 
+  const onNodeClick = useCallback((_: any, node: Node) => {
+    const concept = allConcepts.find(c => String(c.id) === node.id);
+    if (concept) {
+      setSelectedConcept(concept);
+    }
+  }, [allConcepts]);
+
+  const isUnlocked = (concept: Concept) => {
+    let prereqs: string[] = [];
+    try {
+      prereqs = JSON.parse(concept.prerequisites) as string[];
+    } catch (e) {}
+    if (prereqs.length === 0) return true;
+    
+    return prereqs.every(pName => {
+      const pConcept = allConcepts.find(c => c.name === pName && c.subject === concept.subject);
+      if (!pConcept) return true;
+      return (masteryMap[pConcept.id] || 0) >= 0.7;
+    });
+  };
+
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <GraphSkeleton />;
   }
 
   return (
@@ -240,6 +263,7 @@ export default function KnowledgeGraph() {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          onNodeClick={onNodeClick}
           fitView
           attributionPosition="bottom-left"
           proOptions={{ hideAttribution: true }}
@@ -252,6 +276,112 @@ export default function KnowledgeGraph() {
           />
         </ReactFlow>
         </div>
+
+        {/* ── SELECTION PANEL ── */}
+        <AnimatePresence>
+          {selectedConcept && (
+            <motion.div
+              initial={{ x: 400, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 400, opacity: 0 }}
+              className="absolute top-4 right-4 bottom-4 w-full max-w-[360px] bg-card/80 backdrop-blur-xl border border-border/60 rounded-2xl shadow-2xl z-[1000] overflow-hidden flex flex-col"
+            >
+              <div className="p-6 overflow-y-auto flex-1 no-scrollbar">
+                <div className="flex items-center justify-between mb-6">
+                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">{selectedConcept.subject}</Badge>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedConcept(null)} className="h-8 w-8 p-0 rounded-full">✕</Button>
+                </div>
+
+                <h2 className="text-2xl font-black mb-2 leading-tight">{selectedConcept.name}</h2>
+                <p className="text-sm text-muted-foreground mb-6">{selectedConcept.description}</p>
+
+                <div className="grid grid-cols-2 gap-3 mb-8">
+                  <div className="p-4 rounded-xl bg-muted/40 border border-border/40">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Target className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Mastery</span>
+                    </div>
+                    <p className="text-xl font-black">{Math.round((masteryMap[selectedConcept.id] || 0) * 100)}%</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-muted/40 border border-border/40">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</span>
+                    </div>
+                    <p className="text-sm font-bold flex items-center gap-1.5">
+                      {isUnlocked(selectedConcept) ? (
+                        <>
+                          <Unlock className="w-3.5 h-3.5 text-emerald-500" />
+                          Unlocked
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5 text-rose-500" />
+                          Locked
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator className="mb-6 opacity-40" />
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Prerequisites</h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {JSON.parse(selectedConcept.prerequisites).length > 0 ? (
+                        JSON.parse(selectedConcept.prerequisites).map((p: string) => {
+                          const pConcept = allConcepts.find(c => c.name === p && c.subject === selectedConcept.subject);
+                          const mastered = pConcept && (masteryMap[pConcept.id] || 0) >= 0.7;
+                          return (
+                            <Badge key={p} variant="secondary" className={`text-[10px] gap-1 px-2 ${mastered ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
+                              {mastered ? <CheckCheck className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                              {p}
+                            </Badge>
+                          );
+                        })
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">None — This is a foundational concept.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {!isUnlocked(selectedConcept) && (
+                  <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/20 text-[11px] text-rose-600 dark:text-rose-400 mb-6">
+                    <p className="font-bold flex items-center gap-1.5 mb-1">
+                      <Lock className="w-3.5 h-3.5" /> Concept Locked
+                    </p>
+                    <p className="opacity-80">Master all prerequisites (≥70%) to unlock this learning module.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-muted/20 border-t border-border/40 mt-auto backdrop-blur-md">
+                <Button 
+                  className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20 gap-2"
+                  disabled={!isUnlocked(selectedConcept)}
+                  onClick={() => {
+                    // Navigate to learning session with this concept pre-selected if possible
+                    // For now, go to subjects page as per existing flow or subjects list
+                    setLocation("/subjects");
+                  }}
+                >
+                  {isUnlocked(selectedConcept) ? (
+                    <>
+                      Start Learning <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" /> Prerequisites Required
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

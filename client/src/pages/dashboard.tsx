@@ -16,10 +16,28 @@ import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface MisconceptionPattern {
+  type: string;
+  label: string;
+  emoji: string;
+  count: number;
+  concepts: string[];
+}
+
+interface Reflection {
+  id: number;
+  studentId: number;
+  conceptId: number;
+  content: string;
+  createdAt: string;
+  conceptName: string;
+}
 
 interface StudentStats {
   totalSessions: number;
@@ -125,6 +143,16 @@ export default function Dashboard() {
     queryKey: ["/api/classrooms"],
     enabled: !!student,
     queryFn: async () => (await apiRequest("GET", "/api/classrooms")).json(),
+  });
+
+  const { data: misconceptionHistory } = useQuery<MisconceptionPattern[]>({
+    queryKey: ["/api/students", student.id, "misconception-history"],
+    queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/misconception-history`)).json(),
+  });
+
+  const { data: reflections } = useQuery<Reflection[]>({
+    queryKey: ["/api/students", student.id, "reflections"],
+    queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/reflections`)).json(),
   });
 
   const subjects = ["Biology", "Math", "History", "Computer Science", "Physics", "Chemistry", "Economics"];
@@ -416,6 +444,99 @@ export default function Dashboard() {
               <div className="flex flex-col items-center justify-center h-[220px] gap-3">
                 <Brain className="w-10 h-10 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground text-center">Answer questions to visualize your cognitive progression.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── RECURRING MISCONCEPTIONS ── */}
+        <Card className="border border-border/50 mb-8 bg-amber-500/5">
+          <CardHeader className="pb-2 pt-5">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Brain className="w-4 h-4 text-amber-500" /> Recurring Patterns
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">AI-detected recurring cognitive gaps across your learning sessions.</p>
+          </CardHeader>
+          <CardContent className="pb-6">
+            {misconceptionHistory && misconceptionHistory.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <AnimatePresence>
+                  {misconceptionHistory.map((m, idx) => (
+                    <motion.div
+                      key={m.type}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="p-4 rounded-2xl bg-background/60 border border-amber-500/20 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl">
+                          {m.emoji}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm">{m.label}</h4>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Detected {m.count} times</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Seen in:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {m.concepts.slice(0, 3).map((c) => (
+                            <Badge key={c} variant="outline" className="text-[9px] py-0 px-1 bg-amber-500/5 border-amber-500/20">{c}</Badge>
+                          ))}
+                          {m.concepts.length > 3 && <span className="text-[9px] text-muted-foreground">+{m.concepts.length - 3} more</span>}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 gap-2">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500/50" />
+                <p className="text-sm text-muted-foreground text-center">
+                  {hasActivity ? "No recurring misconceptions detected. Keep up the consistent reasoning! 🎉" : "Start your first session to begin tracking your learning patterns."}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── LEARNING REFLECTIONS ── */}
+        <Card className="border border-border/50 mb-8 overflow-hidden">
+          <CardHeader className="pb-2 pt-5 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Quote className="w-4 h-4 text-primary" /> Learning Artifacts
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Metacognitive reflections captured during your moments of breakthrough.</p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {reflections && reflections.length > 0 ? (
+              <div className="divide-y divide-border/40 max-h-[400px] overflow-y-auto no-scrollbar">
+                {reflections.map((r, idx) => (
+                  <motion.div 
+                    key={r.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="p-5 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 text-[10px]">{r.conceptName}</Badge>
+                      <span className="text-[10px] text-muted-foreground">{new Date(r.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm italic text-foreground/80 leading-relaxed">"{r.content}"</p>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-60">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <Quote className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground text-center px-6">
+                  Reflections are captured when you make significant progress on a concept. Keep learning to build your artifact library!
+                </p>
               </div>
             )}
           </CardContent>
