@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import mermaid from "mermaid";
 import confetti from "canvas-confetti";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,6 +20,70 @@ import {
   Mic, MicOff, Search, Shuffle, MessageSquare, Layers
 } from "lucide-react";
 
+mermaid.initialize({ startOnLoad: false, theme: "default" });
+
+const MermaidChart = ({ chart }: { chart: string }) => {
+  const [svg, setSvg] = useState<string>("");
+  const id = useMemo(() => `mermaid-${Math.random().toString(36).substring(7)}`, []);
+  
+  useEffect(() => {
+    mermaid.render(id, chart).then(res => {
+      setSvg(res.svg);
+    }).catch(err => {
+      console.error("Mermaid error:", err);
+      setSvg(`<div class="text-red-500 text-sm">Failed to render diagram</div>`);
+    });
+  }, [chart, id]);
+  
+  return <div className="flex justify-center my-4 overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />;
+};
+
+const VoiceVisualizer = ({ isActive }: { isActive: boolean }) => {
+  return (
+    <AnimatePresence>
+      {isActive && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="flex items-center justify-center gap-1 mb-4 h-12"
+        >
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-1 bg-primary rounded-full"
+              animate={{
+                height: [
+                  "10%",
+                  `${Math.random() * 80 + 20}%`,
+                  `${Math.random() * 80 + 20}%`,
+                  "10%"
+                ]
+              }}
+              transition={{
+                duration: 0.6,
+                repeat: Infinity,
+                delay: i * 0.05,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const markdownComponents = {
+  code({node, inline, className, children, ...props}: any) {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'mermaid') {
+      return <MermaidChart chart={String(children).replace(/\n$/, '')} />;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  }
+};
+
 interface ScoreResult {
   interaction: Interaction;
   score: number;
@@ -28,6 +93,7 @@ interface ScoreResult {
   misconceptionType: string | null;
   misconceptionDetail: string | null;
   mastery: number;
+  bloomLevel?: string | null;
 }
 
 const MISCONCEPTION_META: Record<string, { label: string; emoji: string; color: string; bg: string; border: string; remediation: string }> = {
@@ -96,6 +162,10 @@ export default function LearningInterface() {
   const [explanation, setExplanation] = useState("");
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"intro" | "question" | "responding" | "feedback" | "complete">("intro");
+
+  const [socraticHistory, setSocraticHistory] = useState<{role: string, content: string}[]>([]);
+  const [socraticInput, setSocraticInput] = useState("");
+  const [isSocraticActive, setIsSocraticActive] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -243,6 +313,70 @@ export default function LearningInterface() {
     onSuccess: (data) => setExplanation(data.explanation),
   });
 
+  const socraticMutation = useMutation({
+    mutationFn: async (data: { history: any[], conceptName: string, misconception: string }) => {
+      const res = await apiRequest("POST", "/api/ai/socratic", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setSocraticHistory(prev => [...prev, { role: "assistant", content: data.message }]);
+    }
+  });
+
+  const handleStartSocratic = () => {
+    if (!currentConcept || !lastScore?.misconceptionType) return;
+    setIsSocraticActive(true);
+    setSocraticHistory([]);
+    socraticMutation.mutate({
+      history: [],
+      conceptName: currentConcept.name,
+      misconception: MISCONCEPTION_META[lastScore.misconceptionType]?.label || "Misconception"
+    });
+
+    // Notify teacher
+    if (classrooms && classrooms.length > 0) {
+      classroomSocket.send({
+        type: "student_update",
+        room: classrooms[0].code,
+        data: {
+          name: student?.name,
+          score: lastScore.score,
+          concept: currentConcept?.name,
+          misconception: lastScore.misconceptionType,
+          isSocraticActive: true
+        }
+      });
+    }
+  };
+
+  const handleSocraticSubmit = () => {
+    if (!socraticInput.trim() || !currentConcept || !lastScore?.misconceptionType) return;
+    const newHistory = [...socraticHistory, { role: "user", content: socraticInput }];
+    setSocraticHistory(newHistory);
+    setSocraticInput("");
+    socraticMutation.mutate({
+      history: newHistory,
+      conceptName: currentConcept.name,
+      misconception: MISCONCEPTION_META[lastScore.misconceptionType]?.label || "Misconception"
+    });
+
+    // Update teacher
+    if (classrooms && classrooms.length > 0) {
+      classroomSocket.send({
+        type: "student_update",
+        room: classrooms[0].code,
+        data: {
+          name: student?.name,
+          score: lastScore.score,
+          concept: currentConcept?.name,
+          misconception: lastScore.misconceptionType,
+          isSocraticActive: true,
+          socraticMessage: socraticInput
+        }
+      });
+    }
+  };
+
   const questionMutation = useMutation({
     mutationFn: async (data: { conceptName: string; subject: string; difficulty?: string }) => {
       const res = await apiRequest("POST", "/api/ai/question", data);
@@ -252,6 +386,11 @@ export default function LearningInterface() {
       setQuestion(data.question);
       setPhase("question");
     },
+    onError: (error: Error) => {
+      console.error("Question generation failed:", error);
+      setQuestion("Explain the key concepts of this topic in your own words.");
+      setPhase("question");
+    }
   });
 
   const currentConcept = concepts?.[currentConceptIndex];
@@ -283,6 +422,8 @@ export default function LearningInterface() {
         setLastScore(null);
         setExplanation("");
         setQuestion("");
+        setIsSocraticActive(false);
+        setSocraticHistory([]);
         return;
       }
       setCurrentConceptIndex(prev => prev + 1);
@@ -291,6 +432,8 @@ export default function LearningInterface() {
       setLastScore(null);
       setExplanation("");
       setQuestion("");
+      setIsSocraticActive(false);
+      setSocraticHistory([]);
     } else {
       setPhase("complete");
       apiRequest("POST", `/api/sessions/${sessionId}/end`);
@@ -301,6 +444,8 @@ export default function LearningInterface() {
     setResponse("");
     setLastScore(null);
     setPhase("question");
+    setIsSocraticActive(false);
+    setSocraticHistory([]);
     // Optionally get a new question
     if (currentConcept && session) {
       questionMutation.mutate({ conceptName: currentConcept.name, subject: session.subject, difficulty: "easy" });
@@ -415,7 +560,7 @@ export default function LearningInterface() {
                         <h3 className="flex items-center gap-2 text-md font-semibold mt-0 mb-2">
                           <BookOpen className="w-4 h-4 text-primary" /> Mini-Lesson
                         </h3>
-                        <ReactMarkdown>{currentConcept.idealExplanation}</ReactMarkdown>
+                        <ReactMarkdown components={markdownComponents}>{currentConcept.idealExplanation}</ReactMarkdown>
                       </div>
                     </div>
                   </div>
@@ -447,36 +592,51 @@ export default function LearningInterface() {
                     <div>
                       <h3 className="font-semibold mb-1">{currentConcept.name}</h3>
                       <div className="text-sm prose prose-sm dark:prose-invert max-w-none" data-testid="text-question">
-                        <ReactMarkdown>{question || `Explain the key concepts of ${currentConcept.name} in your own words.`}</ReactMarkdown>
+                        <ReactMarkdown components={markdownComponents}>{question || `Explain the key concepts of ${currentConcept.name} in your own words.`}</ReactMarkdown>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-3">
+                    <VoiceVisualizer isActive={isRecording} />
                     <Textarea
-                      data-testid="input-response"
                       placeholder="Type your explanation here... Be as detailed as you can!"
                       value={response}
                       onChange={e => setResponse(e.target.value)}
                       rows={5}
-                      className="resize-none"
+                      className={`resize-none transition-all duration-300 ${isRecording ? 'border-primary shadow-lg shadow-primary/20' : ''}`}
                       disabled={respondMutation.isPending}
                     />
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} words` : "Start typing or speaking..."}
+                      <span className="text-xs text-muted-foreground flex items-center gap-2">
+                        {isRecording && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+                        {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} words` : isRecording ? "Listening..." : "Start typing or speaking..."}
                       </span>
                       <div className="flex gap-2">
-                        <Button
-                          variant={isRecording ? "destructive" : "secondary"}
-                          onClick={toggleRecording}
-                          title={isRecording ? "Stop recording" : "Start recording"}
-                        >
-                          {isRecording ? <><MicOff className="w-4 h-4 mr-2" /> Stop</> : <><Mic className="w-4 h-4 mr-2" /> Speak</>}
-                        </Button>
+                        <div className="relative">
+                          <AnimatePresence>
+                            {isRecording && (
+                              <motion.div
+                                initial={{ scale: 1, opacity: 0.5 }}
+                                animate={{ scale: 1.5, opacity: 0 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                className="absolute inset-0 rounded-md bg-red-500 z-0"
+                              />
+                            )}
+                          </AnimatePresence>
+                          <Button
+                            variant={isRecording ? "destructive" : "secondary"}
+                            onClick={toggleRecording}
+                            title={isRecording ? "Stop recording" : "Start recording"}
+                            className="relative z-10"
+                          >
+                            {isRecording ? <><MicOff className="w-4 h-4 mr-2" /> Stop</> : <><Mic className="w-4 h-4 mr-2" /> Speak</>}
+                          </Button>
+                        </div>
                         <Button
                           data-testid="button-submit-response"
                           onClick={handleSubmitResponse}
-                          disabled={!response.trim() || respondMutation.isPending}
+                          disabled={!response.trim() || respondMutation.isPending || isRecording}
                         >
                           {respondMutation.isPending ? (
                             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scoring...</>
@@ -505,9 +665,9 @@ export default function LearningInterface() {
                             {Math.round(lastScore.score * 100)}%
                           </span>
                           <span className="text-sm text-muted-foreground">understanding</span>
-                          {lastScore.bloomLevel && (
-                            <Badge className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel]?.bg} ${BLOOMS_META[lastScore.bloomLevel]?.color} border-none text-[10px] uppercase font-black tracking-widest`}>
-                              {BLOOMS_META[lastScore.bloomLevel]?.label}
+                          {lastScore.bloomLevel && BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()] && (
+                            <Badge className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].bg} ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].color} border-none text-[10px] uppercase font-black tracking-widest`}>
+                              {BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].label}
                             </Badge>
                           )}
                         </div>
@@ -523,7 +683,7 @@ export default function LearningInterface() {
                     </div>
 
                     <div className="text-sm mb-4 prose prose-sm dark:prose-invert max-w-none" data-testid="text-feedback">
-                      <ReactMarkdown>{lastScore.feedback}</ReactMarkdown>
+                      <ReactMarkdown components={markdownComponents}>{lastScore.feedback}</ReactMarkdown>
                     </div>
 
                     {/* Misconception Diagnostic Card */}
@@ -619,7 +779,59 @@ export default function LearningInterface() {
                         <h4 className="font-semibold text-sm">AI Explanation</h4>
                       </div>
                       <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown>{explanation}</ReactMarkdown>
+                        <ReactMarkdown components={markdownComponents}>{explanation}</ReactMarkdown>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Socratic Chat UI */}
+                {isSocraticActive && (
+                  <Card className="border border-blue-500/30 bg-blue-500/5 mb-4" data-testid="card-socratic">
+                    <CardContent className="pt-5 pb-4 flex flex-col gap-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="w-4 h-4 text-blue-500" />
+                        <h4 className="font-semibold text-sm text-blue-600 dark:text-blue-400">Socratic Tutor</h4>
+                      </div>
+                      
+                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                        {socraticHistory.map((msg, i) => (
+                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`prose prose-sm dark:prose-invert max-w-none max-w-[85%] rounded-xl px-3 py-2 text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-blue-100 dark:bg-blue-900/40 text-foreground'}`}>
+                              <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+                            </div>
+                          </div>
+                        ))}
+                        {socraticMutation.isPending && (
+                          <div className="flex justify-start">
+                            <div className="max-w-[85%] rounded-xl px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/40 flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> <span className="text-muted-foreground text-xs italic">Tutor is typing...</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 mt-2">
+                        <Textarea 
+                          value={socraticInput}
+                          onChange={(e) => setSocraticInput(e.target.value)}
+                          placeholder="Reply to the tutor..."
+                          rows={2}
+                          className="resize-none min-h-[60px]"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSocraticSubmit();
+                            }
+                          }}
+                        />
+                        <Button 
+                          onClick={handleSocraticSubmit} 
+                          disabled={!socraticInput.trim() || socraticMutation.isPending}
+                          className="h-auto"
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -627,6 +839,11 @@ export default function LearningInterface() {
 
                 {/* Action buttons */}
                 <div className="flex gap-3">
+                  {lastScore.score < 0.7 && !isSocraticActive && lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION" && (
+                     <Button variant="default" onClick={handleStartSocratic} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-none" data-testid="button-socratic">
+                       <MessageSquare className="w-4 h-4 mr-2" /> Start Socratic Review
+                     </Button>
+                  )}
                   {lastScore.score < 0.6 && (
                     <Button variant="outline" onClick={handleRetry} className="flex-1" data-testid="button-retry">
                       Try a Simpler Question

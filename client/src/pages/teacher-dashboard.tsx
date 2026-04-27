@@ -407,7 +407,11 @@ export default function TeacherDashboard() {
                             key={idx}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="p-4 rounded-xl border border-border/50 bg-muted/20 flex flex-col gap-2"
+                            className={`p-4 rounded-xl border transition-all duration-500 ${
+                              update.isSocraticActive 
+                                ? "border-red-500/50 bg-red-500/5 shadow-[0_0_15px_rgba(239,68,68,0.1)] animate-pulse" 
+                                : "border-border/50 bg-muted/20"
+                            } flex flex-col gap-2`}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex flex-wrap items-center gap-2">
@@ -418,14 +422,21 @@ export default function TeacherDashboard() {
                                 <span className="text-xs text-muted-foreground whitespace-nowrap">just answered</span>
                                 <Badge variant="outline" className="text-[10px] py-0 shrink-0">{update.concept}</Badge>
                                 {update.bloomLevel && (
-                                  <Badge className={`text-[10px] py-0 border-none shrink-0 ${BLOOMS_MAP[update.bloomLevel]?.bg} ${BLOOMS_MAP[update.bloomLevel]?.color}`}>
-                                    {BLOOMS_MAP[update.bloomLevel]?.label}
+                                  <Badge className={`text-[10px] py-0 border-none shrink-0 ${BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.bg} ${BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.color}`}>
+                                    {BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.label}
+                                  </Badge>
+                                )}
+                                {update.isSocraticActive && (
+                                  <Badge className="bg-red-500 text-white text-[10px] py-0 px-1.5 animate-bounce">
+                                    INTERVENTION
                                   </Badge>
                                 )}
                               </div>
                               <ScorePill score={update.score} />
                             </div>
-                            <p className="text-sm italic text-muted-foreground">"{update.feedback}"</p>
+                            <p className="text-sm italic text-muted-foreground line-clamp-2">
+                              {update.isSocraticActive ? `“${update.socraticMessage || 'Starting Socratic review...'}”` : `“${update.feedback}”`}
+                            </p>
                             {update.misconception && update.misconception !== "NO_MISCONCEPTION" && (
                               <div className="mt-1 flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                                 <AlertTriangle className="w-3 h-3" />

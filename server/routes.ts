@@ -323,6 +323,7 @@ export async function registerRoutes(
         feedback: scoreResult.feedback,
         misconceptionType: scoreResult.misconceptionType || null,
         misconceptionDetail: scoreResult.misconceptionDetail || null,
+        bloomLevel: scoreResult.bloomLevel,
         mastery: newScore,
       });
     } catch (e: any) {
@@ -528,6 +529,38 @@ export async function registerRoutes(
       }
       const question = await generateQuestion(conceptName, subject, difficulty);
       res.json({ question });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/ai/socratic", requireAuth, async (req, res) => {
+    try {
+      const { history, conceptName, misconception } = req.body;
+      if (!conceptName || !history) {
+        return res.status(400).json({ message: "conceptName and history are required" });
+      }
+
+      if (!process.env.GROQ_API_KEY) {
+        return res.json({ message: "Socratic mode requires an active API key. Please check your setup." });
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a strict but encouraging Socratic tutor. The student is learning about "${conceptName}". They recently made a mistake classified as: ${misconception}.
+Your goal is to guide them to the correct understanding WITHOUT giving them the direct answer.
+Ask ONE guiding question to help them realize their mistake. Keep it very short (1-2 sentences). Do not be overly verbose.`
+          },
+          ...history.map((msg: any) => ({ role: msg.role, content: msg.content }))
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.6,
+        max_tokens: 150,
+      });
+
+      res.json({ message: completion.choices[0]?.message?.content || "Let's rethink this. What part are you most unsure about?" });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -795,7 +828,7 @@ async function generateExplanation(conceptName: string, subject?: string, studen
       messages: [
         {
           role: "system",
-          content: "You are a patient, encouraging tutor. Explain concepts clearly at the appropriate level. Use analogies and examples."
+          content: "You are a patient, encouraging tutor. Explain concepts clearly at the appropriate level. Use analogies and examples. YOU MUST include a Markdown code block with Mermaid.js syntax (```mermaid\n...\n```) to visually illustrate the concept. Keep the diagram simple but informative."
         },
         {
           role: "user",
@@ -859,7 +892,7 @@ async function generateDynamicConcept(subject: string, topic: string) {
   "name": "Concept Name",
   "subject": "Subject Name",
   "description": "A 1-sentence description.",
-  "idealExplanation": "A 2-3 sentence perfect explanation.",
+  "idealExplanation": "A detailed explanation. YOU MUST include a Mermaid.js diagram illustrating the concept using the markdown \`\`\`mermaid\\n...\\n\`\`\` syntax.",
   "prerequisites": "[\"Prereq 1\", \"Prereq 2\"]"
 }`
       },

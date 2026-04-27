@@ -32,7 +32,7 @@ export interface IStorage {
   getConceptByName(name: string, subject: string): Promise<Concept | undefined>;
   getConceptCount(): Promise<number>;
   createInteraction(interaction: InsertInteraction): Promise<Interaction>;
-  updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null): Promise<Interaction | undefined>;
+  updateInteraction(id: number, score: number, feedback: string, misconceptionType?: string | null, misconceptionDetail?: string | null, bloomsLevel?: string | null): Promise<Interaction | undefined>;
   getSessionInteractions(sessionId: number): Promise<Interaction[]>;
   getStudentInteractions(studentId: number): Promise<Interaction[]>;
   getMastery(studentId: number, conceptId: number): Promise<MasteryScore | undefined>;
