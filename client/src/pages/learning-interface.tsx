@@ -1104,18 +1104,22 @@ export default function LearningInterface() {
             {/* Feedback */}
             {phase === "feedback" && lastScore && (
               <div className="space-y-4">
-                {/* Score Card */}
+                {/* Score Header Card */}
                 <Card
-                  className="border border-border/60"
+                  className="border border-border/60 overflow-hidden"
                   data-testid="card-score"
                 >
                   <CardContent className="pt-6 pb-5">
                     <div className="flex items-center gap-4 mb-4">
-                      {scoreIcon(lastScore.score)}
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                        lastScore.score >= 0.7 ? "bg-emerald-500/10" : lastScore.score >= 0.4 ? "bg-amber-500/10" : "bg-rose-500/10"
+                      }`}>
+                        {scoreIcon(lastScore.score)}
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span
-                            className={`text-2xl font-bold ${scoreColor(lastScore.score)}`}
+                            className={`text-3xl font-black ${scoreColor(lastScore.score)}`}
                             data-testid="text-score"
                           >
                             {Math.round(lastScore.score * 100)}%
@@ -1124,17 +1128,11 @@ export default function LearningInterface() {
                             understanding
                           </span>
                           {lastScore.bloomLevel &&
-                            BLOOMS_META[
-                              lastScore.bloomLevel.trim().toUpperCase()
-                            ] && (
+                            BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()] && (
                               <Badge
                                 className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].bg} ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].color} border-none text-[10px] uppercase font-black tracking-widest`}
                               >
-                                {
-                                  BLOOMS_META[
-                                    lastScore.bloomLevel.trim().toUpperCase()
-                                  ].label
-                                }
+                                Bloom's: {BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].label}
                               </Badge>
                             )}
                         </div>
@@ -1149,114 +1147,114 @@ export default function LearningInterface() {
                       </div>
                     </div>
 
+                    {/* AI Feedback text */}
                     <div
-                      className="text-sm mb-4 prose prose-sm dark:prose-invert max-w-none"
+                      className="text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/30 rounded-xl p-4 border border-border/30"
                       data-testid="text-feedback"
                     >
                       <ReactMarkdown components={markdownComponents}>
                         {lastScore.feedback}
                       </ReactMarkdown>
                     </div>
-
-                    {/* Misconception Diagnostic Card */}
-                    {lastScore.misconceptionType &&
-                      lastScore.misconceptionType !== "NO_MISCONCEPTION" &&
-                      (() => {
-                        const mc =
-                          MISCONCEPTION_META[lastScore.misconceptionType] ||
-                          MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING;
-                        return (
-                          <div
-                            className={`rounded-xl border ${mc.border} ${mc.bg} p-4 mb-4`}
-                            data-testid="card-misconception"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="text-2xl leading-none mt-0.5">
-                                {mc.emoji}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span
-                                    className={`text-xs font-bold uppercase tracking-wider ${mc.color}`}
-                                  >
-                                    Misconception Detected
-                                  </span>
-                                </div>
-                                <h4 className={`font-bold text-sm ${mc.color}`}>
-                                  {mc.label}
-                                </h4>
-                                {lastScore.misconceptionDetail && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {lastScore.misconceptionDetail}
-                                  </p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-2 italic">
-                                  💡 {mc.remediation}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                    {lastScore.misconceptionType === "NO_MISCONCEPTION" && (
-                      <div
-                        className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 mb-4 flex items-center gap-3"
-                        data-testid="card-no-misconception"
-                      >
-                        <span className="text-xl">✅</span>
-                        <div>
-                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                            No Misconceptions Detected
-                          </span>
-                          <p className="text-xs text-muted-foreground">
-                            Your response demonstrates accurate conceptual
-                            understanding.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {lastScore.strengths.length > 0 && (
-                      <div className="mb-3">
-                        <h4 className="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-400 mb-1.5">
-                          Strengths
-                        </h4>
-                        <ul className="space-y-1">
-                          {lastScore.strengths.map((s, i) => (
-                            <li
-                              key={i}
-                              className="text-sm flex items-start gap-2"
-                            >
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {lastScore.gaps.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-semibold uppercase text-amber-600 dark:text-amber-400 mb-1.5">
-                          Areas to Improve
-                        </h4>
-                        <ul className="space-y-1">
-                          {lastScore.gaps.map((g, i) => (
-                            <li
-                              key={i}
-                              className="text-sm flex items-start gap-2"
-                            >
-                              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                              {g}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
+                {/* 4-Panel Diagnosis Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Panel 1: What You Understood */}
+                  <Card className="border-emerald-500/20 bg-emerald-500/5" data-testid="panel-strengths">
+                    <CardContent className="pt-4 pb-4 px-4">
+                      <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> What You Understood
+                      </p>
+                      <ul className="space-y-2">
+                        {lastScore.strengths.length > 0 ? lastScore.strengths.map((s, i) => (
+                          <li key={i} className="text-sm flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                            {s}
+                          </li>
+                        )) : (
+                          <li className="text-sm text-muted-foreground italic">Keep practicing to build understanding</li>
+                        )}
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  {/* Panel 2: What You Missed */}
+                  <Card className="border-rose-500/20 bg-rose-500/5" data-testid="panel-gaps">
+                    <CardContent className="pt-4 pb-4 px-4">
+                      <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <XCircle className="w-3.5 h-3.5" /> What You Missed
+                      </p>
+                      <ul className="space-y-2">
+                        {lastScore.gaps.length > 0 ? lastScore.gaps.map((g, i) => (
+                          <li key={i} className="text-sm flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                            {g}
+                          </li>
+                        )) : (
+                          <li className="text-sm text-muted-foreground italic">No gaps found — great work!</li>
+                        )}
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  {/* Panel 3: Why This Matters (Misconception) */}
+                  {(() => {
+                    const mc = lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION"
+                      ? (MISCONCEPTION_META[lastScore.misconceptionType] || MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING)
+                      : MISCONCEPTION_META.NO_MISCONCEPTION;
+                    const hasMisconception = lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION";
+                    return (
+                      <Card className={`border ${mc.border} ${mc.bg}`} data-testid="panel-misconception">
+                        <CardContent className="pt-4 pb-4 px-4">
+                          <p className={`text-[10px] font-black uppercase tracking-wider mb-2.5 flex items-center gap-1.5 ${mc.color}`}>
+                            <Target className="w-3.5 h-3.5" /> {hasMisconception ? "Misconception Detected" : "Diagnosis"}
+                          </p>
+                          {hasMisconception ? (
+                            <>
+                              <p className={`text-sm font-bold ${mc.color} mb-1`}>{mc.emoji} {mc.label}</p>
+                              {lastScore.misconceptionDetail && (
+                                <p className="text-sm text-muted-foreground leading-relaxed">{lastScore.misconceptionDetail}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2 italic">💡 {mc.remediation}</p>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">✅</span>
+                              <div>
+                                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No Misconceptions</p>
+                                <p className="text-xs text-muted-foreground">Accurate conceptual understanding demonstrated.</p>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+
+                  {/* Panel 4: Your Next Best Activity */}
+                  <Card className="border-primary/20 bg-primary/5" data-testid="panel-next-activity">
+                    <CardContent className="pt-4 pb-4 px-4">
+                      <p className="text-[10px] font-black text-primary uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <Lightbulb className="w-3.5 h-3.5" /> Your Next Best Activity
+                      </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {lastScore.score >= 0.7
+                          ? "🎯 You've mastered this! The system will advance you to the next concept with a harder question."
+                          : lastScore.score >= 0.4
+                          ? "🔄 Good start! Try the Socratic tutor below to address your specific gap, then retry with an easier question."
+                          : "📖 Let's go back to basics. An AI explanation is being generated, and you'll get a simpler question to rebuild your understanding."}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Explanation, Socratic Tutor & Actions — shown during feedback phase */}
+            {phase === "feedback" && lastScore && (
+              <div className="space-y-4">
                 {/* AI Explanation — auto-triggered for low scores, manual button otherwise */}
                 {!explanation && (!lastScore || lastScore.score >= 0.5) && (
                   <Button
@@ -1374,7 +1372,6 @@ export default function LearningInterface() {
                           <Send className="w-4 h-4" />
                         </Button>
                       </div>
-                      {/* Step 11: Socratic exit button */}
                       <Button
                         variant="ghost"
                         size="sm"

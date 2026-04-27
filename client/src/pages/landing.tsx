@@ -264,6 +264,14 @@ export default function Landing() {
             className="flex items-center gap-3"
           >
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/demo")}
+              className="font-semibold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              See It Work
+            </Button>
+            <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsLogin(true)}
