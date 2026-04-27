@@ -171,9 +171,6 @@ export default function SubjectSelection() {
             <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-dashboard">
               Dashboard
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }} className="text-muted-foreground hover:text-foreground">
-              <LogOut className="w-4 h-4 mr-1" /> Sign Out
-            </Button>
           </div>
         </div>
 

@@ -167,9 +167,6 @@ export default function Dashboard() {
             <Button size="sm" onClick={() => setLocation("/subjects")} className="shrink-0">
               <BookOpen className="w-4 h-4 mr-1.5" /> Continue Learning
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }} className="text-muted-foreground shrink-0">
-              <LogOut className="w-4 h-4" />
-            </Button>
           </div>
         </div>
 
@@ -329,10 +326,11 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="pb-6 px-6 pt-2">
-             <div className="h-[220px] w-full">
+            {stats?.recentInteractions && stats.recentInteractions.length > 0 ? (
+              <div className="h-[220px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart 
-                    data={(stats?.recentInteractions || []).map((i, idx) => ({
+                    data={(stats.recentInteractions).map((i, idx) => ({
                       index: idx + 1,
                       level: BLOOMS_VALUE_MAP[i.bloomsLevel?.trim().toUpperCase() || 'UNDERSTANDING'] || 2,
                       label: i.bloomsLevel || 'Understanding'
@@ -373,15 +371,21 @@ export default function Dashboard() {
                     <Line 
                       type="stepAfter" 
                       dataKey="level" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={4} 
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4, stroke: 'hsl(var(--background))' }}
+                      stroke="hsl(239 84% 67%)" 
+                      strokeWidth={3} 
+                      dot={{ fill: 'hsl(239 84% 67%)', r: 4, strokeWidth: 2, stroke: 'white' }} 
                       activeDot={{ r: 6, strokeWidth: 0 }}
                       animationDuration={2000}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[220px] gap-3">
+                <Brain className="w-10 h-10 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground text-center">Answer questions to visualize your cognitive progression.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

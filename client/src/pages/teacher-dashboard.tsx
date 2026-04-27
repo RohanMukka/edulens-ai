@@ -322,13 +322,6 @@ export default function TeacherDashboard() {
               Welcome back{student?.name ? `, ${student.name}` : ""}. Here's how your students are doing.
             </p>
           </div>
-          <Button
-            variant="ghost" size="sm"
-            onClick={() => { logout(); setLocation("/"); }}
-            className="text-muted-foreground self-start sm:self-auto"
-          >
-            <LogOut className="w-4 h-4 mr-1.5" /> Sign Out
-          </Button>
         </div>
 
         {/* ── STATS ROW ── */}
