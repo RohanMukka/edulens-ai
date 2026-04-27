@@ -22,6 +22,7 @@ export interface IStorage {
   createStudent(student: InsertStudent): Promise<Student>;
   getStudent(id: number): Promise<Student | undefined>;
   getStudentByEmail(email: string): Promise<Student | undefined>;
+  getStudentIdsByEmail(email: string): Promise<number[]>;
   createSession(session: InsertSession): Promise<Session>;
   getSession(id: number): Promise<Session | undefined>;
   getStudentSessions(studentId: number): Promise<Session[]>;
@@ -68,6 +69,11 @@ export class DatabaseStorage implements IStorage {
   async getStudentByEmail(email: string): Promise<Student | undefined> {
     const [res] = await db.select().from(students).where(eq(students.email, email));
     return res;
+  }
+
+  async getStudentIdsByEmail(email: string): Promise<number[]> {
+    const res = await db.select({ id: students.id }).from(students).where(eq(students.email, email));
+    return res.map(s => s.id);
   }
 
   async createSession(session: InsertSession): Promise<Session> {

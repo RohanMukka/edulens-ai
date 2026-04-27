@@ -368,8 +368,24 @@ export async function registerRoutes(
   // === Student ===
   app.get("/api/students/:id/mastery", requireStudentOrEducator, async (req, res) => {
     try {
-      const mastery = await storage.getStudentMastery(Number(req.params.id));
-      res.json(mastery);
+      const student = await storage.getStudent(Number(req.params.id));
+      if (!student) return res.status(404).json({ message: "Student not found" });
+      const allIds = await storage.getStudentIdsByEmail(student.email);
+      
+      const allMastery = [];
+      for (const sid of allIds) {
+        allMastery.push(...await storage.getStudentMastery(sid));
+      }
+      
+      // Merge mastery: for each concept, keep the one with the highest score
+      const mergedMap = new Map<number, any>();
+      for (const m of allMastery) {
+        if (!mergedMap.has(m.conceptId) || mergedMap.get(m.conceptId).score < m.score) {
+          mergedMap.set(m.conceptId, m);
+        }
+      }
+      
+      res.json(Array.from(mergedMap.values()));
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -377,8 +393,19 @@ export async function registerRoutes(
 
   app.get("/api/students/:id/history", requireStudentOrEducator, async (req, res) => {
     try {
-      const sessions = await storage.getStudentSessions(Number(req.params.id));
-      res.json(sessions);
+      const student = await storage.getStudent(Number(req.params.id));
+      if (!student) return res.status(404).json({ message: "Student not found" });
+      const allIds = await storage.getStudentIdsByEmail(student.email);
+      
+      const allSessions = [];
+      for (const sid of allIds) {
+        allSessions.push(...await storage.getStudentSessions(sid));
+      }
+      
+      // Sort by startedAt descending
+      allSessions.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+      
+      res.json(allSessions);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -387,23 +414,45 @@ export async function registerRoutes(
   app.get("/api/students/:id/stats", requireStudentOrEducator, async (req, res) => {
     try {
       const studentId = Number(req.params.id);
-      const sessions = await storage.getStudentSessions(studentId);
-      const mastery = await storage.getStudentMastery(studentId);
-      const interactions = await storage.getStudentInteractions(studentId);
+      const student = await storage.getStudent(studentId);
+      if (!student) return res.status(404).json({ message: "Student not found" });
+      const allIds = await storage.getStudentIdsByEmail(student.email);
+      
+      const allSessions = [];
+      const allMastery = [];
+      const allInteractions = [];
+      
+      for (const sid of allIds) {
+        allSessions.push(...await storage.getStudentSessions(sid));
+        allMastery.push(...await storage.getStudentMastery(sid));
+        allInteractions.push(...await storage.getStudentInteractions(sid));
+      }
 
-      const totalSessions = sessions.length;
-      const totalInteractions = interactions.length;
-      const avgScore = interactions.length > 0
-        ? interactions.reduce((sum, i) => sum + (i.score || 0), 0) / interactions.length
+      const totalSessions = allSessions.length;
+      const totalInteractions = allInteractions.length;
+      const avgScore = allInteractions.length > 0
+        ? allInteractions.reduce((sum, i) => sum + (i.score || 0), 0) / allInteractions.length
         : 0;
-      const conceptsMastered = mastery.filter(m => m.score >= 0.7).length;
-      const totalConcepts = mastery.length;
-      const weakAreas = await Promise.all(mastery
-        .filter(m => m.score < 0.5)
-        .map(async m => {
-          const concept = await storage.getConcept(m.conceptId);
-          return { conceptId: m.conceptId, name: concept?.name || "Unknown", score: m.score };
-        }));
+        
+      // Aggregate mastery by concept
+      const conceptMastery = new Map<number, number>();
+      for (const m of allMastery) {
+        if (!conceptMastery.has(m.conceptId) || conceptMastery.get(m.conceptId)! < m.score) {
+          conceptMastery.set(m.conceptId, m.score);
+        }
+      }
+      
+      const conceptsMastered = Array.from(conceptMastery.values()).filter(score => score >= 0.7).length;
+      const totalConcepts = conceptMastery.size;
+      
+      const weakAreas = await Promise.all(
+        Array.from(conceptMastery.entries())
+          .filter(([_, score]) => score < 0.5)
+          .map(async ([conceptId, score]) => {
+            const concept = await storage.getConcept(conceptId);
+            return { conceptId, name: concept?.name || "Unknown", score };
+          })
+      );
 
       res.json({
         totalSessions,
@@ -412,12 +461,12 @@ export async function registerRoutes(
         conceptsMastered,
         totalConcepts,
         weakAreas,
-        recentSessions: sessions.slice(0, 5),
-        recentInteractions: interactions.slice(-20),
+        recentSessions: allSessions.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()).slice(0, 5),
+        recentInteractions: allInteractions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 20).reverse(),
         currentStreak: (() => {
-          if (interactions.length === 0) return 0;
+          if (allInteractions.length === 0) return 0;
           
-          const dates = Array.from(new Set(interactions.map(i => i.createdAt.split('T')[0]))).sort().reverse();
+          const dates = Array.from(new Set(allInteractions.map(i => i.createdAt.split('T')[0]))).sort().reverse();
           const today = new Date().toISOString().split('T')[0];
           const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
           
@@ -438,7 +487,13 @@ export async function registerRoutes(
           return streak;
         })(),
         classPercentile: await (async () => {
-          const studentClassrooms = await storage.getStudentClassrooms(studentId);
+          // Percentile based on the first classroom found for ANY of the student's records
+          let studentClassrooms: any[] = [];
+          for (const sid of allIds) {
+            const rooms = await storage.getStudentClassrooms(sid);
+            studentClassrooms.push(...rooms);
+          }
+          
           if (studentClassrooms.length === 0) return null;
           
           const classroom = studentClassrooms[0];
@@ -446,18 +501,27 @@ export async function registerRoutes(
           if (classStudents.length < 2) return null;
 
           const studentAverages = await Promise.all(classStudents.map(async s => {
+            // Each student in class might also have duplicates, but we simplify for performance
             const m = await storage.getStudentMastery(s.id);
             const avg = m.length > 0 ? m.reduce((sum, curr) => sum + curr.score, 0) / m.length : 0;
-            return { id: s.id, avg };
+            return { id: s.id, avg, email: s.email };
           }));
 
-          studentAverages.sort((a, b) => b.avg - a.avg);
-          const rank = studentAverages.findIndex(s => s.id === studentId);
-          if (rank === -1) return null;
+          // Group class averages by email to avoid counting duplicates in percentile
+          const emailAverages = new Map<string, number>();
+          for (const sa of studentAverages) {
+            const email = sa.email.toLowerCase().trim();
+            if (!emailAverages.has(email) || emailAverages.get(email)! < sa.avg) {
+              emailAverages.set(email, sa.avg);
+            }
+          }
+
+          const sortedAverages = Array.from(emailAverages.values()).sort((a, b) => b - a);
+          const studentAvg = emailAverages.get(student.email.toLowerCase().trim()) || 0;
+          const rank = sortedAverages.indexOf(studentAvg);
           
-          // Percentile = ((Total - Rank) / Total) * 100
-          // e.g. Rank 0 in class of 10 = Top 10% (technically 100th percentile)
-          return Math.round(((classStudents.length - rank) / classStudents.length) * 100);
+          if (rank === -1) return null;
+          return Math.round(((sortedAverages.length - rank) / sortedAverages.length) * 100);
         })(),
       });
     } catch (e: any) {
