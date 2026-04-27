@@ -156,6 +156,11 @@ export async function registerRoutes(
     next();
   };
 
+  // === Health Check ===
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // === Auth ===
   app.post("/api/auth/register", async (req, res) => {
     try {

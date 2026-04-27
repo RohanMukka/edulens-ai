@@ -53,7 +53,12 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createStudent(student: InsertStudent): Promise<Student> {
-    const [res] = await db.insert(students).values({ ...student, createdAt: new Date().toISOString() }).returning();
+    const normalizedEmail = student.email.toLowerCase().trim();
+    const [res] = await db.insert(students).values({ 
+      ...student, 
+      email: normalizedEmail,
+      createdAt: new Date().toISOString() 
+    }).returning();
     return res;
   }
 
@@ -67,12 +72,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentByEmail(email: string): Promise<Student | undefined> {
-    const [res] = await db.select().from(students).where(eq(students.email, email));
+    const normalizedEmail = email.toLowerCase().trim();
+    const [res] = await db.select().from(students).where(eq(students.email, normalizedEmail));
     return res;
   }
 
   async getStudentIdsByEmail(email: string): Promise<number[]> {
-    const res = await db.select({ id: students.id }).from(students).where(eq(students.email, email));
+    const normalizedEmail = email.toLowerCase().trim();
+    const res = await db.select({ id: students.id }).from(students).where(eq(students.email, normalizedEmail));
     return res.map(s => s.id);
   }
 
