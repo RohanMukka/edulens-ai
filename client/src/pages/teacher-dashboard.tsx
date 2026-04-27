@@ -266,25 +266,32 @@ export default function TeacherDashboard() {
   });
 
   const handleCreateClassroom = async () => {
-    if (!newClassName.trim()) return;
+    const name = newClassName.trim();
+    if (!name) return;
+    
     setCreating(true);
     try {
-      await apiRequest("POST", "/api/classrooms", { name: newClassName });
+      const res = await apiRequest("POST", "/api/classrooms", { name });
+      if (!res.ok) throw new Error("Failed to create classroom");
+      
       setNewClassName("");
       qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
       qc.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      
       toast({
-        title: "Classroom Created",
-        description: "Your new classroom has been created successfully.",
+        title: "Success",
+        description: `Classroom "${name}" created successfully!`,
       });
     } catch (e: any) {
+      console.error("Creation error:", e);
       toast({
         title: "Creation Failed",
-        description: e.message,
+        description: e.message || "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const handleJoinClassroom = async () => {
@@ -550,8 +557,8 @@ export default function TeacherDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
-                  {students && students.length > 0 ? students.map((s) => (
-                    <tr key={s.id} className="hover:bg-muted/20 transition-colors">
+                  {students && students.length > 0 ? students.map((s, idx) => (
+                    <tr key={`${s.id}-${idx}`} className="hover:bg-muted/20 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

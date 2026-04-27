@@ -70,15 +70,41 @@ const MermaidChart = ({ chart }: { chart: string }) => {
   );
 
   useEffect(() => {
+    if (!chart) return;
+
+    // Sanitize Mermaid chart text
+    let sanitizedChart = chart.trim();
+    
+    // 1. Ensure it starts with a valid graph type if missing
+    if (!sanitizedChart.startsWith("graph") && 
+        !sanitizedChart.startsWith("flowchart") && 
+        !sanitizedChart.startsWith("sequenceDiagram") && 
+        !sanitizedChart.startsWith("classDiagram") && 
+        !sanitizedChart.startsWith("stateDiagram") && 
+        !sanitizedChart.startsWith("erDiagram") && 
+        !sanitizedChart.startsWith("gantt") && 
+        !sanitizedChart.startsWith("pie")) {
+      sanitizedChart = "graph TD\n" + sanitizedChart;
+    }
+
+    // 2. Try to fix unquoted labels that contain common special chars but spaces
+    // This is a naive attempt to wrap node labels in quotes if the AI forgot
+    // e.g. A[Label with space] -> A["Label with space"]
+    sanitizedChart = sanitizedChart.replace(/\[([^"\]\n]+)\]/g, '["$1"]');
+    sanitizedChart = sanitizedChart.replace(/\(([^" \)\n]+)\)/g, '("$1")');
+
     mermaid
-      .render(id, chart)
+      .render(id, sanitizedChart)
       .then((res) => {
         setSvg(res.svg);
       })
       .catch((err) => {
         console.error("Mermaid error:", err);
         setSvg(
-          `<div class="text-red-500 text-sm">Failed to render diagram</div>`,
+          `<div class="text-rose-500/80 text-xs bg-rose-500/5 border border-rose-500/10 rounded-lg p-3 flex items-center justify-center gap-2">
+             <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+             Failed to render diagram
+           </div>`,
         );
       });
   }, [chart, id]);

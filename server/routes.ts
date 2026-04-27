@@ -470,7 +470,14 @@ export async function registerRoutes(
     try {
       const { name } = req.body;
       if (!name) return res.status(400).json({ message: "Classroom name is required" });
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      // Robust 6-char alphanumeric code generation
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed ambiguous chars like 0, O, 1, I
+      let code = "";
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
       const classroom = await storage.createClassroom({ name, teacherId: req.session.studentId!, code });
       res.json(classroom);
     } catch (e: any) {
@@ -527,26 +534,63 @@ export async function registerRoutes(
         allStudents = allStudents.concat(students);
       }
       
-      const uniqueStudentsMap = new Map();
-      allStudents.forEach(s => uniqueStudentsMap.set(s.id, s));
-      const uniqueStudents = Array.from(uniqueStudentsMap.values());
+      // De-duplicate by email (case-insensitive) to handle multiple accounts/bad data
+      // and aggregate their stats if they have multiple records
+      const studentGroups = new Map<string, { student: any; stats: any[] }>();
+      
+      for (const s of allStudents) {
+        // Only include actual students in the roster, not educators who might have joined
+        if (s.role === "educator") continue;
 
-      const studentStats = await Promise.all(uniqueStudents.map(async (s) => {
+        const email = s.email.toLowerCase().trim();
+        if (!studentGroups.has(email)) {
+          studentGroups.set(email, { student: s, stats: [] });
+        }
+        
         const mastery = await storage.getStudentMastery(s.id);
         const interactions = await storage.getStudentInteractions(s.id);
-        const avgScore = interactions.length > 0 
-          ? interactions.reduce((sum, i) => sum + (i.score || 0), 0) / interactions.length 
-          : 0;
+        
+        studentGroups.get(email)!.stats.push({
+          interactions,
+          mastery
+        });
+      }
+
+      const aggregatedStats = Array.from(studentGroups.values()).map(({ student, stats }) => {
+        const totalInteractions = stats.reduce((sum, s) => sum + s.interactions.length, 0);
+        
+        // Average score across all interactions for all records with this email
+        let totalScore = 0;
+        let totalCount = 0;
+        stats.forEach(s => {
+          s.interactions.forEach((i: any) => {
+            if (i.score !== null) {
+              totalScore += i.score;
+              totalCount++;
+            }
+          });
+        });
+        const avgScore = totalCount > 0 ? totalScore / totalCount : 0;
+        
+        // Mastery count: unique concept IDs mastered across all records
+        const masteredConcepts = new Set<number>();
+        stats.forEach(s => {
+          s.mastery.forEach((m: any) => {
+            if (m.score >= 0.7) masteredConcepts.add(m.conceptId);
+          });
+        });
+
         return {
-          id: s.id,
-          name: s.name,
-          email: s.email,
-          totalInteractions: interactions.length,
+          id: student.id, // Use the primary ID for UI keying
+          name: student.name,
+          email: student.email,
+          totalInteractions,
           avgScore,
-          masteryCount: mastery.filter(m => m.score >= 0.7).length
+          masteryCount: masteredConcepts.size
         };
-      }));
-      res.json(studentStats);
+      });
+
+      res.json(aggregatedStats);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -941,7 +985,7 @@ async function generateExplanation(conceptName: string, subject?: string, studen
       messages: [
         {
           role: "system",
-          content: "You are a patient, encouraging tutor. Explain concepts clearly at the appropriate level. Use analogies and examples. YOU MUST include a Markdown code block with Mermaid.js syntax (```mermaid\n...\n```) to visually illustrate the concept. Keep the diagram simple but informative."
+          content: "You are a patient, encouraging tutor. Explain concepts clearly at the appropriate level. Use analogies and examples. YOU MUST include a Markdown code block with Mermaid.js syntax (```mermaid\n...\n```) to visually illustrate the concept. Keep the diagram simple. IMPORTANT: Use simple alphanumeric IDs for nodes and ALWAYS wrap labels in double quotes (e.g. A[\"Label\"]) to avoid syntax errors with special characters."
         },
         {
           role: "user",
@@ -1005,9 +1049,9 @@ async function generateDynamicConcept(subject: string, topic: string) {
   "name": "Concept Name",
   "subject": "Subject Name",
   "description": "A 1-sentence description.",
-  "idealExplanation": "A detailed explanation. YOU MUST include a Mermaid.js diagram illustrating the concept using the markdown \`\`\`mermaid\\n...\\n\`\`\` syntax.",
+  "idealExplanation": "A detailed explanation. YOU MUST include a Mermaid.js diagram illustrating the concept using the markdown \`\`\`mermaid\\n...\\n\`\`\` syntax. IMPORTANT: Use simple alphanumeric IDs for nodes and ALWAYS wrap labels in double quotes (e.g. A[\"Label\"]) to avoid syntax errors with special characters.",
   "prerequisites": "[\"Prereq 1\", \"Prereq 2\"]"
-}`
+} `
       },
       {
         role: "user",
