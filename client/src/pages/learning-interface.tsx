@@ -596,6 +596,12 @@ export default function LearningInterface() {
                 <span className="text-sm text-muted-foreground">
                   {currentConceptIndex + 1} of {totalConcepts}
                 </span>
+                {classrooms && classrooms.length > 0 && (
+                  <div className="flex items-center gap-1.5 ml-3 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Live Feed</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

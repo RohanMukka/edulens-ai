@@ -12,11 +12,11 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
   LineChart, Line, CartesianGrid
 } from "recharts";
-import type { MasteryScore, Concept } from "@shared/schema";
+import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical,
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users
 } from "lucide-react";
 
 interface StudentStats {
@@ -93,6 +93,12 @@ export default function Dashboard() {
   const { data: mastery } = useQuery<MasteryScore[]>({
     queryKey: ["/api/students", student.id, "mastery"],
     queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/mastery`)).json(),
+  });
+
+  const { data: classrooms } = useQuery<Classroom[]>({
+    queryKey: ["/api/classrooms"],
+    enabled: !!student,
+    queryFn: async () => (await apiRequest("GET", "/api/classrooms")).json(),
   });
 
   const subjects = ["Biology", "Math", "History", "Computer Science", "Physics", "Chemistry", "Economics"];
@@ -461,6 +467,28 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ── CLASSROOM STATUS ── */}
+        {classrooms && classrooms.length > 0 && (
+          <Card className="border border-border/50 mb-8 bg-emerald-500/5">
+            <CardHeader className="pb-2 pt-5">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="w-4 h-4 text-emerald-500" /> Joined Classrooms
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-5">
+              <div className="flex flex-wrap gap-3">
+                {classrooms.map(c => (
+                  <div key={c.id} className="flex items-center gap-2 bg-background/60 border border-emerald-500/20 rounded-xl px-4 py-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-sm font-bold">{c.name}</span>
+                    <Badge variant="outline" className="text-[10px] uppercase tracking-tighter opacity-70">{c.code}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── TROPHY CASE ── */}
         <Card className="border border-border/50 bg-gradient-to-r from-amber-500/5 via-background to-background">
