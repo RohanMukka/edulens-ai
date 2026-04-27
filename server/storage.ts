@@ -49,6 +49,8 @@ export interface IStorage {
   joinClassroom(studentId: number, classroomId: number): Promise<ClassroomStudent>;
   getStudentClassrooms(studentId: number): Promise<Classroom[]>;
   getClassroomStudents(classroomId: number): Promise<Student[]>;
+  deleteClassroom(id: number): Promise<void>;
+  leaveClassroom(studentId: number, classroomId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -239,6 +241,22 @@ export class DatabaseStorage implements IStorage {
       if (student) studentsList.push(student);
     }
     return studentsList;
+  }
+
+  async deleteClassroom(id: number): Promise<void> {
+    // Delete student associations first
+    await db.delete(classroomStudents).where(eq(classroomStudents.classroomId, id));
+    // Delete the classroom
+    await db.delete(classrooms).where(eq(classrooms.id, id));
+  }
+
+  async leaveClassroom(studentId: number, classroomId: number): Promise<void> {
+    await db.delete(classroomStudents).where(
+      and(
+        eq(classroomStudents.studentId, studentId),
+        eq(classroomStudents.classroomId, classroomId)
+      )
+    );
   }
 }
 

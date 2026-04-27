@@ -157,8 +157,19 @@ export async function registerRoutes(
   };
 
   // === Health Check ===
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  app.get("/api/health", async (_req, res) => {
+    try {
+      // Test DB connection
+      const conceptCount = await storage.getConceptCount();
+      res.json({ 
+        status: "ok", 
+        db: "connected",
+        concepts: conceptCount,
+        timestamp: new Date().toISOString() 
+      });
+    } catch (e: any) {
+      res.status(500).json({ status: "error", message: e.message });
+    }
   });
 
   // === Auth ===
@@ -562,6 +573,31 @@ export async function registerRoutes(
       if (!classroom) return res.status(404).json({ message: "Invalid classroom code" });
       const joined = await storage.joinClassroom(req.session.studentId!, classroom.id);
       res.json(joined);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/classrooms/:id", requireEducator, async (req, res) => {
+    try {
+      const classroomId = Number(req.params.id);
+      // Verify ownership
+      const teacherClassrooms = await storage.getTeacherClassrooms(req.session.studentId!);
+      if (!teacherClassrooms.some(c => c.id === classroomId)) {
+        return res.status(403).json({ message: "You don't have permission to delete this classroom" });
+      }
+      await storage.deleteClassroom(classroomId);
+      res.json({ message: "Classroom deleted successfully" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/classrooms/leave/:id", requireAuth, async (req, res) => {
+    try {
+      const classroomId = Number(req.params.id);
+      await storage.leaveClassroom(req.session.studentId!, classroomId);
+      res.json({ message: "Left classroom successfully" });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

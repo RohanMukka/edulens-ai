@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Users, GraduationCap, Activity, LogOut, Plus, Copy,
   ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck, AlertTriangle,
-  Flame, Brain
+  Flame, Brain, Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
@@ -316,6 +316,52 @@ export default function TeacherDashboard() {
     setJoining(false);
   };
 
+  const handleDeleteClassroom = async (id: number, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? All student progress links for this specific classroom record will be disconnected.`)) return;
+    
+    try {
+      const res = await apiRequest("DELETE", `/api/classrooms/${id}`);
+      if (!res.ok) throw new Error("Failed to delete classroom");
+      
+      qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
+      qc.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      
+      toast({
+        title: "Classroom Deleted",
+        description: `Successfully removed "${name}".`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Delete Failed",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLeaveClassroom = async (id: number, name: string) => {
+    if (!confirm(`Leave "${name}"?`)) return;
+    
+    try {
+      const res = await apiRequest("DELETE", `/api/classrooms/leave/${id}`);
+      if (!res.ok) throw new Error("Failed to leave classroom");
+      
+      qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
+      qc.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      
+      toast({
+        title: "Left Classroom",
+        description: `You are no longer enrolled in "${name}".`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCopy = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopied(code);
@@ -445,11 +491,21 @@ export default function TeacherDashboard() {
                       <div key={c.id} className="p-4 border border-border/40 rounded-2xl bg-muted/20 backdrop-blur-sm group hover:border-primary/30 transition-all">
                         <div className="flex items-center justify-between mb-3">
                           <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{c.name}</p>
-                          {c.isOwner ? (
-                            <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-none">Owner</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px]">Joined</Badge>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {c.isOwner ? (
+                              <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-none">Owner</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px]">Joined</Badge>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => c.isOwner ? handleDeleteClassroom(c.id, c.name) : handleLeaveClassroom(c.id, c.name)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between bg-background/60 rounded-xl px-3 py-2 border border-border/30">
                           <code className="text-xl font-black tracking-[0.3em] text-primary">{c.code}</code>

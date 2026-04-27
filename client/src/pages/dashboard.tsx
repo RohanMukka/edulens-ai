@@ -16,8 +16,10 @@ import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface StudentStats {
   totalSessions: number;
@@ -82,6 +84,30 @@ function ProgressRing({ pct, size = 120, stroke = 10, color = "#6366f1" }: { pct
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { student, logout } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const handleLeaveClassroom = async (id: number, name: string) => {
+    if (!confirm(`Are you sure you want to leave "${name}"?`)) return;
+    
+    try {
+      const res = await apiRequest("DELETE", `/api/classrooms/leave/${id}`);
+      if (!res.ok) throw new Error("Failed to leave classroom");
+      
+      qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
+      
+      toast({
+        title: "Left Classroom",
+        description: `You have unenrolled from "${name}".`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!student) { setLocation("/"); return null; }
 
@@ -479,10 +505,18 @@ export default function Dashboard() {
             <CardContent className="pb-5">
               <div className="flex flex-wrap gap-3">
                 {classrooms.map(c => (
-                  <div key={c.id} className="flex items-center gap-2 bg-background/60 border border-emerald-500/20 rounded-xl px-4 py-2">
+                  <div key={c.id} className="flex items-center gap-2 bg-background/60 border border-emerald-500/20 rounded-xl px-4 py-2 group">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-sm font-bold">{c.name}</span>
                     <Badge variant="outline" className="text-[10px] uppercase tracking-tighter opacity-70">{c.code}</Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleLeaveClassroom(c.id, c.name)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 ))}
               </div>
