@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import { ErrorBoundary } from "@/components/error-boundary";
 import Landing from "@/pages/landing";
 import SubjectSelection from "@/pages/subject-selection";
 import LearningInterface from "@/pages/learning-interface";
@@ -34,6 +35,7 @@ function AppRouter() {
 
 function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
@@ -46,6 +48,7 @@ function App() {
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

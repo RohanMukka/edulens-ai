@@ -10,7 +10,7 @@ import {
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, count, sql } from "drizzle-orm";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/edulens",
@@ -109,8 +109,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConceptCount(): Promise<number> {
-    const res = await db.select().from(concepts);
-    return res.length;
+    const [res] = await db.select({ count: count() }).from(concepts);
+    return res?.count ?? 0;
   }
 
   async createInteraction(interaction: InsertInteraction): Promise<Interaction> {
@@ -134,14 +134,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentInteractions(studentId: number): Promise<Interaction[]> {
-    const studentSessions = await db.select().from(sessions).where(eq(sessions.studentId, studentId));
+    const studentSessions = await db.select({ id: sessions.id }).from(sessions).where(eq(sessions.studentId, studentId));
     if (studentSessions.length === 0) return [];
-    const allInteractions: Interaction[] = [];
-    for (const s of studentSessions) {
-      const ints = await db.select().from(interactions).where(eq(interactions.sessionId, s.id));
-      allInteractions.push(...ints);
-    }
-    return allInteractions;
+    const sessionIds = studentSessions.map(s => s.id);
+    return await db.select().from(interactions).where(inArray(interactions.sessionId, sessionIds));
   }
 
   async getMastery(studentId: number, conceptId: number): Promise<MasteryScore | undefined> {

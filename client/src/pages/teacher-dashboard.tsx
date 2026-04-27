@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Users, GraduationCap, Activity, LogOut, Plus, Copy,
-  ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck, AlertTriangle
+  ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck, AlertTriangle,
+  Flame, Brain
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
@@ -37,6 +38,23 @@ const BLOOMS_MAP: Record<string, { label: string; color: string; bg: string }> =
   CREATING: { label: "Creating", color: "text-cyan-500", bg: "bg-cyan-500/10" },
 };
 
+const MISCONCEPTION_META: Record<string, { label: string; emoji: string; color: string; bg: string; border: string }> = {
+  PROCESS_CONFUSION: { label: "Process Confusion", emoji: "🔄", color: "text-orange-500", bg: "bg-orange-500/10", border: "border-orange-500/30" },
+  INCOMPLETE_UNDERSTANDING: { label: "Partial Understanding", emoji: "🧩", color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/30" },
+  OVERGENERALIZATION: { label: "Overgeneralization", emoji: "🎯", color: "text-purple-500", bg: "bg-purple-500/10", border: "border-purple-500/30" },
+  CAUSE_EFFECT_REVERSAL: { label: "Cause-Effect Reversal", emoji: "↔️", color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30" },
+  TERMINOLOGY_CONFUSION: { label: "Vocabulary Confusion", emoji: "📝", color: "text-cyan-500", bg: "bg-cyan-500/10", border: "border-cyan-500/30" },
+  SURFACE_LEVEL: { label: "Surface-Level", emoji: "🏊", color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/30" },
+};
+
+type HeatmapEntry = {
+  conceptId: number;
+  conceptName: string;
+  subject: string;
+  misconceptions: Record<string, number>;
+  total: number;
+};
+
 type Classroom = {
   id: number;
   name: string;
@@ -56,6 +74,154 @@ function ScorePill({ score }: { score: number }) {
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${color}`}>
       {pct}%
     </span>
+  );
+}
+
+function MisconceptionHeatmap() {
+  const { data, isLoading } = useQuery<{ heatmap: HeatmapEntry[]; summary: Record<string, number> }>({
+    queryKey: ["/api/teacher/misconception-heatmap"],
+    queryFn: async () => (await apiRequest("GET", "/api/teacher/misconception-heatmap")).json(),
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="border border-border/50 mb-8">
+        <CardContent className="py-12 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const heatmap = data?.heatmap || [];
+  const summary = data?.summary || {};
+  const totalMisconceptions = Object.values(summary).reduce((a, b) => a + b, 0);
+
+  if (heatmap.length === 0) {
+    return (
+      <Card className="border border-border/50 mb-8">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Flame className="w-4 h-4 text-rose-500" /> Misconception Heatmap
+          </CardTitle>
+          <CardDescription>Classroom-wide misconception analysis across all concepts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <Brain className="w-10 h-10 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground text-center">
+              No misconception data yet. As students answer questions,<br />their misconceptions will appear here.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const mcTypes = Object.keys(MISCONCEPTION_META);
+
+  return (
+    <Card className="border border-rose-500/20 bg-gradient-to-br from-rose-500/5 via-background to-background mb-8 shadow-lg shadow-rose-500/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Flame className="w-4 h-4 text-rose-500" /> Misconception Heatmap
+          <Badge className="ml-auto bg-rose-500/10 text-rose-500 border-rose-500/20 text-[10px] font-black">
+            {totalMisconceptions} total
+          </Badge>
+        </CardTitle>
+        <CardDescription>Where your class is confused — aggregated across all students</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Summary bar */}
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overall Distribution</p>
+          <div className="flex gap-3 flex-wrap">
+            {mcTypes.map(type => {
+              const count = summary[type] || 0;
+              if (count === 0) return null;
+              const meta = MISCONCEPTION_META[type];
+              const pct = Math.round((count / totalMisconceptions) * 100);
+              return (
+                <motion.div
+                  key={type}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${meta.border} ${meta.bg}`}
+                >
+                  <span className="text-lg leading-none">{meta.emoji}</span>
+                  <div>
+                    <div className={`text-xs font-bold ${meta.color}`}>{meta.label}</div>
+                    <div className="text-[10px] text-muted-foreground font-bold">{count} ({pct}%)</div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Per-concept heatmap grid */}
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">By Concept (sorted by severity)</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/40">
+                  <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground min-w-[160px]">Concept</th>
+                  {mcTypes.map(type => (
+                    <th key={type} className="text-center py-2 px-1.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground min-w-[50px]" title={MISCONCEPTION_META[type].label}>
+                      {MISCONCEPTION_META[type].emoji}
+                    </th>
+                  ))}
+                  <th className="text-center py-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/20">
+                {heatmap.slice(0, 10).map((entry, idx) => (
+                  <motion.tr
+                    key={entry.conceptId}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className="hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{entry.conceptName}</span>
+                        <Badge variant="outline" className="text-[9px] py-0 shrink-0">{entry.subject}</Badge>
+                      </div>
+                    </td>
+                    {mcTypes.map(type => {
+                      const count = entry.misconceptions[type] || 0;
+                      if (count === 0) {
+                        return <td key={type} className="text-center py-2.5 px-1.5"><span className="text-muted-foreground/20 text-xs">—</span></td>;
+                      }
+                      // Heat intensity: higher count = more intense background
+                      const intensity = Math.min(1, count / 5);
+                      const meta = MISCONCEPTION_META[type];
+                      return (
+                        <td key={type} className="text-center py-2.5 px-1.5">
+                          <span
+                            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black ${meta.color} transition-all hover:scale-110`}
+                            style={{ backgroundColor: `color-mix(in srgb, currentColor ${Math.round(intensity * 15 + 5)}%, transparent)` }}
+                          >
+                            {count}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td className="text-center py-2.5 px-2">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-black">
+                        {entry.total}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -298,6 +464,9 @@ export default function TeacherDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* ── MISCONCEPTION HEATMAP ── */}
+        <MisconceptionHeatmap />
 
         {/* ── STUDENT ROSTER TABLE ── */}
         <Card className="border border-border/50">

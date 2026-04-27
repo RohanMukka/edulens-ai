@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MasteryScore, Concept, Classroom } from "@shared/schema";
-import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users, Code, Atom, FlaskConical, TrendingUp } from "lucide-react";
+import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users, Code, Atom, FlaskConical, TrendingUp, Clock } from "lucide-react";
 import { SubjectSkeleton } from "@/components/ui/skeleton-screen";
 
 const subjects = [
@@ -144,6 +144,13 @@ export default function SubjectSelection() {
     return mastery.length > 0 ? mastery : null;
   };
 
+  // Surface SM-2 spaced repetition: count concepts due for review
+  const now = new Date().toISOString();
+  const reviewDueConcepts = (mastery || []).filter(
+    m => m.nextReviewAt && m.nextReviewAt <= now && m.score > 0
+  );
+  const reviewDueCount = reviewDueConcepts.length;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-6 py-8">
@@ -186,6 +193,30 @@ export default function SubjectSelection() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* ── SPACED REPETITION REVIEW DUE ── */}
+        {reviewDueCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Card className="border border-amber-500/30 bg-amber-500/5 shadow-lg shadow-amber-500/5">
+              <CardContent className="py-4 px-5 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5 text-amber-500 animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-sm text-amber-600 dark:text-amber-400">Spaced Repetition Review</h3>
+                  <p className="text-xs text-muted-foreground">You have <strong className="text-foreground">{reviewDueCount}</strong> concept{reviewDueCount !== 1 ? 's' : ''} due for review. Practice now to strengthen your memory!</p>
+                </div>
+                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-xs font-black shrink-0">
+                  {reviewDueCount} Due
+                </Badge>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         <div className="grid gap-4">

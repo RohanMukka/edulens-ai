@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { seedConcepts } from "./seed";
@@ -10,6 +10,7 @@ import createMemoryStore from "memorystore";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { WebSocketServer, WebSocket } from "ws";
+import type { IncomingMessage } from "http";
 
 // Never expose the password field to the client
 const safeStudent = (s: any) => {
@@ -23,7 +24,7 @@ declare module "express-session" {
   }
 }
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
+export const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
 export async function registerRoutes(
   httpServer: Server,
@@ -412,6 +413,7 @@ export async function registerRoutes(
         totalConcepts,
         weakAreas,
         recentSessions: sessions.slice(0, 5),
+        recentInteractions: interactions.slice(-20), // Get last 20 for the progression tracker
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -494,6 +496,61 @@ export async function registerRoutes(
     }
   });
 
+  // === Teacher Misconception Heatmap ===
+  app.get("/api/teacher/misconception-heatmap", requireEducator, async (req, res) => {
+    try {
+      const classrooms = await storage.getTeacherClassrooms(req.session.studentId!);
+      let allStudentIds: number[] = [];
+      for (const classroom of classrooms) {
+        const students = await storage.getClassroomStudents(classroom.id);
+        students.forEach(s => { if (!allStudentIds.includes(s.id)) allStudentIds.push(s.id); });
+      }
+
+      if (allStudentIds.length === 0) {
+        return res.json({ heatmap: [], summary: {} });
+      }
+
+      // Gather all interactions for all students
+      const allInteractions: any[] = [];
+      for (const sid of allStudentIds) {
+        const ints = await storage.getStudentInteractions(sid);
+        allInteractions.push(...ints);
+      }
+
+      // Build heatmap: concept -> misconception type -> count
+      const heatmap: Record<number, { conceptId: number; conceptName: string; subject: string; misconceptions: Record<string, number>; total: number }> = {};
+      const summary: Record<string, number> = {};
+
+      for (const interaction of allInteractions) {
+        if (!interaction.misconceptionType || interaction.misconceptionType === "NO_MISCONCEPTION") continue;
+
+        if (!heatmap[interaction.conceptId]) {
+          const concept = await storage.getConcept(interaction.conceptId);
+          heatmap[interaction.conceptId] = {
+            conceptId: interaction.conceptId,
+            conceptName: concept?.name || "Unknown",
+            subject: concept?.subject || "Unknown",
+            misconceptions: {},
+            total: 0,
+          };
+        }
+
+        const entry = heatmap[interaction.conceptId];
+        entry.misconceptions[interaction.misconceptionType] = (entry.misconceptions[interaction.misconceptionType] || 0) + 1;
+        entry.total++;
+
+        summary[interaction.misconceptionType] = (summary[interaction.misconceptionType] || 0) + 1;
+      }
+
+      // Sort by total misconceptions descending
+      const sorted = Object.values(heatmap).sort((a, b) => b.total - a.total);
+
+      res.json({ heatmap: sorted, summary });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // === AI endpoints ===
   app.post("/api/ai/score", requireAuth, async (req, res) => {
     try {
@@ -570,7 +627,7 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
 }
 
 // === Misconception Taxonomy ===
-const MISCONCEPTION_TYPES: Record<string, { label: string; emoji: string; remediation: string }> = {
+export const MISCONCEPTION_TYPES: Record<string, { label: string; emoji: string; remediation: string }> = {
   PROCESS_CONFUSION: {
     label: "Process Confusion",
     emoji: "🔄",
@@ -609,7 +666,7 @@ const MISCONCEPTION_TYPES: Record<string, { label: string; emoji: string; remedi
 };
 
 // === Bloom's Taxonomy ===
-const BLOOMS_LEVELS: Record<string, { label: string; description: string }> = {
+export const BLOOMS_LEVELS: Record<string, { label: string; description: string }> = {
   REMEMBERING: {
     label: "Remembering",
     description: "Recalling facts and basic concepts without necessarily understanding them."
@@ -678,7 +735,7 @@ interface ScoreResult {
 }
 
 // AI helper functions
-async function scoreResponse(studentResponse: string, idealExplanation: string, conceptName: string, question?: string): Promise<ScoreResult> {
+export async function scoreResponse(studentResponse: string, idealExplanation: string, conceptName: string, question?: string): Promise<ScoreResult> {
   // Fallback if no API key
   if (!process.env.GROQ_API_KEY) {
     return fallbackScore(studentResponse, idealExplanation);

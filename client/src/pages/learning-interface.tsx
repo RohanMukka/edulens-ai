@@ -12,12 +12,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import type { Concept, Session, Interaction, Classroom } from "@shared/schema";
+import type { Concept, Session, Interaction, Classroom, MasteryScore } from "@shared/schema";
 import { classroomSocket } from "@/lib/socket";
 import {
   ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
   AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
-  Mic, MicOff, Search, Shuffle, MessageSquare, Layers
+  Mic, MicOff, Search, Shuffle, MessageSquare, Layers, HelpCircle, X
 } from "lucide-react";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
@@ -166,6 +166,7 @@ export default function LearningInterface() {
   const [socraticHistory, setSocraticHistory] = useState<{role: string, content: string}[]>([]);
   const [socraticInput, setSocraticInput] = useState("");
   const [isSocraticActive, setIsSocraticActive] = useState(false);
+  const [prerequisiteRedirect, setPrerequisiteRedirect] = useState<string | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -267,6 +268,13 @@ export default function LearningInterface() {
     },
   });
 
+  // Fetch student mastery for prerequisite-driven pathfinding
+  const { data: studentMastery } = useQuery<MasteryScore[]>({
+    queryKey: ["/api/students", student.id, "mastery"],
+    enabled: !!student,
+    queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/mastery`)).json(),
+  });
+
   const respondMutation = useMutation({
     mutationFn: async (data: { conceptId: number; studentResponse: string; question: string }) => {
       const res = await apiRequest("POST", `/api/sessions/${sessionId}/respond`, data);
@@ -275,12 +283,21 @@ export default function LearningInterface() {
     onSuccess: (data) => {
       setLastScore(data);
       setPhase("feedback");
+      setPrerequisiteRedirect(null);
       if (data.score >= 0.7) {
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
           colors: ["#6366f1", "#a855f7", "#ec4899"]
+        });
+      }
+      // Step 2: Auto-show AI explanation for low scores
+      if (data.score < 0.5 && currentConcept && session) {
+        explainMutation.mutate({
+          conceptName: currentConcept.name,
+          subject: session.subject,
+          gaps: data.gaps,
         });
       }
       qc.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}`] });
@@ -413,31 +430,67 @@ export default function LearningInterface() {
     respondMutation.mutate({ conceptId: currentConcept.id, studentResponse: response, question });
   };
 
+  const resetConceptState = () => {
+    setPhase("intro");
+    setResponse("");
+    setLastScore(null);
+    setExplanation("");
+    setQuestion("");
+    setIsSocraticActive(false);
+    setSocraticHistory([]);
+    setPrerequisiteRedirect(null);
+  };
+
   const handleNext = () => {
     if (currentConceptIndex < totalConcepts - 1) {
-      // If score was low, stay on same concept
-      if (lastScore && lastScore.score < 0.4) {
-        setPhase("intro");
-        setResponse("");
-        setLastScore(null);
-        setExplanation("");
-        setQuestion("");
-        setIsSocraticActive(false);
-        setSocraticHistory([]);
+      // Step 1: Prerequisite-Driven Adaptive Pathfinding
+      // If score was low, check if a prerequisite needs attention first
+      if (lastScore && lastScore.score < 0.4 && currentConcept && concepts && studentMastery) {
+        try {
+          const prereqs: string[] = JSON.parse(currentConcept.prerequisites || "[]");
+          if (prereqs.length > 0) {
+            // Find prerequisite concepts that have weak mastery
+            for (const prereqName of prereqs) {
+              const prereqConcept = concepts.find(c => c.name === prereqName);
+              if (prereqConcept) {
+                const prereqMastery = studentMastery.find(m => m.conceptId === prereqConcept.id);
+                // If prerequisite mastery is low (< 0.5) or never attempted, redirect
+                if (!prereqMastery || prereqMastery.score < 0.5) {
+                  const prereqIndex = concepts.findIndex(c => c.name === prereqName);
+                  if (prereqIndex >= 0 && prereqIndex !== currentConceptIndex) {
+                    setPrerequisiteRedirect(prereqName);
+                    setCurrentConceptIndex(prereqIndex);
+                    resetConceptState();
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // If prereq parsing fails, fall through to normal retry
+        }
+        // No weak prerequisite found — retry same concept
+        resetConceptState();
         return;
       }
       setCurrentConceptIndex(prev => prev + 1);
-      setPhase("intro");
-      setResponse("");
-      setLastScore(null);
-      setExplanation("");
-      setQuestion("");
-      setIsSocraticActive(false);
-      setSocraticHistory([]);
+      resetConceptState();
     } else {
       setPhase("complete");
       apiRequest("POST", `/api/sessions/${sessionId}/end`);
     }
+  };
+
+  // Step 3: "I Don't Know" handler
+  const handleIDontKnow = async () => {
+    if (!currentConcept) return;
+    // Log a 0.0 score interaction so we track the gap
+    await respondMutation.mutateAsync({
+      conceptId: currentConcept.id,
+      studentResponse: "[Student indicated they don't know the answer]",
+      question: question || "Explain this concept",
+    });
   };
 
   const handleRetry = () => {
@@ -544,6 +597,29 @@ export default function LearningInterface() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         {currentConcept && (
           <>
+            {/* Prerequisite Redirect Banner */}
+            {prerequisiteRedirect && phase === "intro" && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-2"
+              >
+                <Card className="border border-amber-500/30 bg-amber-500/5">
+                  <CardContent className="py-3 px-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <Target className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Adaptive Redirect</p>
+                      <p className="text-xs text-muted-foreground">
+                        You're struggling with a concept that builds on <strong className="text-foreground">{prerequisiteRedirect}</strong>. Let's strengthen that foundation first.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Concept Introduction */}
             {phase === "intro" && (
               <Card className="border border-border/60" data-testid="card-concept-intro">
@@ -646,6 +722,17 @@ export default function LearningInterface() {
                         </Button>
                       </div>
                     </div>
+                    {/* Step 3: "I Don't Know" button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2 text-muted-foreground hover:text-foreground"
+                      onClick={handleIDontKnow}
+                      disabled={respondMutation.isPending}
+                      data-testid="button-i-dont-know"
+                    >
+                      <HelpCircle className="w-4 h-4 mr-1" /> I'm stuck — show me the explanation
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -754,8 +841,8 @@ export default function LearningInterface() {
                   </CardContent>
                 </Card>
 
-                {/* AI Explanation (optional) */}
-                {!explanation && (
+                {/* AI Explanation — auto-triggered for low scores, manual button otherwise */}
+                {!explanation && (!lastScore || lastScore.score >= 0.5) && (
                   <Button
                     variant="outline"
                     className="w-full"
@@ -769,6 +856,11 @@ export default function LearningInterface() {
                       <><Sparkles className="w-4 h-4 mr-2" /> Get AI Explanation</>
                     )}
                   </Button>
+                )}
+                {!explanation && lastScore && lastScore.score < 0.5 && explainMutation.isPending && (
+                  <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" /> Auto-generating explanation for you...
+                  </div>
                 )}
 
                 {explanation && (
@@ -833,6 +925,15 @@ export default function LearningInterface() {
                           <Send className="w-4 h-4" />
                         </Button>
                       </div>
+                      {/* Step 11: Socratic exit button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-muted-foreground hover:text-foreground w-full"
+                        onClick={() => setIsSocraticActive(false)}
+                      >
+                        <X className="w-3 h-3 mr-1" /> Close Tutor
+                      </Button>
                     </CardContent>
                   </Card>
                 )}

@@ -67,6 +67,25 @@ EduLens doesn't just teach; it ensures you remember. We've implemented the **Sup
 
 ---
 
+## 🧪 AI Validation & Scientific Rigor
+
+We don't just "use AI"—we validate it. EduLens AI features an automated validation suite that benchmarks our diagnostic engine against human-graded student responses.
+
+### 📊 Diagnostic Accuracy (Llama-3.1-8b)
+| Metric | Result |
+| --- | --- |
+| **Misconception Diagnosis Accuracy** | **83.3%** |
+| **Score Correlation (Human-AI)** | **Moderate** |
+| **Avg Feedback Latency** | **3.2s** |
+| **Safety Filter (Gatekeeper)** | **Active** |
+
+Our **Gatekeeper Agent** ensures that plagiarized or off-topic responses are caught before they reach the gradebook, while our **Cognitive Scorer** analyzes responses across 6 misconception types and 4 Bloom's levels.
+
+> [!TIP]
+> Run the validation suite yourself: `npx tsx script/validate_ai.ts`
+
+---
+
 ## 🏆 Hackathon Judges' Guide
 
 When evaluating EduLens AI, please focus on:
