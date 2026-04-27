@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { classroomSocket } from "@/lib/socket";
+import { useToast } from "@/hooks/use-toast";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from "recharts";
@@ -61,6 +62,7 @@ type Classroom = {
   code: string;
   teacherId: number;
   createdAt: string;
+  isOwner?: boolean;
 };
 
 function ScorePill({ score }: { score: number }) {
@@ -228,9 +230,12 @@ function MisconceptionHeatmap() {
 export default function TeacherDashboard() {
   const [, setLocation] = useLocation();
   const { student, logout } = useAuth();
+  const { toast } = useToast();
   const qc = useQueryClient();
   const [newClassName, setNewClassName] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [activeLiveRoom, setActiveLiveRoom] = useState<Classroom | null>(null);
   const [liveUpdates, setLiveUpdates] = useState<any[]>([]);
@@ -268,8 +273,40 @@ export default function TeacherDashboard() {
       setNewClassName("");
       qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
       qc.invalidateQueries({ queryKey: ["/api/teacher/students"] });
-    } catch (e) { console.error(e); }
+      toast({
+        title: "Classroom Created",
+        description: "Your new classroom has been created successfully.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Creation Failed",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
     setCreating(false);
+  };
+
+  const handleJoinClassroom = async () => {
+    if (!joinCode.trim()) return;
+    setJoining(true);
+    try {
+      await apiRequest("POST", "/api/classrooms/join", { code: joinCode });
+      setJoinCode("");
+      qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
+      qc.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      toast({
+        title: "Joined Classroom",
+        description: "You have successfully joined the classroom.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Join Failed",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+    setJoining(false);
   };
 
   const handleCopy = (code: string) => {
@@ -359,25 +396,54 @@ export default function TeacherDashboard() {
                 <CardTitle className="text-base">My Classrooms</CardTitle>
                 <CardDescription>Share the code with your students</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="e.g. Bio 101 – Fall 2026"
-                    value={newClassName}
-                    onChange={e => setNewClassName(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
-                    className="text-sm bg-background/50"
-                  />
-                  <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="shadow-lg shadow-primary/20">
-                    {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  </Button>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Create New</p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g. Bio 101 – Fall 2026"
+                        value={newClassName}
+                        onChange={e => setNewClassName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
+                        className="text-sm bg-background/50"
+                      />
+                      <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="shadow-lg shadow-primary/20 shrink-0">
+                        {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Join Existing</p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter 6-char code"
+                        value={joinCode}
+                        onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                        onKeyDown={e => e.key === "Enter" && handleJoinClassroom()}
+                        maxLength={6}
+                        className="text-sm bg-background/50 font-mono"
+                      />
+                      <Button variant="outline" size="sm" onClick={handleJoinClassroom} disabled={joining || joinCode.length !== 6} className="shrink-0">
+                        {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 {classrooms && classrooms.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-4 border-t border-border/40 mt-2">
                     {classrooms.map((c) => (
                       <div key={c.id} className="p-4 border border-border/40 rounded-2xl bg-muted/20 backdrop-blur-sm group hover:border-primary/30 transition-all">
-                        <p className="font-bold text-sm mb-3 truncate group-hover:text-primary transition-colors">{c.name}</p>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{c.name}</p>
+                          {c.isOwner ? (
+                            <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-none">Owner</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">Joined</Badge>
+                          )}
+                        </div>
                         <div className="flex items-center justify-between bg-background/60 rounded-xl px-3 py-2 border border-border/30">
                           <code className="text-xl font-black tracking-[0.3em] text-primary">{c.code}</code>
                           <div className="flex items-center gap-2">
@@ -390,19 +456,21 @@ export default function TeacherDashboard() {
                               {copied === c.code ? <CheckCheck className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                               Copy
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-9 px-3 text-xs gap-1.5 border-primary/40 hover:bg-primary hover:text-primary-foreground font-bold shadow-sm transition-all relative overflow-hidden group/btn"
-                              onClick={() => {
-                                setLiveUpdates([]);
-                                setActiveLiveRoom(c);
-                              }}
-                            >
-                              <div className="absolute inset-0 bg-primary/10 animate-pulse group-hover/btn:hidden" />
-                              <Activity className="w-4 h-4 relative z-10" />
-                              <span className="relative z-10">Go Live</span>
-                            </Button>
+                            {c.isOwner && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 px-3 text-xs gap-1.5 border-primary/40 hover:bg-primary hover:text-primary-foreground font-bold shadow-sm transition-all relative overflow-hidden group/btn"
+                                onClick={() => {
+                                  setLiveUpdates([]);
+                                  setActiveLiveRoom(c);
+                                }}
+                              >
+                                <div className="absolute inset-0 bg-primary/10 animate-pulse group-hover/btn:hidden" />
+                                <Activity className="w-4 h-4 relative z-10" />
+                                <span className="relative z-10">Go Live</span>
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -411,7 +479,7 @@ export default function TeacherDashboard() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
                     <BookOpen className="w-10 h-10 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">No classrooms yet.<br />Create one above to get started.</p>
+                    <p className="text-sm text-muted-foreground">No classrooms yet.<br />Create or join one above.</p>
                   </div>
                 )}
               </CardContent>

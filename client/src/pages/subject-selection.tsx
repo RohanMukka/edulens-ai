@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users, Code, Atom, FlaskConical, TrendingUp, Clock } from "lucide-react";
 import { SubjectSkeleton } from "@/components/ui/skeleton-screen";
+import { useToast } from "@/hooks/use-toast";
 
 const subjects = [
   {
@@ -71,6 +72,7 @@ export default function SubjectSelection() {
   const [joinCode, setJoinCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const { toast } = useToast();
   const qc = useQueryClient();
 
   const { data: classrooms } = useQuery<Classroom[]>({
@@ -116,9 +118,17 @@ export default function SubjectSelection() {
     try {
       const res = await apiRequest("POST", "/api/concepts/generate", { subject: "Custom", topic: newTopic });
       const concept = await res.json();
+      toast({
+        title: "Concept Generated",
+        description: `Successfully generated learning module for "${newTopic}".`,
+      });
       startSession(concept.subject);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      toast({
+        title: "Generation Failed",
+        description: e.message,
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -131,8 +141,16 @@ export default function SubjectSelection() {
       await apiRequest("POST", "/api/classrooms/join", { code: joinCode });
       setJoinCode("");
       qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
-    } catch (e) {
-      console.error(e);
+      toast({
+        title: "Joined Classroom",
+        description: "You have successfully joined the classroom.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Join Failed",
+        description: e.message,
+        variant: "destructive",
+      });
     } finally {
       setIsJoining(false);
     }

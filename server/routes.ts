@@ -495,11 +495,22 @@ export async function registerRoutes(
     try {
       const student = await storage.getStudent(req.session.studentId!);
       if (student?.role === "educator") {
-        const classrooms = await storage.getTeacherClassrooms(req.session.studentId!);
-        res.json(classrooms);
+        const owned = await storage.getTeacherClassrooms(req.session.studentId!);
+        const joined = await storage.getStudentClassrooms(req.session.studentId!);
+        
+        // Merge and remove duplicates (though unlikely for owned/joined to overlap)
+        const allMap = new Map<number, any>();
+        owned.forEach(c => allMap.set(c.id, { ...c, isOwner: true }));
+        joined.forEach(c => {
+          if (!allMap.has(c.id)) {
+            allMap.set(c.id, { ...c, isOwner: false });
+          }
+        });
+        
+        res.json(Array.from(allMap.values()));
       } else {
         const classrooms = await storage.getStudentClassrooms(req.session.studentId!);
-        res.json(classrooms);
+        res.json(classrooms.map(c => ({ ...c, isOwner: false })));
       }
     } catch (e: any) {
       res.status(500).json({ message: e.message });
