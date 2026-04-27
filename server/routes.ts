@@ -756,6 +756,118 @@ export async function registerRoutes(
     }
   });
 
+  // === Teacher Intervention Queue (Prescriptive Analytics) ===
+  app.get("/api/teacher/interventions", requireEducator, async (req, res) => {
+    try {
+      const classroomsList = await storage.getTeacherClassrooms(req.session.studentId!);
+      const allStudentIds: number[] = [];
+      const studentMap: Record<number, { name: string; email: string }> = {};
+
+      for (const classroom of classroomsList) {
+        const classStudents = await storage.getClassroomStudents(classroom.id);
+        for (const s of classStudents) {
+          if (s.role === "educator") continue;
+          if (!allStudentIds.includes(s.id)) {
+            allStudentIds.push(s.id);
+            studentMap[s.id] = { name: s.name, email: s.email };
+          }
+        }
+      }
+
+      if (allStudentIds.length === 0) {
+        return res.json({ queue: [], topMisconception: null, stats: { atRisk: 0, total: 0 } });
+      }
+
+      // For each student, find concepts where they have 3+ attempts with avg score < 0.4
+      type InterventionItem = {
+        studentId: number;
+        studentName: string;
+        studentEmail: string;
+        conceptId: number;
+        conceptName: string;
+        subject: string;
+        attempts: number;
+        avgScore: number;
+        lastMisconception: string;
+        misconceptionLabel: string;
+        priority: "critical" | "warning";
+      };
+
+      const queue: InterventionItem[] = [];
+      const misconceptionCounts: Record<string, number> = {};
+
+      for (const sid of allStudentIds) {
+        const ints = await storage.getStudentInteractions(sid);
+        // Group interactions by conceptId
+        const byConceptId: Record<number, typeof ints> = {};
+        for (const i of ints) {
+          if (!byConceptId[i.conceptId]) byConceptId[i.conceptId] = [];
+          byConceptId[i.conceptId].push(i);
+        }
+
+        for (const [cid, conceptInts] of Object.entries(byConceptId)) {
+          const scored = conceptInts.filter(i => i.score !== null);
+          if (scored.length < 2) continue; // Need at least 2 attempts to flag
+
+          const avgScore = scored.reduce((sum, i) => sum + (i.score ?? 0), 0) / scored.length;
+          if (avgScore >= 0.5) continue; // Not struggling
+
+          // Find most common misconception for this student-concept pair
+          const mcCounts: Record<string, number> = {};
+          for (const i of scored) {
+            if (i.misconceptionType && i.misconceptionType !== "NO_MISCONCEPTION") {
+              mcCounts[i.misconceptionType] = (mcCounts[i.misconceptionType] || 0) + 1;
+              misconceptionCounts[i.misconceptionType] = (misconceptionCounts[i.misconceptionType] || 0) + 1;
+            }
+          }
+          const topMc = Object.entries(mcCounts).sort((a, b) => b[1] - a[1])[0];
+          const mcType = topMc ? topMc[0] : "INCOMPLETE_UNDERSTANDING";
+          const mcMeta = MISCONCEPTION_TYPES[mcType];
+
+          const concept = await storage.getConcept(Number(cid));
+
+          queue.push({
+            studentId: sid,
+            studentName: studentMap[sid]?.name || "Unknown",
+            studentEmail: studentMap[sid]?.email || "",
+            conceptId: Number(cid),
+            conceptName: concept?.name || "Unknown",
+            subject: concept?.subject || "Unknown",
+            attempts: scored.length,
+            avgScore: Math.round(avgScore * 100) / 100,
+            lastMisconception: mcType,
+            misconceptionLabel: mcMeta?.label || mcType,
+            priority: avgScore < 0.3 ? "critical" : "warning",
+          });
+        }
+      }
+
+      // Sort: critical first, then by lowest avg score
+      queue.sort((a, b) => {
+        if (a.priority === "critical" && b.priority !== "critical") return -1;
+        if (b.priority === "critical" && a.priority !== "critical") return 1;
+        return a.avgScore - b.avgScore;
+      });
+
+      // Top classroom misconception
+      const topMisconceptionEntry = Object.entries(misconceptionCounts).sort((a, b) => b[1] - a[1])[0];
+      const topMisconception = topMisconceptionEntry
+        ? { type: topMisconceptionEntry[0], label: MISCONCEPTION_TYPES[topMisconceptionEntry[0]]?.label || topMisconceptionEntry[0], count: topMisconceptionEntry[1] }
+        : null;
+
+      res.json({
+        queue: queue.slice(0, 20), // Cap at 20
+        topMisconception,
+        stats: {
+          atRisk: queue.filter(q => q.priority === "critical").length,
+          total: allStudentIds.length,
+        }
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // === AI endpoints ===
   app.post("/api/ai/score", requireAuth, async (req, res) => {
     try {

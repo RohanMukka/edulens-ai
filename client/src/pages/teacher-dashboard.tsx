@@ -227,6 +227,146 @@ function MisconceptionHeatmap() {
   );
 }
 
+type InterventionItem = {
+  studentId: number;
+  studentName: string;
+  studentEmail: string;
+  conceptId: number;
+  conceptName: string;
+  subject: string;
+  attempts: number;
+  avgScore: number;
+  lastMisconception: string;
+  misconceptionLabel: string;
+  priority: "critical" | "warning";
+};
+
+type InterventionData = {
+  queue: InterventionItem[];
+  topMisconception: { type: string; label: string; count: number } | null;
+  stats: { atRisk: number; total: number };
+};
+
+function InterventionQueue() {
+  const { data, isLoading } = useQuery<InterventionData>({
+    queryKey: ["/api/teacher/interventions"],
+    queryFn: async () => (await apiRequest("GET", "/api/teacher/interventions")).json(),
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="border border-border/50 mb-8">
+        <CardContent className="py-12 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const queue = data?.queue || [];
+  const topMc = data?.topMisconception;
+  const stats = data?.stats || { atRisk: 0, total: 0 };
+
+  return (
+    <Card className="border border-border/50 mb-8 overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> Intervention Queue
+            </CardTitle>
+            <CardDescription>Students struggling with recurring misconceptions</CardDescription>
+          </div>
+          <div className="flex items-center gap-3">
+            {stats.atRisk > 0 && (
+              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-bold gap-1">
+                <Flame className="w-3 h-3" /> {stats.atRisk} Critical
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-xs">
+              {stats.total} Students
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {/* Top Misconception Alert */}
+        {topMc && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Brain className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                Most Common Misconception
+              </p>
+              <p className="text-sm font-medium">
+                {topMc.label} — detected {topMc.count} times across your classrooms
+              </p>
+            </div>
+          </div>
+        )}
+
+        {queue.length > 0 ? (
+          <div className="space-y-2">
+            {queue.map((item, idx) => {
+              const mc = MISCONCEPTION_META[item.lastMisconception];
+              return (
+                <motion.div
+                  key={`${item.studentId}-${item.conceptId}`}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all hover:shadow-sm ${
+                    item.priority === "critical"
+                      ? "bg-rose-500/5 border-rose-500/20"
+                      : "bg-amber-500/5 border-amber-500/20"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    item.priority === "critical" ? "bg-rose-500/10" : "bg-amber-500/10"
+                  }`}>
+                    {item.priority === "critical"
+                      ? <Flame className="w-4 h-4 text-rose-500" />
+                      : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold truncate">{item.studentName}</p>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{item.subject}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Struggling with <span className="font-semibold text-foreground">{item.conceptName}</span>
+                      {" "} · {item.attempts} attempts · avg {Math.round(item.avgScore * 100)}%
+                    </p>
+                  </div>
+                  {mc && (
+                    <Badge className={`${mc.bg} ${mc.color} border ${mc.border} text-[10px] font-bold shrink-0`}>
+                      {mc.emoji} {mc.label}
+                    </Badge>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">All Clear!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                No students are currently flagged for intervention.
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function TeacherDashboard() {
   const [, setLocation] = useLocation();
   const { student, logout } = useAuth();
@@ -588,6 +728,9 @@ export default function TeacherDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* ── INTERVENTION QUEUE ── */}
+        <InterventionQueue />
 
         {/* ── MISCONCEPTION HEATMAP ── */}
         <MisconceptionHeatmap />
