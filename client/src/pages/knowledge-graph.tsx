@@ -137,7 +137,12 @@ export default function KnowledgeGraph() {
         },
       });
 
-      const prereqs = JSON.parse(concept.prerequisites) as string[];
+      let prereqs: string[] = [];
+      try {
+        prereqs = JSON.parse(concept.prerequisites) as string[];
+      } catch (e) {
+        console.error("Failed to parse prerequisites for concept", concept.id);
+      }
       for (const prereqName of prereqs) {
         const prereqConcept = allConcepts.find(c => c.name === prereqName && c.subject === concept.subject);
         if (prereqConcept) {

@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
+  LineChart, Line, CartesianGrid
 } from "recharts";
 import type { MasteryScore, Concept } from "@shared/schema";
 import {
@@ -26,7 +27,28 @@ interface StudentStats {
   totalConcepts: number;
   weakAreas: { conceptId: number; name: string; score: number }[];
   recentSessions: any[];
+  recentInteractions: any[];
+  classPercentile: number | null;
+  currentStreak: number;
 }
+
+const BLOOMS_VALUE_MAP: Record<string, number> = {
+  'REMEMBERING': 1,
+  'UNDERSTANDING': 2,
+  'APPLYING': 3,
+  'ANALYZING': 4,
+  'EVALUATING': 5,
+  'CREATING': 6
+};
+
+const BLOOMS_LABEL_MAP: Record<number, string> = {
+  1: 'REMEMBERING',
+  2: 'UNDERSTANDING',
+  3: 'APPLYING',
+  4: 'ANALYZING',
+  5: 'EVALUATING',
+  6: 'CREATING'
+};
 
 const SUBJECT_META: Record<string, { icon: any; color: string; bg: string; ring: string }> = {
   Biology:            { icon: Dna,           color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "#10b981" },
@@ -132,20 +154,20 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* ── HEADER ── */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} className="-ml-2">
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setLocation("/graph")}>
-              <Network className="w-4 h-4 mr-1.5" /> Knowledge Graph
+          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+            <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} className="shrink-0">
+              <Network className="w-4 h-4 mr-1.5" /> Graph
             </Button>
-            <Button size="sm" onClick={() => setLocation("/subjects")}>
+            <Button size="sm" onClick={() => setLocation("/subjects")} className="shrink-0">
               <BookOpen className="w-4 h-4 mr-1.5" /> Continue Learning
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }} className="text-muted-foreground shrink-0">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
@@ -169,6 +191,12 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground font-medium mb-1">Welcome back,</p>
               <h1 className="text-4xl font-extrabold tracking-tight mb-3">{student.name}</h1>
               <div className="flex flex-wrap gap-3">
+                {stats?.currentStreak ? (
+                  <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 rounded-full px-3 py-1.5 text-sm text-orange-600 dark:text-orange-400 font-bold animate-pulse">
+                    <Flame className="w-4 h-4 fill-orange-500" />
+                    <span>{stats.currentStreak} Day Streak</span>
+                  </div>
+                ) : null}
                 <div className="flex items-center gap-2 bg-background/60 border border-border/50 rounded-full px-3 py-1.5 text-sm">
                   <Award className="w-4 h-4 text-primary" />
                   <span><strong>{masteredCount}</strong> / {totalCount} concepts mastered</span>
@@ -181,6 +209,17 @@ export default function Dashboard() {
                   <Target className="w-4 h-4 text-amber-500" />
                   <span><strong>{stats?.totalInteractions || 0}</strong> responses</span>
                 </div>
+                {stats?.classPercentile !== null && stats?.classPercentile !== undefined && (
+                  <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-full px-3 py-1.5 text-sm text-primary font-semibold animate-in fade-in slide-in-from-left-2 duration-700">
+                    <Trophy className="w-4 h-4" />
+                    <span>
+                      {stats.classPercentile >= 95 ? "Class Leader" : 
+                       stats.classPercentile >= 90 ? "Top 10% of class" :
+                       stats.classPercentile >= 75 ? "Top 25% of class" :
+                       `Top ${100 - stats.classPercentile}% of class`}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -188,7 +227,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── SUBJECT BREAKDOWN ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {subjectBreakdown.map(({ subject, mastered, total, avg, meta }) => {
             const Icon = meta.icon;
             const pct = Math.round(avg * 100);
@@ -275,6 +314,76 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ── COGNITIVE GROWTH ── */}
+        <Card className="border border-border/50 mb-8 overflow-hidden group">
+          <CardHeader className="pb-2 pt-6 px-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-primary" /> Cognitive Growth Tracker
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">Visualization of your depth of understanding over time (Bloom's Taxonomy).</p>
+              </div>
+              <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] uppercase font-bold tracking-widest px-2">Live Diagnostics</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-6 px-6 pt-2">
+             <div className="h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={(stats?.recentInteractions || []).map((i, idx) => ({
+                      index: idx + 1,
+                      level: BLOOMS_VALUE_MAP[i.bloomsLevel?.trim().toUpperCase() || 'UNDERSTANDING'] || 2,
+                      label: i.bloomsLevel || 'Understanding'
+                    }))}
+                    margin={{ left: 35, right: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted)/0.3)" vertical={false} />
+                    <XAxis 
+                      dataKey="index" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                      label={{ value: 'Response History (Last 20)', position: 'insideBottom', offset: -5, fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                      domain={[1, 6]}
+                      ticks={[1, 2, 3, 4, 5, 6]}
+                      tickFormatter={(val) => BLOOMS_LABEL_MAP[val]?.charAt(0) + BLOOMS_LABEL_MAP[val]?.slice(1).toLowerCase()}
+                    />
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-popover/90 backdrop-blur-md border border-border p-3 rounded-xl shadow-2xl text-xs ring-1 ring-primary/20">
+                              <p className="font-black text-primary uppercase tracking-tighter mb-1">{payload[0].payload.label}</p>
+                              <p className="text-muted-foreground text-[10px]">Interaction #{payload[0].payload.index}</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Line 
+                      type="stepAfter" 
+                      dataKey="level" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={4} 
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4, stroke: 'hsl(var(--background))' }}
+                      activeDot={{ r: 6, strokeWidth: 0 }}
+                      animationDuration={2000}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+          </CardContent>
+        </Card>
 
         <div className="grid md:grid-cols-2 gap-5 mb-8">
           {/* ── WEAK AREAS ── */}

@@ -12,12 +12,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Concept, Session, Interaction, Classroom, MasteryScore } from "@shared/schema";
 import { classroomSocket } from "@/lib/socket";
 import {
   ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
   AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
-  Mic, MicOff, Search, Shuffle, MessageSquare, Layers, HelpCircle, X
+  Mic, MicOff, Search, Shuffle, MessageSquare, Layers, HelpCircle, X,
+  ChevronDown, ChevronUp
 } from "lucide-react";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
@@ -167,6 +179,8 @@ export default function LearningInterface() {
   const [socraticInput, setSocraticInput] = useState("");
   const [isSocraticActive, setIsSocraticActive] = useState(false);
   const [prerequisiteRedirect, setPrerequisiteRedirect] = useState<string | null>(null);
+  const [isLessonOpen, setIsLessonOpen] = useState(true);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -573,7 +587,7 @@ export default function LearningInterface() {
       <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} data-testid="button-back">
+            <Button variant="ghost" size="sm" onClick={() => setShowExitDialog(true)} data-testid="button-back">
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -632,20 +646,41 @@ export default function LearningInterface() {
                       <h2 className="font-bold text-lg">{currentConcept.name}</h2>
                       <p className="text-muted-foreground text-sm mt-1 mb-4">{currentConcept.description}</p>
                       
-                      <div className="bg-primary/5 border border-primary/20 rounded-lg p-5 mb-4 prose dark:prose-invert prose-sm max-w-none text-left">
-                        <h3 className="flex items-center gap-2 text-md font-semibold mt-0 mb-2">
-                          <BookOpen className="w-4 h-4 text-primary" /> Mini-Lesson
-                        </h3>
-                        <ReactMarkdown components={markdownComponents}>{currentConcept.idealExplanation}</ReactMarkdown>
-                      </div>
+                      <Collapsible open={isLessonOpen} onOpenChange={setIsLessonOpen} className="mb-4">
+                        <CollapsibleTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full flex items-center justify-between py-2 px-3 h-auto bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg group transition-all"
+                          >
+                            <span className="flex items-center gap-2 text-sm font-semibold text-primary">
+                              <BookOpen className="w-4 h-4" /> 
+                              {isLessonOpen ? "Hide Mini-Lesson" : "Review Mini-Lesson"}
+                            </span>
+                            {isLessonOpen ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="animate-in fade-in slide-in-from-top-1 duration-300">
+                          <div className="bg-primary/5 border-x border-b border-primary/20 rounded-b-lg p-5 prose dark:prose-invert prose-sm max-w-none text-left">
+                            <ReactMarkdown components={markdownComponents}>{currentConcept.idealExplanation}</ReactMarkdown>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
                   </div>
-                  {JSON.parse(currentConcept.prerequisites).length > 0 && (
-                    <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-                      <Target className="w-4 h-4" />
-                      Prerequisites: {JSON.parse(currentConcept.prerequisites).join(", ")}
-                    </div>
-                  )}
+                  {(() => {
+                    let prereqs: string[] = [];
+                    try {
+                      prereqs = JSON.parse(currentConcept.prerequisites);
+                    } catch (e) {}
+                    if (prereqs.length === 0) return null;
+                    return (
+                      <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+                        <Target className="w-4 h-4" />
+                        Prerequisites: {prereqs.join(", ")}
+                      </div>
+                    );
+                  })()}
                   <Button onClick={handleStartConcept} className="w-full" data-testid="button-start-concept">
                     {questionMutation.isPending ? (
                       <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating question...</>
@@ -967,6 +1002,28 @@ export default function LearningInterface() {
           </>
         )}
       </div>
+
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent className="border-border/60 bg-card/90 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" /> End Session?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Are you sure you want to exit this learning session? Your progress on mastered concepts will be saved, but you'll lose the current momentum.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-background/50">Keep Learning</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => setLocation("/subjects")}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Exit Session
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

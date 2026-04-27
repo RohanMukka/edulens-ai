@@ -413,7 +413,52 @@ export async function registerRoutes(
         totalConcepts,
         weakAreas,
         recentSessions: sessions.slice(0, 5),
-        recentInteractions: interactions.slice(-20), // Get last 20 for the progression tracker
+        recentInteractions: interactions.slice(-20),
+        currentStreak: (() => {
+          if (interactions.length === 0) return 0;
+          
+          const dates = Array.from(new Set(interactions.map(i => i.createdAt.split('T')[0]))).sort().reverse();
+          const today = new Date().toISOString().split('T')[0];
+          const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+          
+          if (dates[0] !== today && dates[0] !== yesterday) return 0;
+          
+          let streak = 1;
+          for (let i = 0; i < dates.length - 1; i++) {
+            const d1 = new Date(dates[i]);
+            const d2 = new Date(dates[i+1]);
+            const diffDays = (d1.getTime() - d2.getTime()) / (1000 * 3600 * 24);
+            
+            if (diffDays === 1) {
+              streak++;
+            } else if (diffDays > 1) {
+              break;
+            }
+          }
+          return streak;
+        })(),
+        classPercentile: await (async () => {
+          const studentClassrooms = await storage.getStudentClassrooms(studentId);
+          if (studentClassrooms.length === 0) return null;
+          
+          const classroom = studentClassrooms[0];
+          const classStudents = await storage.getClassroomStudents(classroom.id);
+          if (classStudents.length < 2) return null;
+
+          const studentAverages = await Promise.all(classStudents.map(async s => {
+            const m = await storage.getStudentMastery(s.id);
+            const avg = m.length > 0 ? m.reduce((sum, curr) => sum + curr.score, 0) / m.length : 0;
+            return { id: s.id, avg };
+          }));
+
+          studentAverages.sort((a, b) => b.avg - a.avg);
+          const rank = studentAverages.findIndex(s => s.id === studentId);
+          if (rank === -1) return null;
+          
+          // Percentile = ((Total - Rank) / Total) * 100
+          // e.g. Rank 0 in class of 10 = Top 10% (technically 100th percentile)
+          return Math.round(((classStudents.length - rank) / classStudents.length) * 100);
+        })(),
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
