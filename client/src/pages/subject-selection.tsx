@@ -9,7 +9,25 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MasteryScore, Concept, Classroom } from "@shared/schema";
-import { Dna, Calculator, Landmark, ArrowLeft, ChevronRight, BookOpen, Loader2, Plus, Sparkles, GraduationCap, LogOut, Users, Code, Atom, FlaskConical, TrendingUp, Clock } from "lucide-react";
+import {
+  Dna,
+  Calculator,
+  Landmark,
+  ArrowLeft,
+  ChevronRight,
+  BookOpen,
+  Loader2,
+  Plus,
+  Sparkles,
+  GraduationCap,
+  LogOut,
+  Users,
+  Code,
+  Atom,
+  FlaskConical,
+  TrendingUp,
+  Clock,
+} from "lucide-react";
 import { SubjectSkeleton } from "@/components/ui/skeleton-screen";
 import { useToast } from "@/hooks/use-toast";
 
@@ -88,7 +106,10 @@ export default function SubjectSelection() {
     queryKey: ["/api/students", student?.id, "mastery"],
     enabled: !!student,
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/students/${student!.id}/mastery`);
+      const res = await apiRequest(
+        "GET",
+        `/api/students/${student!.id}/mastery`,
+      );
       return res.json();
     },
   });
@@ -104,7 +125,14 @@ export default function SubjectSelection() {
 
   const startSession = async (subject: string) => {
     try {
-      const res = await apiRequest("POST", "/api/sessions", { studentId: student.id, subject });
+      const preferredCode = localStorage.getItem("edulens.activeClassroomCode");
+      if (!preferredCode && classrooms && classrooms.length > 0) {
+        localStorage.setItem("edulens.activeClassroomCode", classrooms[0].code);
+      }
+      const res = await apiRequest("POST", "/api/sessions", {
+        studentId: student.id,
+        subject,
+      });
       const session = await res.json();
       setLocation(`/learn/${session.id}`);
     } catch (e) {
@@ -116,7 +144,10 @@ export default function SubjectSelection() {
     if (!newTopic.trim()) return;
     setIsGenerating(true);
     try {
-      const res = await apiRequest("POST", "/api/concepts/generate", { subject: "Custom", topic: newTopic });
+      const res = await apiRequest("POST", "/api/concepts/generate", {
+        subject: "Custom",
+        topic: newTopic,
+      });
       const concept = await res.json();
       toast({
         title: "Concept Generated",
@@ -138,7 +169,11 @@ export default function SubjectSelection() {
     if (!joinCode.trim()) return;
     setIsJoining(true);
     try {
-      await apiRequest("POST", "/api/classrooms/join", { code: joinCode });
+      const normalizedCode = joinCode.trim().toUpperCase();
+      await apiRequest("POST", "/api/classrooms/join", {
+        code: normalizedCode,
+      });
+      localStorage.setItem("edulens.activeClassroomCode", normalizedCode);
       setJoinCode("");
       qc.invalidateQueries({ queryKey: ["/api/classrooms"] });
       toast({
@@ -165,7 +200,7 @@ export default function SubjectSelection() {
   // Surface SM-2 spaced repetition: count concepts due for review
   const now = new Date().toISOString();
   const reviewDueConcepts = (mastery || []).filter(
-    m => m.nextReviewAt && m.nextReviewAt <= now && m.score > 0
+    (m) => m.nextReviewAt && m.nextReviewAt <= now && m.score > 0,
   );
   const reviewDueCount = reviewDueConcepts.length;
 
@@ -174,7 +209,12 @@ export default function SubjectSelection() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="mb-2 -ml-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/")}
+              className="mb-2 -ml-2"
+            >
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
             <h1 className="text-xl font-bold">Choose a Subject</h1>
@@ -183,10 +223,20 @@ export default function SubjectSelection() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} data-testid="button-knowledge-graph">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/graph")}
+              data-testid="button-knowledge-graph"
+            >
               <BookOpen className="w-4 h-4 mr-1" /> Knowledge Graph
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-dashboard">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/dashboard")}
+              data-testid="button-dashboard"
+            >
               Dashboard
             </Button>
           </div>
@@ -198,11 +248,13 @@ export default function SubjectSelection() {
               <GraduationCap className="w-5 h-5 text-primary" /> My Classrooms
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
-              {classrooms.map(c => (
+              {classrooms.map((c) => (
                 <Card key={c.id} className="border border-border/60">
                   <CardContent className="py-4 px-5">
                     <h3 className="font-bold">{c.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Code: {c.code}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Code: {c.code}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -223,8 +275,17 @@ export default function SubjectSelection() {
                   <Clock className="w-5 h-5 text-amber-500 animate-pulse" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-sm text-amber-600 dark:text-amber-400">Spaced Repetition Review</h3>
-                  <p className="text-xs text-muted-foreground">You have <strong className="text-foreground">{reviewDueCount}</strong> concept{reviewDueCount !== 1 ? 's' : ''} due for review. Practice now to strengthen your memory!</p>
+                  <h3 className="font-bold text-sm text-amber-600 dark:text-amber-400">
+                    Spaced Repetition Review
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    You have{" "}
+                    <strong className="text-foreground">
+                      {reviewDueCount}
+                    </strong>{" "}
+                    concept{reviewDueCount !== 1 ? "s" : ""} due for review.
+                    Practice now to strengthen your memory!
+                  </p>
                 </div>
                 <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-xs font-black shrink-0">
                   {reviewDueCount} Due
@@ -248,15 +309,28 @@ export default function SubjectSelection() {
                 data-testid={`card-subject-${subject.name.toLowerCase()}`}
               >
                 <CardContent className="py-6 px-6 flex items-center gap-5">
-                  <div className={`w-14 h-14 rounded-2xl ${subject.iconBg} flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform`}>
-                    <subject.icon className={`w-7 h-7 ${subject.color.split(" ").slice(1).join(" ")}`} />
+                  <div
+                    className={`w-14 h-14 rounded-2xl ${subject.iconBg} flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform`}
+                  >
+                    <subject.icon
+                      className={`w-7 h-7 ${subject.color.split(" ").slice(1).join(" ")}`}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">{subject.name}</h3>
-                      <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-widest bg-primary/5 text-primary/70 border-primary/10">5 Concepts</Badge>
+                      <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
+                        {subject.name}
+                      </h3>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] uppercase font-black tracking-widest bg-primary/5 text-primary/70 border-primary/10"
+                      >
+                        5 Concepts
+                      </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">{subject.desc}</p>
+                    <p className="text-sm text-muted-foreground font-medium">
+                      {subject.desc}
+                    </p>
                   </div>
                   <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                     <ChevronRight className="w-5 h-5" />
@@ -271,31 +345,41 @@ export default function SubjectSelection() {
           <div>
             <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-            Dynamic Knowledge Expansion
-          </h2>
-          <Card className="border border-primary/20 bg-primary/5">
-            <CardContent className="py-5 px-5">
-              <p className="text-sm text-muted-foreground mb-4">
-                Want to learn something not on the list? Type any topic below, and our AI will generate a custom learning concept for you on the fly.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input 
-                  placeholder="e.g., Quantum Physics, Black Holes, AI..." 
-                  value={newTopic}
-                  onChange={(e) => setNewTopic(e.target.value)}
-                  className="flex-1 bg-background"
-                />
-                <Button onClick={handleGenerateConcept} disabled={isGenerating || !newTopic.trim()}>
-                  {isGenerating ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
-                  ) : (
-                    <><Plus className="w-4 h-4 mr-2" /> Generate & Learn</>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              Dynamic Knowledge Expansion
+            </h2>
+            <Card className="border border-primary/20 bg-primary/5">
+              <CardContent className="py-5 px-5">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Want to learn something not on the list? Type any topic below,
+                  and our AI will generate a custom learning concept for you on
+                  the fly.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    placeholder="e.g., Quantum Physics, Black Holes, AI..."
+                    value={newTopic}
+                    onChange={(e) => setNewTopic(e.target.value)}
+                    className="flex-1 bg-background"
+                  />
+                  <Button
+                    onClick={handleGenerateConcept}
+                    disabled={isGenerating || !newTopic.trim()}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" /> Generate & Learn
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           <div>
             <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" /> Join Classroom
@@ -306,19 +390,23 @@ export default function SubjectSelection() {
                   Have a code from your teacher? Join their classroom here.
                 </p>
                 <div className="flex gap-2">
-                  <Input 
-                    placeholder="Enter 6-char code" 
+                  <Input
+                    placeholder="Enter 6-char code"
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     maxLength={6}
                     className="font-mono text-center uppercase bg-background"
                   />
-                  <Button 
-                    onClick={handleJoinClassroom} 
+                  <Button
+                    onClick={handleJoinClassroom}
                     disabled={isJoining || joinCode.length !== 6}
                     className="shrink-0"
                   >
-                    {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
+                    {isJoining ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Join"
+                    )}
                   </Button>
                 </div>
               </CardContent>

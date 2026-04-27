@@ -13,6 +13,10 @@ class ClassroomSocket {
   private url: string;
   private listeners: Set<(msg: any) => void> = new Set();
   private reconnectTimer: any = null;
+  private shouldReconnect = false;
+  private currentRoom: string | null = null;
+  private currentUserId: number | null = null;
+  private currentRole: "student" | "teacher" | null = null;
 
   constructor() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -20,7 +24,21 @@ class ClassroomSocket {
   }
 
   connect(room: string, userId: number, role: "student" | "teacher") {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws?.readyState === WebSocket.OPEN && this.currentRoom === room) return;
+
+    this.shouldReconnect = true;
+    this.currentRoom = room;
+    this.currentUserId = userId;
+    this.currentRole = role;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+      this.ws.close();
+    }
 
     this.ws = new WebSocket(this.url);
 
@@ -39,14 +57,26 @@ class ClassroomSocket {
     };
 
     this.ws.onclose = () => {
+      if (!this.shouldReconnect || !this.currentRoom || !this.currentUserId || !this.currentRole) {
+        return;
+      }
       console.log("WS Disconnected, retrying...");
-      this.reconnectTimer = setTimeout(() => this.connect(room, userId, role), 3000);
+      this.reconnectTimer = setTimeout(() => {
+        if (this.currentRoom && this.currentUserId && this.currentRole) {
+          this.connect(this.currentRoom, this.currentUserId, this.currentRole);
+        }
+      }, 3000);
     };
   }
 
   disconnect() {
+    this.shouldReconnect = false;
+    this.currentRoom = null;
+    this.currentUserId = null;
+    this.currentRole = null;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.ws) {
+      this.ws.onclose = null;
       this.ws.close();
       this.ws = null;
     }

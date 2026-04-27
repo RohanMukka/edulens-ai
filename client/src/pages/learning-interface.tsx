@@ -12,7 +12,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,31 +27,68 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { Concept, Session, Interaction, Classroom, MasteryScore } from "@shared/schema";
+import type {
+  Concept,
+  Session,
+  Interaction,
+  Classroom,
+  MasteryScore,
+} from "@shared/schema";
 import { classroomSocket } from "@/lib/socket";
 import {
-  ArrowLeft, ArrowRight, Send, Loader2, CheckCircle2, XCircle,
-  AlertTriangle, Brain, Sparkles, BookOpen, Target, Lightbulb,
-  Mic, MicOff, Search, Shuffle, MessageSquare, Layers, HelpCircle, X,
-  ChevronDown, ChevronUp
+  ArrowLeft,
+  ArrowRight,
+  Send,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Brain,
+  Sparkles,
+  BookOpen,
+  Target,
+  Lightbulb,
+  Mic,
+  MicOff,
+  Search,
+  Shuffle,
+  MessageSquare,
+  Layers,
+  HelpCircle,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
 const MermaidChart = ({ chart }: { chart: string }) => {
   const [svg, setSvg] = useState<string>("");
-  const id = useMemo(() => `mermaid-${Math.random().toString(36).substring(7)}`, []);
-  
+  const id = useMemo(
+    () => `mermaid-${Math.random().toString(36).substring(7)}`,
+    [],
+  );
+
   useEffect(() => {
-    mermaid.render(id, chart).then(res => {
-      setSvg(res.svg);
-    }).catch(err => {
-      console.error("Mermaid error:", err);
-      setSvg(`<div class="text-red-500 text-sm">Failed to render diagram</div>`);
-    });
+    mermaid
+      .render(id, chart)
+      .then((res) => {
+        setSvg(res.svg);
+      })
+      .catch((err) => {
+        console.error("Mermaid error:", err);
+        setSvg(
+          `<div class="text-red-500 text-sm">Failed to render diagram</div>`,
+        );
+      });
   }, [chart, id]);
-  
-  return <div className="flex justify-center my-4 overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />;
+
+  return (
+    <div
+      className="flex justify-center my-4 overflow-x-auto"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
 };
 
 const VoiceVisualizer = ({ isActive }: { isActive: boolean }) => {
@@ -69,14 +110,14 @@ const VoiceVisualizer = ({ isActive }: { isActive: boolean }) => {
                   "10%",
                   `${Math.random() * 80 + 20}%`,
                   `${Math.random() * 80 + 20}%`,
-                  "10%"
-                ]
+                  "10%",
+                ],
               }}
               transition={{
                 duration: 0.6,
                 repeat: Infinity,
                 delay: i * 0.05,
-                ease: "easeInOut"
+                ease: "easeInOut",
               }}
             />
           ))}
@@ -87,13 +128,17 @@ const VoiceVisualizer = ({ isActive }: { isActive: boolean }) => {
 };
 
 const markdownComponents = {
-  code({node, inline, className, children, ...props}: any) {
-    const match = /language-(\w+)/.exec(className || '');
-    if (!inline && match && match[1] === 'mermaid') {
-      return <MermaidChart chart={String(children).replace(/\n$/, '')} />;
+  code({ node, inline, className, children, ...props }: any) {
+    const match = /language-(\w+)/.exec(className || "");
+    if (!inline && match && match[1] === "mermaid") {
+      return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
     }
-    return <code className={className} {...props}>{children}</code>;
-  }
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    );
+  },
 };
 
 interface ScoreResult {
@@ -108,57 +153,110 @@ interface ScoreResult {
   bloomLevel?: string | null;
 }
 
-const MISCONCEPTION_META: Record<string, { label: string; emoji: string; color: string; bg: string; border: string; remediation: string }> = {
+const MISCONCEPTION_META: Record<
+  string,
+  {
+    label: string;
+    emoji: string;
+    color: string;
+    bg: string;
+    border: string;
+    remediation: string;
+  }
+> = {
   PROCESS_CONFUSION: {
-    label: "Process Confusion", emoji: "🔄",
+    label: "Process Confusion",
+    emoji: "🔄",
     color: "text-orange-600 dark:text-orange-400",
-    bg: "bg-orange-500/10", border: "border-orange-500/30",
-    remediation: "You may be mixing up two related but distinct processes. Let's compare them side by side."
+    bg: "bg-orange-500/10",
+    border: "border-orange-500/30",
+    remediation:
+      "You may be mixing up two related but distinct processes. Let's compare them side by side.",
   },
   INCOMPLETE_UNDERSTANDING: {
-    label: "Partial Understanding", emoji: "🧩",
+    label: "Partial Understanding",
+    emoji: "🧩",
     color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-500/10", border: "border-blue-500/30",
-    remediation: "You've grasped the core idea but are missing some critical components."
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/30",
+    remediation:
+      "You've grasped the core idea but are missing some critical components.",
   },
   OVERGENERALIZATION: {
-    label: "Overgeneralization", emoji: "🎯",
+    label: "Overgeneralization",
+    emoji: "🎯",
     color: "text-purple-600 dark:text-purple-400",
-    bg: "bg-purple-500/10", border: "border-purple-500/30",
-    remediation: "You're applying a rule too broadly — there are important exceptions to consider."
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/30",
+    remediation:
+      "You're applying a rule too broadly — there are important exceptions to consider.",
   },
   CAUSE_EFFECT_REVERSAL: {
-    label: "Cause-Effect Reversal", emoji: "↔️",
+    label: "Cause-Effect Reversal",
+    emoji: "↔️",
     color: "text-rose-600 dark:text-rose-400",
-    bg: "bg-rose-500/10", border: "border-rose-500/30",
-    remediation: "You've identified the right concepts but inverted the causal direction."
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/30",
+    remediation:
+      "You've identified the right concepts but inverted the causal direction.",
   },
   TERMINOLOGY_CONFUSION: {
-    label: "Vocabulary Confusion", emoji: "📝",
+    label: "Vocabulary Confusion",
+    emoji: "📝",
     color: "text-cyan-600 dark:text-cyan-400",
-    bg: "bg-cyan-500/10", border: "border-cyan-500/30",
-    remediation: "Some technical terms are being used interchangeably — let's clarify what each one means."
+    bg: "bg-cyan-500/10",
+    border: "border-cyan-500/30",
+    remediation:
+      "Some technical terms are being used interchangeably — let's clarify what each one means.",
   },
   SURFACE_LEVEL: {
-    label: "Surface-Level Response", emoji: "🏊",
+    label: "Surface-Level Response",
+    emoji: "🏊",
     color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/10", border: "border-amber-500/30",
-    remediation: "Your answer stays at a high level. Try to go deeper into the mechanism or reasoning."
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/30",
+    remediation:
+      "Your answer stays at a high level. Try to go deeper into the mechanism or reasoning.",
   },
   NO_MISCONCEPTION: {
-    label: "Strong Understanding", emoji: "✅",
+    label: "Strong Understanding",
+    emoji: "✅",
     color: "text-emerald-600 dark:text-emerald-400",
-    bg: "bg-emerald-500/10", border: "border-emerald-500/30",
-    remediation: ""
-  }
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    remediation: "",
+  },
 };
 
-const BLOOMS_META: Record<string, { label: string; color: string; bg: string }> = {
-  REMEMBERING: { label: "Remembering", color: "text-rose-500", bg: "bg-rose-500/10" },
-  UNDERSTANDING: { label: "Understanding", color: "text-amber-500", bg: "bg-amber-500/10" },
-  APPLYING: { label: "Applying", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  ANALYZING: { label: "Analyzing", color: "text-blue-500", bg: "bg-blue-500/10" },
-  EVALUATING: { label: "Evaluating", color: "text-violet-500", bg: "bg-violet-500/10" },
+const BLOOMS_META: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
+  REMEMBERING: {
+    label: "Remembering",
+    color: "text-rose-500",
+    bg: "bg-rose-500/10",
+  },
+  UNDERSTANDING: {
+    label: "Understanding",
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
+  },
+  APPLYING: {
+    label: "Applying",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+  },
+  ANALYZING: {
+    label: "Analyzing",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+  },
+  EVALUATING: {
+    label: "Evaluating",
+    color: "text-violet-500",
+    bg: "bg-violet-500/10",
+  },
   CREATING: { label: "Creating", color: "text-cyan-500", bg: "bg-cyan-500/10" },
 };
 
@@ -173,35 +271,49 @@ export default function LearningInterface() {
   const [lastScore, setLastScore] = useState<ScoreResult | null>(null);
   const [explanation, setExplanation] = useState("");
   const [question, setQuestion] = useState("");
-  const [phase, setPhase] = useState<"intro" | "question" | "responding" | "feedback" | "complete">("intro");
+  const [phase, setPhase] = useState<
+    "intro" | "question" | "responding" | "feedback" | "complete"
+  >("intro");
 
-  const [socraticHistory, setSocraticHistory] = useState<{role: string, content: string}[]>([]);
+  const [socraticHistory, setSocraticHistory] = useState<
+    { role: string; content: string }[]
+  >([]);
   const [socraticInput, setSocraticInput] = useState("");
   const [isSocraticActive, setIsSocraticActive] = useState(false);
-  const [prerequisiteRedirect, setPrerequisiteRedirect] = useState<string | null>(null);
+  const [prerequisiteRedirect, setPrerequisiteRedirect] = useState<
+    string | null
+  >(null);
   const [isLessonOpen, setIsLessonOpen] = useState(true);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [activeClassroomCode, setActiveClassroomCode] = useState<string | null>(
+    null,
+  );
 
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     // Initialize speech recognition
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
 
       recognitionRef.current.onresult = (event: any) => {
-        let finalTranscript = '';
+        let finalTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript + " ";
           }
         }
         if (finalTranscript) {
-          setResponse((prev) => prev + (prev && !prev.endsWith(" ") ? " " : "") + finalTranscript);
+          setResponse(
+            (prev) =>
+              prev + (prev && !prev.endsWith(" ") ? " " : "") + finalTranscript,
+          );
         }
       };
 
@@ -218,7 +330,9 @@ export default function LearningInterface() {
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
-      alert("Speech recognition is not supported in this browser. Try Chrome or Edge.");
+      alert(
+        "Speech recognition is not supported in this browser. Try Chrome or Edge.",
+      );
       return;
     }
 
@@ -241,7 +355,7 @@ export default function LearningInterface() {
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399', '#059669', '#f59e0b', '#fbbf24']
+        colors: ["#10b981", "#34d399", "#059669", "#f59e0b", "#fbbf24"],
       });
     }
   }, [phase, lastScore]);
@@ -253,9 +367,12 @@ export default function LearningInterface() {
 
   const sessionId = Number(params.sessionId);
 
-  const { data: session, isLoading: sessionLoading } = useQuery<Session & { interactions: Interaction[] }>({
+  const { data: session, isLoading: sessionLoading } = useQuery<
+    Session & { interactions: Interaction[] }
+  >({
     queryKey: [`/api/sessions/${params.sessionId}`],
-    queryFn: async () => (await apiRequest("GET", `/api/sessions/${params.sessionId}`)).json(),
+    queryFn: async () =>
+      (await apiRequest("GET", `/api/sessions/${params.sessionId}`)).json(),
   });
 
   const { data: classrooms } = useQuery<Classroom[]>({
@@ -265,12 +382,21 @@ export default function LearningInterface() {
   });
 
   useEffect(() => {
-    if (student && classrooms && classrooms.length > 0) {
-      // For now, join the first classroom's live room
-      const room = classrooms[0].code;
-      classroomSocket.connect(room, student.id, "student");
-      return () => classroomSocket.disconnect();
+    if (!student || !classrooms || classrooms.length === 0) {
+      setActiveClassroomCode(null);
+      return;
     }
+
+    const storedCode = localStorage.getItem("edulens.activeClassroomCode");
+    const room = classrooms.some((c) => c.code === storedCode)
+      ? (storedCode as string)
+      : classrooms[0].code;
+
+    setActiveClassroomCode(room);
+    localStorage.setItem("edulens.activeClassroomCode", room);
+    classroomSocket.connect(room, student.id, "student");
+
+    return () => classroomSocket.disconnect();
   }, [student, classrooms]);
 
   const { data: concepts } = useQuery<Concept[]>({
@@ -286,12 +412,21 @@ export default function LearningInterface() {
   const { data: studentMastery } = useQuery<MasteryScore[]>({
     queryKey: ["/api/students", student.id, "mastery"],
     enabled: !!student,
-    queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/mastery`)).json(),
+    queryFn: async () =>
+      (await apiRequest("GET", `/api/students/${student.id}/mastery`)).json(),
   });
 
   const respondMutation = useMutation({
-    mutationFn: async (data: { conceptId: number; studentResponse: string; question: string }) => {
-      const res = await apiRequest("POST", `/api/sessions/${sessionId}/respond`, data);
+    mutationFn: async (data: {
+      conceptId: number;
+      studentResponse: string;
+      question: string;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/sessions/${sessionId}/respond`,
+        data,
+      );
       return res.json() as Promise<ScoreResult>;
     },
     onSuccess: (data) => {
@@ -303,7 +438,7 @@ export default function LearningInterface() {
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ["#6366f1", "#a855f7", "#ec4899"]
+          colors: ["#6366f1", "#a855f7", "#ec4899"],
         });
       }
       // Step 2: Auto-show AI explanation for low scores
@@ -315,29 +450,37 @@ export default function LearningInterface() {
         });
       }
       qc.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}`] });
-      qc.invalidateQueries({ queryKey: ["/api/students", student.id, "mastery"] });
-      qc.invalidateQueries({ queryKey: ["/api/students", student.id, "stats"] });
-      
+      qc.invalidateQueries({
+        queryKey: ["/api/students", student.id, "mastery"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["/api/students", student.id, "stats"],
+      });
+
       // Emit live update
-      if (classrooms && classrooms.length > 0) {
+      if (activeClassroomCode) {
         classroomSocket.send({
           type: "student_update",
-          room: classrooms[0].code,
+          room: activeClassroomCode,
           data: {
             name: student?.name,
             score: data.score,
             concept: currentConcept?.name,
             misconception: data.misconceptionType,
             feedback: data.feedback,
-            bloomLevel: data.bloomLevel
-          }
+            bloomLevel: data.bloomLevel,
+          },
         });
       }
     },
   });
 
   const explainMutation = useMutation({
-    mutationFn: async (data: { conceptName: string; subject: string; gaps?: string[] }) => {
+    mutationFn: async (data: {
+      conceptName: string;
+      subject: string;
+      gaps?: string[];
+    }) => {
       const res = await apiRequest("POST", "/api/ai/explain", data);
       return res.json();
     },
@@ -345,13 +488,20 @@ export default function LearningInterface() {
   });
 
   const socraticMutation = useMutation({
-    mutationFn: async (data: { history: any[], conceptName: string, misconception: string }) => {
+    mutationFn: async (data: {
+      history: any[];
+      conceptName: string;
+      misconception: string;
+    }) => {
       const res = await apiRequest("POST", "/api/ai/socratic", data);
       return res.json();
     },
     onSuccess: (data) => {
-      setSocraticHistory(prev => [...prev, { role: "assistant", content: data.message }]);
-    }
+      setSocraticHistory((prev) => [
+        ...prev,
+        { role: "assistant", content: data.message },
+      ]);
+    },
   });
 
   const handleStartSocratic = () => {
@@ -361,55 +511,71 @@ export default function LearningInterface() {
     socraticMutation.mutate({
       history: [],
       conceptName: currentConcept.name,
-      misconception: MISCONCEPTION_META[lastScore.misconceptionType]?.label || "Misconception"
+      misconception:
+        MISCONCEPTION_META[lastScore.misconceptionType]?.label ||
+        "Misconception",
     });
 
     // Notify teacher
-    if (classrooms && classrooms.length > 0) {
+    if (activeClassroomCode) {
       classroomSocket.send({
         type: "student_update",
-        room: classrooms[0].code,
-        data: {
-          name: student?.name,
-          score: lastScore.score,
-          concept: currentConcept?.name,
-          misconception: lastScore.misconceptionType,
-          isSocraticActive: true
-        }
-      });
-    }
-  };
-
-  const handleSocraticSubmit = () => {
-    if (!socraticInput.trim() || !currentConcept || !lastScore?.misconceptionType) return;
-    const newHistory = [...socraticHistory, { role: "user", content: socraticInput }];
-    setSocraticHistory(newHistory);
-    setSocraticInput("");
-    socraticMutation.mutate({
-      history: newHistory,
-      conceptName: currentConcept.name,
-      misconception: MISCONCEPTION_META[lastScore.misconceptionType]?.label || "Misconception"
-    });
-
-    // Update teacher
-    if (classrooms && classrooms.length > 0) {
-      classroomSocket.send({
-        type: "student_update",
-        room: classrooms[0].code,
+        room: activeClassroomCode,
         data: {
           name: student?.name,
           score: lastScore.score,
           concept: currentConcept?.name,
           misconception: lastScore.misconceptionType,
           isSocraticActive: true,
-          socraticMessage: socraticInput
-        }
+        },
+      });
+    }
+  };
+
+  const handleSocraticSubmit = () => {
+    if (
+      !socraticInput.trim() ||
+      !currentConcept ||
+      !lastScore?.misconceptionType
+    )
+      return;
+    const newHistory = [
+      ...socraticHistory,
+      { role: "user", content: socraticInput },
+    ];
+    setSocraticHistory(newHistory);
+    setSocraticInput("");
+    socraticMutation.mutate({
+      history: newHistory,
+      conceptName: currentConcept.name,
+      misconception:
+        MISCONCEPTION_META[lastScore.misconceptionType]?.label ||
+        "Misconception",
+    });
+
+    // Update teacher
+    if (activeClassroomCode) {
+      classroomSocket.send({
+        type: "student_update",
+        room: activeClassroomCode,
+        data: {
+          name: student?.name,
+          score: lastScore.score,
+          concept: currentConcept?.name,
+          misconception: lastScore.misconceptionType,
+          isSocraticActive: true,
+          socraticMessage: socraticInput,
+        },
       });
     }
   };
 
   const questionMutation = useMutation({
-    mutationFn: async (data: { conceptName: string; subject: string; difficulty?: string }) => {
+    mutationFn: async (data: {
+      conceptName: string;
+      subject: string;
+      difficulty?: string;
+    }) => {
       const res = await apiRequest("POST", "/api/ai/question", data);
       return res.json();
     },
@@ -421,17 +587,27 @@ export default function LearningInterface() {
       console.error("Question generation failed:", error);
       setQuestion("Explain the key concepts of this topic in your own words.");
       setPhase("question");
-    }
+    },
   });
 
   const currentConcept = concepts?.[currentConceptIndex];
   const totalConcepts = concepts?.length || 0;
-  const progressPercent = totalConcepts > 0 ? ((currentConceptIndex) / totalConcepts) * 100 : 0;
+  const progressPercent =
+    totalConcepts > 0 ? (currentConceptIndex / totalConcepts) * 100 : 0;
 
   const handleGetQuestion = () => {
     if (!currentConcept || !session) return;
-    const difficulty = lastScore && lastScore.score < 0.5 ? "easy" : lastScore && lastScore.score > 0.8 ? "hard" : "medium";
-    questionMutation.mutate({ conceptName: currentConcept.name, subject: session.subject, difficulty });
+    const difficulty =
+      lastScore && lastScore.score < 0.5
+        ? "easy"
+        : lastScore && lastScore.score > 0.8
+          ? "hard"
+          : "medium";
+    questionMutation.mutate({
+      conceptName: currentConcept.name,
+      subject: session.subject,
+      difficulty,
+    });
   };
 
   const handleStartConcept = () => {
@@ -441,7 +617,11 @@ export default function LearningInterface() {
 
   const handleSubmitResponse = () => {
     if (!currentConcept || !response.trim()) return;
-    respondMutation.mutate({ conceptId: currentConcept.id, studentResponse: response, question });
+    respondMutation.mutate({
+      conceptId: currentConcept.id,
+      studentResponse: response,
+      question,
+    });
   };
 
   const resetConceptState = () => {
@@ -459,18 +639,30 @@ export default function LearningInterface() {
     if (currentConceptIndex < totalConcepts - 1) {
       // Step 1: Prerequisite-Driven Adaptive Pathfinding
       // If score was low, check if a prerequisite needs attention first
-      if (lastScore && lastScore.score < 0.4 && currentConcept && concepts && studentMastery) {
+      if (
+        lastScore &&
+        lastScore.score < 0.4 &&
+        currentConcept &&
+        concepts &&
+        studentMastery
+      ) {
         try {
-          const prereqs: string[] = JSON.parse(currentConcept.prerequisites || "[]");
+          const prereqs: string[] = JSON.parse(
+            currentConcept.prerequisites || "[]",
+          );
           if (prereqs.length > 0) {
             // Find prerequisite concepts that have weak mastery
             for (const prereqName of prereqs) {
-              const prereqConcept = concepts.find(c => c.name === prereqName);
+              const prereqConcept = concepts.find((c) => c.name === prereqName);
               if (prereqConcept) {
-                const prereqMastery = studentMastery.find(m => m.conceptId === prereqConcept.id);
+                const prereqMastery = studentMastery.find(
+                  (m) => m.conceptId === prereqConcept.id,
+                );
                 // If prerequisite mastery is low (< 0.5) or never attempted, redirect
                 if (!prereqMastery || prereqMastery.score < 0.5) {
-                  const prereqIndex = concepts.findIndex(c => c.name === prereqName);
+                  const prereqIndex = concepts.findIndex(
+                    (c) => c.name === prereqName,
+                  );
                   if (prereqIndex >= 0 && prereqIndex !== currentConceptIndex) {
                     setPrerequisiteRedirect(prereqName);
                     setCurrentConceptIndex(prereqIndex);
@@ -488,7 +680,7 @@ export default function LearningInterface() {
         resetConceptState();
         return;
       }
-      setCurrentConceptIndex(prev => prev + 1);
+      setCurrentConceptIndex((prev) => prev + 1);
       resetConceptState();
     } else {
       setPhase("complete");
@@ -515,7 +707,11 @@ export default function LearningInterface() {
     setSocraticHistory([]);
     // Optionally get a new question
     if (currentConcept && session) {
-      questionMutation.mutate({ conceptName: currentConcept.name, subject: session.subject, difficulty: "easy" });
+      questionMutation.mutate({
+        conceptName: currentConcept.name,
+        subject: session.subject,
+        difficulty: "easy",
+      });
     }
   };
 
@@ -541,8 +737,10 @@ export default function LearningInterface() {
   };
 
   const scoreIcon = (score: number) => {
-    if (score >= 0.7) return <CheckCircle2 className="w-6 h-6 text-emerald-500" />;
-    if (score >= 0.4) return <AlertTriangle className="w-6 h-6 text-amber-500" />;
+    if (score >= 0.7)
+      return <CheckCircle2 className="w-6 h-6 text-emerald-500" />;
+    if (score >= 0.4)
+      return <AlertTriangle className="w-6 h-6 text-amber-500" />;
     return <XCircle className="w-6 h-6 text-rose-500" />;
   };
 
@@ -565,13 +763,21 @@ export default function LearningInterface() {
             </div>
             <h2 className="text-xl font-bold mb-2">Session Complete!</h2>
             <p className="text-muted-foreground text-sm mb-6">
-              Great job studying {session.subject}! You covered {totalConcepts} concepts.
+              Great job studying {session.subject}! You covered {totalConcepts}{" "}
+              concepts.
             </p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => setLocation("/subjects")} data-testid="button-new-session">
+              <Button
+                onClick={() => setLocation("/subjects")}
+                data-testid="button-new-session"
+              >
                 New Session
               </Button>
-              <Button variant="outline" onClick={() => setLocation("/dashboard")} data-testid="button-view-progress">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/dashboard")}
+                data-testid="button-view-progress"
+              >
                 View Progress
               </Button>
             </div>
@@ -587,30 +793,48 @@ export default function LearningInterface() {
       <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setShowExitDialog(true)} data-testid="button-back">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowExitDialog(true)}
+              data-testid="button-back"
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">{session.subject}</Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {session.subject}
+                </Badge>
                 <span className="text-sm text-muted-foreground">
                   {currentConceptIndex + 1} of {totalConcepts}
                 </span>
-                {classrooms && classrooms.length > 0 && (
+                {activeClassroomCode && (
                   <div className="flex items-center gap-1.5 ml-3 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Live Feed</span>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                      Live Feed
+                    </span>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} data-testid="button-view-graph">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation("/graph")}
+            data-testid="button-view-graph"
+          >
             <Brain className="w-4 h-4 mr-1" /> Graph
           </Button>
         </div>
         <div className="max-w-3xl mx-auto px-6 pb-2">
-          <Progress value={progressPercent} className="h-1.5" data-testid="progress-session" />
+          <Progress
+            value={progressPercent}
+            className="h-1.5"
+            data-testid="progress-session"
+          />
         </div>
       </div>
 
@@ -630,9 +854,15 @@ export default function LearningInterface() {
                       <Target className="w-4 h-4 text-amber-500" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Adaptive Redirect</p>
+                      <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                        Adaptive Redirect
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        You're struggling with a concept that builds on <strong className="text-foreground">{prerequisiteRedirect}</strong>. Let's strengthen that foundation first.
+                        You're struggling with a concept that builds on{" "}
+                        <strong className="text-foreground">
+                          {prerequisiteRedirect}
+                        </strong>
+                        . Let's strengthen that foundation first.
                       </p>
                     </div>
                   </CardContent>
@@ -642,33 +872,52 @@ export default function LearningInterface() {
 
             {/* Concept Introduction */}
             {phase === "intro" && (
-              <Card className="border border-border/60" data-testid="card-concept-intro">
+              <Card
+                className="border border-border/60"
+                data-testid="card-concept-intro"
+              >
                 <CardContent className="pt-6 pb-5">
                   <div className="flex items-start gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <BookOpen className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h2 className="font-bold text-lg">{currentConcept.name}</h2>
-                      <p className="text-muted-foreground text-sm mt-1 mb-4">{currentConcept.description}</p>
-                      
-                      <Collapsible open={isLessonOpen} onOpenChange={setIsLessonOpen} className="mb-4">
+                      <h2 className="font-bold text-lg">
+                        {currentConcept.name}
+                      </h2>
+                      <p className="text-muted-foreground text-sm mt-1 mb-4">
+                        {currentConcept.description}
+                      </p>
+
+                      <Collapsible
+                        open={isLessonOpen}
+                        onOpenChange={setIsLessonOpen}
+                        className="mb-4"
+                      >
                         <CollapsibleTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="w-full flex items-center justify-between py-2 px-3 h-auto bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg group transition-all"
                           >
                             <span className="flex items-center gap-2 text-sm font-semibold text-primary">
-                              <BookOpen className="w-4 h-4" /> 
-                              {isLessonOpen ? "Hide Mini-Lesson" : "Review Mini-Lesson"}
+                              <BookOpen className="w-4 h-4" />
+                              {isLessonOpen
+                                ? "Hide Mini-Lesson"
+                                : "Review Mini-Lesson"}
                             </span>
-                            {isLessonOpen ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />}
+                            {isLessonOpen ? (
+                              <ChevronUp className="w-4 h-4 text-primary" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-primary" />
+                            )}
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="animate-in fade-in slide-in-from-top-1 duration-300">
                           <div className="bg-primary/5 border-x border-b border-primary/20 rounded-b-lg p-5 prose dark:prose-invert prose-sm max-w-none text-left">
-                            <ReactMarkdown components={markdownComponents}>{currentConcept.idealExplanation}</ReactMarkdown>
+                            <ReactMarkdown components={markdownComponents}>
+                              {currentConcept.idealExplanation}
+                            </ReactMarkdown>
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
@@ -687,11 +936,21 @@ export default function LearningInterface() {
                       </div>
                     );
                   })()}
-                  <Button onClick={handleStartConcept} className="w-full" data-testid="button-start-concept">
+                  <Button
+                    onClick={handleStartConcept}
+                    className="w-full"
+                    data-testid="button-start-concept"
+                  >
                     {questionMutation.isPending ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating question...</>
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        Generating question...
+                      </>
                     ) : (
-                      <>Ready to Practice <ArrowRight className="w-4 h-4 ml-2" /></>
+                      <>
+                        Ready to Practice{" "}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
                     )}
                   </Button>
                 </CardContent>
@@ -700,16 +959,27 @@ export default function LearningInterface() {
 
             {/* Question & Response */}
             {(phase === "question" || phase === "responding") && (
-              <Card className="border border-border/60" data-testid="card-question">
+              <Card
+                className="border border-border/60"
+                data-testid="card-question"
+              >
                 <CardContent className="pt-6 pb-5">
                   <div className="flex items-start gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                       <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">{currentConcept.name}</h3>
-                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none" data-testid="text-question">
-                        <ReactMarkdown components={markdownComponents}>{question || `Explain the key concepts of ${currentConcept.name} in your own words.`}</ReactMarkdown>
+                      <h3 className="font-semibold mb-1">
+                        {currentConcept.name}
+                      </h3>
+                      <div
+                        className="text-sm prose prose-sm dark:prose-invert max-w-none"
+                        data-testid="text-question"
+                      >
+                        <ReactMarkdown components={markdownComponents}>
+                          {question ||
+                            `Explain the key concepts of ${currentConcept.name} in your own words.`}
+                        </ReactMarkdown>
                       </div>
                     </div>
                   </div>
@@ -718,15 +988,21 @@ export default function LearningInterface() {
                     <Textarea
                       placeholder="Type your explanation here... Be as detailed as you can!"
                       value={response}
-                      onChange={e => setResponse(e.target.value)}
+                      onChange={(e) => setResponse(e.target.value)}
                       rows={5}
-                      className={`resize-none transition-all duration-300 ${isRecording ? 'border-primary shadow-lg shadow-primary/20' : ''}`}
+                      className={`resize-none transition-all duration-300 ${isRecording ? "border-primary shadow-lg shadow-primary/20" : ""}`}
                       disabled={respondMutation.isPending}
                     />
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-muted-foreground flex items-center gap-2">
-                        {isRecording && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
-                        {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} words` : isRecording ? "Listening..." : "Start typing or speaking..."}
+                        {isRecording && (
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        )}
+                        {response.length > 0
+                          ? `${response.split(/\s+/).filter(Boolean).length} words`
+                          : isRecording
+                            ? "Listening..."
+                            : "Start typing or speaking..."}
                       </span>
                       <div className="flex gap-2">
                         <div className="relative">
@@ -744,21 +1020,40 @@ export default function LearningInterface() {
                           <Button
                             variant={isRecording ? "destructive" : "secondary"}
                             onClick={toggleRecording}
-                            title={isRecording ? "Stop recording" : "Start recording"}
+                            title={
+                              isRecording ? "Stop recording" : "Start recording"
+                            }
                             className="relative z-10"
                           >
-                            {isRecording ? <><MicOff className="w-4 h-4 mr-2" /> Stop</> : <><Mic className="w-4 h-4 mr-2" /> Speak</>}
+                            {isRecording ? (
+                              <>
+                                <MicOff className="w-4 h-4 mr-2" /> Stop
+                              </>
+                            ) : (
+                              <>
+                                <Mic className="w-4 h-4 mr-2" /> Speak
+                              </>
+                            )}
                           </Button>
                         </div>
                         <Button
                           data-testid="button-submit-response"
                           onClick={handleSubmitResponse}
-                          disabled={!response.trim() || respondMutation.isPending || isRecording}
+                          disabled={
+                            !response.trim() ||
+                            respondMutation.isPending ||
+                            isRecording
+                          }
                         >
                           {respondMutation.isPending ? (
-                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scoring...</>
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                              Scoring...
+                            </>
                           ) : (
-                            <><Send className="w-4 h-4 mr-2" /> Submit</>
+                            <>
+                              <Send className="w-4 h-4 mr-2" /> Submit
+                            </>
                           )}
                         </Button>
                       </div>
@@ -772,7 +1067,8 @@ export default function LearningInterface() {
                       disabled={respondMutation.isPending}
                       data-testid="button-i-dont-know"
                     >
-                      <HelpCircle className="w-4 h-4 mr-1" /> I'm stuck — show me the explanation
+                      <HelpCircle className="w-4 h-4 mr-1" /> I'm stuck — show
+                      me the explanation
                     </Button>
                   </div>
                 </CardContent>
@@ -783,21 +1079,38 @@ export default function LearningInterface() {
             {phase === "feedback" && lastScore && (
               <div className="space-y-4">
                 {/* Score Card */}
-                <Card className="border border-border/60" data-testid="card-score">
+                <Card
+                  className="border border-border/60"
+                  data-testid="card-score"
+                >
                   <CardContent className="pt-6 pb-5">
                     <div className="flex items-center gap-4 mb-4">
                       {scoreIcon(lastScore.score)}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-2xl font-bold ${scoreColor(lastScore.score)}`} data-testid="text-score">
+                          <span
+                            className={`text-2xl font-bold ${scoreColor(lastScore.score)}`}
+                            data-testid="text-score"
+                          >
                             {Math.round(lastScore.score * 100)}%
                           </span>
-                          <span className="text-sm text-muted-foreground">understanding</span>
-                          {lastScore.bloomLevel && BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()] && (
-                            <Badge className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].bg} ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].color} border-none text-[10px] uppercase font-black tracking-widest`}>
-                              {BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].label}
-                            </Badge>
-                          )}
+                          <span className="text-sm text-muted-foreground">
+                            understanding
+                          </span>
+                          {lastScore.bloomLevel &&
+                            BLOOMS_META[
+                              lastScore.bloomLevel.trim().toUpperCase()
+                            ] && (
+                              <Badge
+                                className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].bg} ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].color} border-none text-[10px] uppercase font-black tracking-widest`}
+                              >
+                                {
+                                  BLOOMS_META[
+                                    lastScore.bloomLevel.trim().toUpperCase()
+                                  ].label
+                                }
+                              </Badge>
+                            )}
                         </div>
                         <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                           <motion.div
@@ -810,40 +1123,70 @@ export default function LearningInterface() {
                       </div>
                     </div>
 
-                    <div className="text-sm mb-4 prose prose-sm dark:prose-invert max-w-none" data-testid="text-feedback">
-                      <ReactMarkdown components={markdownComponents}>{lastScore.feedback}</ReactMarkdown>
+                    <div
+                      className="text-sm mb-4 prose prose-sm dark:prose-invert max-w-none"
+                      data-testid="text-feedback"
+                    >
+                      <ReactMarkdown components={markdownComponents}>
+                        {lastScore.feedback}
+                      </ReactMarkdown>
                     </div>
 
                     {/* Misconception Diagnostic Card */}
-                    {lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION" && (() => {
-                      const mc = MISCONCEPTION_META[lastScore.misconceptionType] || MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING;
-                      return (
-                        <div className={`rounded-xl border ${mc.border} ${mc.bg} p-4 mb-4`} data-testid="card-misconception">
-                          <div className="flex items-start gap-3">
-                            <div className="text-2xl leading-none mt-0.5">{mc.emoji}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-xs font-bold uppercase tracking-wider ${mc.color}`}>Misconception Detected</span>
+                    {lastScore.misconceptionType &&
+                      lastScore.misconceptionType !== "NO_MISCONCEPTION" &&
+                      (() => {
+                        const mc =
+                          MISCONCEPTION_META[lastScore.misconceptionType] ||
+                          MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING;
+                        return (
+                          <div
+                            className={`rounded-xl border ${mc.border} ${mc.bg} p-4 mb-4`}
+                            data-testid="card-misconception"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="text-2xl leading-none mt-0.5">
+                                {mc.emoji}
                               </div>
-                              <h4 className={`font-bold text-sm ${mc.color}`}>{mc.label}</h4>
-                              {lastScore.misconceptionDetail && (
-                                <p className="text-sm text-muted-foreground mt-1">{lastScore.misconceptionDetail}</p>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-2 italic">
-                                💡 {mc.remediation}
-                              </p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span
+                                    className={`text-xs font-bold uppercase tracking-wider ${mc.color}`}
+                                  >
+                                    Misconception Detected
+                                  </span>
+                                </div>
+                                <h4 className={`font-bold text-sm ${mc.color}`}>
+                                  {mc.label}
+                                </h4>
+                                {lastScore.misconceptionDetail && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {lastScore.misconceptionDetail}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-2 italic">
+                                  💡 {mc.remediation}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
 
                     {lastScore.misconceptionType === "NO_MISCONCEPTION" && (
-                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 mb-4 flex items-center gap-3" data-testid="card-no-misconception">
+                      <div
+                        className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 mb-4 flex items-center gap-3"
+                        data-testid="card-no-misconception"
+                      >
                         <span className="text-xl">✅</span>
                         <div>
-                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No Misconceptions Detected</span>
-                          <p className="text-xs text-muted-foreground">Your response demonstrates accurate conceptual understanding.</p>
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                            No Misconceptions Detected
+                          </span>
+                          <p className="text-xs text-muted-foreground">
+                            Your response demonstrates accurate conceptual
+                            understanding.
+                          </p>
                         </div>
                       </div>
                     )}
@@ -855,7 +1198,10 @@ export default function LearningInterface() {
                         </h4>
                         <ul className="space-y-1">
                           {lastScore.strengths.map((s, i) => (
-                            <li key={i} className="text-sm flex items-start gap-2">
+                            <li
+                              key={i}
+                              className="text-sm flex items-start gap-2"
+                            >
                               <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                               {s}
                             </li>
@@ -871,7 +1217,10 @@ export default function LearningInterface() {
                         </h4>
                         <ul className="space-y-1">
                           {lastScore.gaps.map((g, i) => (
-                            <li key={i} className="text-sm flex items-start gap-2">
+                            <li
+                              key={i}
+                              className="text-sm flex items-start gap-2"
+                            >
                               <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                               {g}
                             </li>
@@ -892,27 +1241,43 @@ export default function LearningInterface() {
                     data-testid="button-get-explanation"
                   >
                     {explainMutation.isPending ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        Generating...
+                      </>
                     ) : (
-                      <><Sparkles className="w-4 h-4 mr-2" /> Get AI Explanation</>
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" /> Get AI Explanation
+                      </>
                     )}
                   </Button>
                 )}
-                {!explanation && lastScore && lastScore.score < 0.5 && explainMutation.isPending && (
-                  <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" /> Auto-generating explanation for you...
-                  </div>
-                )}
+                {!explanation &&
+                  lastScore &&
+                  lastScore.score < 0.5 &&
+                  explainMutation.isPending && (
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />{" "}
+                      Auto-generating explanation for you...
+                    </div>
+                  )}
 
                 {explanation && (
-                  <Card className="border border-primary/20 bg-primary/5" data-testid="card-explanation">
+                  <Card
+                    className="border border-primary/20 bg-primary/5"
+                    data-testid="card-explanation"
+                  >
                     <CardContent className="pt-5 pb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-4 h-4 text-primary" />
-                        <h4 className="font-semibold text-sm">AI Explanation</h4>
+                        <h4 className="font-semibold text-sm">
+                          AI Explanation
+                        </h4>
                       </div>
                       <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown components={markdownComponents}>{explanation}</ReactMarkdown>
+                        <ReactMarkdown components={markdownComponents}>
+                          {explanation}
+                        </ReactMarkdown>
                       </div>
                     </CardContent>
                   </Card>
@@ -920,47 +1285,64 @@ export default function LearningInterface() {
 
                 {/* Socratic Chat UI */}
                 {isSocraticActive && (
-                  <Card className="border border-blue-500/30 bg-blue-500/5 mb-4" data-testid="card-socratic">
+                  <Card
+                    className="border border-blue-500/30 bg-blue-500/5 mb-4"
+                    data-testid="card-socratic"
+                  >
                     <CardContent className="pt-5 pb-4 flex flex-col gap-3">
                       <div className="flex items-center gap-2 mb-2">
                         <MessageSquare className="w-4 h-4 text-blue-500" />
-                        <h4 className="font-semibold text-sm text-blue-600 dark:text-blue-400">Socratic Tutor</h4>
+                        <h4 className="font-semibold text-sm text-blue-600 dark:text-blue-400">
+                          Socratic Tutor
+                        </h4>
                       </div>
-                      
+
                       <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                         {socraticHistory.map((msg, i) => (
-                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`prose prose-sm dark:prose-invert max-w-none max-w-[85%] rounded-xl px-3 py-2 text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-blue-100 dark:bg-blue-900/40 text-foreground'}`}>
-                              <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+                          <div
+                            key={i}
+                            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`prose prose-sm dark:prose-invert max-w-none max-w-[85%] rounded-xl px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-blue-100 dark:bg-blue-900/40 text-foreground"}`}
+                            >
+                              <ReactMarkdown components={markdownComponents}>
+                                {msg.content}
+                              </ReactMarkdown>
                             </div>
                           </div>
                         ))}
                         {socraticMutation.isPending && (
                           <div className="flex justify-start">
                             <div className="max-w-[85%] rounded-xl px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/40 flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> <span className="text-muted-foreground text-xs italic">Tutor is typing...</span>
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />{" "}
+                              <span className="text-muted-foreground text-xs italic">
+                                Tutor is typing...
+                              </span>
                             </div>
                           </div>
                         )}
                       </div>
 
                       <div className="flex gap-2 mt-2">
-                        <Textarea 
+                        <Textarea
                           value={socraticInput}
                           onChange={(e) => setSocraticInput(e.target.value)}
                           placeholder="Reply to the tutor..."
                           rows={2}
                           className="resize-none min-h-[60px]"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
+                            if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
                               handleSocraticSubmit();
                             }
                           }}
                         />
-                        <Button 
-                          onClick={handleSocraticSubmit} 
-                          disabled={!socraticInput.trim() || socraticMutation.isPending}
+                        <Button
+                          onClick={handleSocraticSubmit}
+                          disabled={
+                            !socraticInput.trim() || socraticMutation.isPending
+                          }
                           className="h-auto"
                         >
                           <Send className="w-4 h-4" />
@@ -981,25 +1363,50 @@ export default function LearningInterface() {
 
                 {/* Action buttons */}
                 <div className="flex gap-3">
-                  {lastScore.score < 0.7 && !isSocraticActive && lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION" && (
-                     <Button variant="default" onClick={handleStartSocratic} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-none" data-testid="button-socratic">
-                       <MessageSquare className="w-4 h-4 mr-2" /> Start Socratic Review
-                     </Button>
-                  )}
+                  {lastScore.score < 0.7 &&
+                    !isSocraticActive &&
+                    lastScore.misconceptionType &&
+                    lastScore.misconceptionType !== "NO_MISCONCEPTION" && (
+                      <Button
+                        variant="default"
+                        onClick={handleStartSocratic}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-none"
+                        data-testid="button-socratic"
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" /> Start
+                        Socratic Review
+                      </Button>
+                    )}
                   {lastScore.score < 0.6 && (
-                    <Button variant="outline" onClick={handleRetry} className="flex-1" data-testid="button-retry">
+                    <Button
+                      variant="outline"
+                      onClick={handleRetry}
+                      className="flex-1"
+                      data-testid="button-retry"
+                    >
                       Try a Simpler Question
                     </Button>
                   )}
-                  <Button onClick={handleNext} className="flex-1" data-testid="button-next">
+                  <Button
+                    onClick={handleNext}
+                    className="flex-1"
+                    data-testid="button-next"
+                  >
                     {currentConceptIndex < totalConcepts - 1 ? (
                       lastScore.score < 0.4 ? (
-                        <>Review Again <ArrowRight className="w-4 h-4 ml-2" /></>
+                        <>
+                          Review Again <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
                       ) : (
-                        <>Next Concept <ArrowRight className="w-4 h-4 ml-2" /></>
+                        <>
+                          Next Concept <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
                       )
                     ) : (
-                      <>Complete Session <CheckCircle2 className="w-4 h-4 ml-2" /></>
+                      <>
+                        Complete Session{" "}
+                        <CheckCircle2 className="w-4 h-4 ml-2" />
+                      </>
                     )}
                   </Button>
                 </div>
@@ -1016,12 +1423,16 @@ export default function LearningInterface() {
               <AlertTriangle className="w-5 h-5 text-amber-500" /> End Session?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              Are you sure you want to exit this learning session? Your progress on mastered concepts will be saved, but you'll lose the current momentum.
+              Are you sure you want to exit this learning session? Your progress
+              on mastered concepts will be saved, but you'll lose the current
+              momentum.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-background/50">Keep Learning</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel className="bg-background/50">
+              Keep Learning
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => setLocation("/subjects")}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
