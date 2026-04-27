@@ -29,6 +29,8 @@ import {
   Globe,
   Lock,
   Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -126,6 +128,7 @@ export default function Landing() {
   const [role, setRole] = useState("student");
   const [educatorCode, setEducatorCode] = useState("");
   const [isLogin, setIsLogin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -487,15 +490,27 @@ export default function Landing() {
                         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">
                           Password
                         </label>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="h-12 bg-muted/30 border-border/40 focus:bg-background transition-all"
-                          required
-                          disabled={loading}
-                        />
+                        <div className="relative group/pass">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="h-12 bg-muted/30 border-border/40 focus:bg-background transition-all pr-12"
+                            required
+                            disabled={loading}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1 w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={() => setShowPassword(!showPassword)}
+                            disabled={loading}
+                          >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </Button>
+                        </div>
                       </div>
 
                       {error && (
