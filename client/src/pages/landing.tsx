@@ -600,6 +600,63 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── AI PIPELINE EVIDENCE ── */}
+      <section className="max-w-6xl mx-auto px-6 py-24 relative z-10">
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-full px-4 py-1.5 mb-6 text-xs font-bold uppercase tracking-widest"
+          >
+            <Brain className="w-3.5 h-3.5" /> Live AI Pipeline
+          </motion.div>
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
+            Watch the AI{" "}
+            <span className="bg-gradient-to-r from-violet-500 to-primary bg-clip-text text-transparent">
+              diagnose reasoning
+            </span>
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Not just "right or wrong" — our multi-agent pipeline decodes <em>why</em> a student is confused and prescribes the exact next step.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-5 gap-4 mb-12">
+          {[
+            { step: "01", title: "Student Explains", desc: "Free-text response — no MCQ, no guessing", icon: "✍️", color: "bg-blue-500/10 border-blue-500/20 text-blue-500" },
+            { step: "02", title: "Gatekeeper Agent", desc: "Anti-plagiarism & jailbreak detection", icon: "🛡️", color: "bg-amber-500/10 border-amber-500/20 text-amber-500" },
+            { step: "03", title: "Diagnostic Agent", desc: "6-type misconception taxonomy + NLP scoring", icon: "🧠", color: "bg-violet-500/10 border-violet-500/20 text-violet-500" },
+            { step: "04", title: "Bloom's Classifier", desc: "Cognitive depth: Remembering → Creating", icon: "📊", color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" },
+            { step: "05", title: "Adaptive Engine", desc: "SM-2 spaced repetition + Socratic tutoring", icon: "🎯", color: "bg-primary/10 border-primary/20 text-primary" },
+          ].map((s, i) => (
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={`rounded-2xl border p-5 text-center ${s.color} transition-all hover:scale-105`}
+            >
+              <div className="text-3xl mb-3">{s.icon}</div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Step {s.step}</p>
+              <p className="font-bold text-sm mb-1.5">{s.title}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-2xl h-14 px-10 text-base border-primary/30 text-primary hover:bg-primary/10 shadow-lg shadow-primary/10"
+            onClick={() => setLocation("/demo")}
+          >
+            <Sparkles className="w-5 h-5 mr-2" /> Try the Live Demo
+          </Button>
+        </div>
+      </section>
+
       {/* ── PROBLEM STATEMENT ── */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center relative z-10">
         <motion.div
