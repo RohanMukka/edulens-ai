@@ -63,7 +63,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
-mermaid.initialize({ startOnLoad: false, theme: "default" });
+mermaid.initialize({ startOnLoad: false, theme: "default", suppressErrorRendering: true });
 
 const MermaidChart = ({ chart }: { chart: string }) => {
   const [svg, setSvg] = useState<string>("");
@@ -946,7 +946,7 @@ export default function LearningInterface() {
         <div className="max-w-3xl mx-auto px-6 pb-2">
           <Progress
             value={progressPercent}
-            className="h-1.5"
+            className="h-3 bg-muted rounded-full shadow-inner"
             data-testid="progress-session"
           />
         </div>
@@ -1174,15 +1174,14 @@ export default function LearningInterface() {
                     </div>
                     {/* Step 3: "I Don't Know" button */}
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 text-muted-foreground hover:text-foreground"
+                      variant="secondary"
+                      size="lg"
+                      className="font-bold w-full sm:w-auto border-2 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground transition-all mt-4"
                       onClick={handleIDontKnow}
                       disabled={respondMutation.isPending}
                       data-testid="button-i-dont-know"
                     >
-                      <HelpCircle className="w-4 h-4 mr-1" /> I'm stuck — show
-                      me the explanation
+                      Skip & Explain <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
                 </CardContent>

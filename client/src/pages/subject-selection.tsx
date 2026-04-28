@@ -114,13 +114,13 @@ export default function SubjectSelection() {
     },
   });
 
-  if (mastery === undefined) {
-    return <SubjectSkeleton />;
-  }
-
   if (!student) {
     setLocation("/");
     return null;
+  }
+
+  if (mastery === undefined) {
+    return <SubjectSkeleton />;
   }
 
   const startSession = async (subject: string) => {

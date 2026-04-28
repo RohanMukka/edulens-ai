@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Users, GraduationCap, Activity, LogOut, Plus, Copy,
   ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck, AlertTriangle,
-  Flame, Brain, Trash2
+  Flame, Brain, Trash2, ArrowRight, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
@@ -21,6 +21,8 @@ import { TeacherDashboardSkeleton } from "@/components/ui/skeleton-screen";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from "recharts";
+import { AssignmentWizard } from "@/components/assignment-wizard";
+
 
 type StudentStat = {
   id: number;
@@ -377,6 +379,7 @@ export default function TeacherDashboard() {
   const [joinCode, setJoinCode] = useState("");
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [activeLiveRoom, setActiveLiveRoom] = useState<Classroom | null>(null);
   const [liveUpdates, setLiveUpdates] = useState<any[]>([]);
@@ -539,17 +542,36 @@ export default function TeacherDashboard() {
             <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="mb-2 -ml-2">
               <ArrowLeft className="w-4 h-4 mr-1" /> Home
             </Button>
-            <h1 className="text-3xl font-extrabold flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-primary" />
-              </div>
-              Educator Dashboard
-            </h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl font-extrabold flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <GraduationCap className="w-6 h-6 text-primary" />
+                </div>
+                Educator Dashboard
+              </h1>
+            </div>
             <p className="text-muted-foreground text-sm mt-1">
               Welcome back{student?.name ? `, ${student.name}` : ""}. Here's how your students are doing.
             </p>
           </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button 
+              className="w-full sm:w-auto bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-500/20 text-white"
+              onClick={() => setShowWizard(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Assign Magic
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => logout()} aria-label="Logout">
+              <LogOut className="w-4 h-4 mr-2" /> Logout
+            </Button>
+          </div>
         </div>
+
+        <AssignmentWizard 
+          open={showWizard} 
+          onOpenChange={setShowWizard} 
+          classrooms={classrooms || []} 
+        />
 
         {/* ── STATS ROW ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -726,6 +748,55 @@ export default function TeacherDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* ── ASSIGNMENTS LIST ── */}
+        <Card className="border border-border/50 mb-8 overflow-hidden">
+          <CardHeader className="bg-muted/10 pb-4 border-b border-border/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" /> Active Assignments
+                </CardTitle>
+                <CardDescription className="mt-1">Assignments ready for grading</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setShowWizard(true)}>
+                <Plus className="w-4 h-4 mr-1" /> New
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/50">
+              <div className="p-4 flex items-center justify-between hover:bg-muted/5 transition-colors">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-violet-500" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold">Photosynthesis Pop Quiz</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">Bio 101 • 2 pending grades • Due Yesterday</p>
+                  </div>
+                </div>
+                <Button onClick={() => setLocation("/teacher/grade/1")} className="bg-violet-600 hover:bg-violet-700 shadow-sm">
+                  SpeedGrader <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+              <div className="p-4 flex items-center justify-between hover:bg-muted/5 transition-colors opacity-70">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold">Introduction to Variables</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">Math • 0 pending grades • Due Last Week</p>
+                  </div>
+                </div>
+                <Button variant="outline" onClick={() => setLocation("/teacher/grade/2")}>
+                  Review
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ── INTERVENTION QUEUE ── */}
         <InterventionQueue />

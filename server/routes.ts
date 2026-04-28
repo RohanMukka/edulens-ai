@@ -1072,6 +1072,17 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
       res.status(500).json({ message: e.message });
     }
   });
+  app.post("/api/ai/generate-assignment", requireEducator, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) return res.status(400).json({ message: "Prompt is required" });
+      
+      const blueprint = await generateAssignmentBlueprint(prompt);
+      res.json(blueprint);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
 
   return httpServer;
 }
@@ -1444,3 +1455,53 @@ async function generateDynamicConcept(subject: string, topic: string) {
     };
   }
 }
+
+async function generateAssignmentBlueprint(prompt: string) {
+  if (!process.env.GROQ_API_KEY) {
+    return {
+      title: "Sample Assignment",
+      description: "Auto-generated assignment based on prompt.",
+      questions: [
+        { question: "What is the main concept?", idealAnswer: "The main concept is..." },
+      ]
+    };
+  }
+
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert curriculum designer. The user will provide a prompt to create an assignment.
+Generate a title, a short description, and a list of open-ended questions with their ideal answers for an AI auto-grader.
+Return ONLY JSON in the following format:
+{
+  "title": "Assignment Title",
+  "description": "Short description",
+  "questions": [
+    { "question": "Question text", "idealAnswer": "Comprehensive ideal answer text that a grading AI can use as a rubric" }
+  ]
+}`
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+    });
+
+    const content = completion.choices[0]?.message?.content || "{}";
+    return JSON.parse(content);
+  } catch (e) {
+    console.error("Assignment generation error:", e);
+    return {
+      title: "Generated Assignment",
+      description: "Fallback assignment.",
+      questions: [{ question: "Explain the concept.", idealAnswer: "A valid explanation." }]
+    };
+  }
+}
+

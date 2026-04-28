@@ -15,6 +15,7 @@ import Dashboard from "@/pages/dashboard";
 import TeacherDashboard from "@/pages/teacher-dashboard";
 import NotFound from "@/pages/not-found";
 import DemoShowcase from "@/pages/demo-showcase";
+import SpeedGrader from "@/pages/speedgrader";
 
 import { Layout } from "@/components/layout";
 
@@ -28,6 +29,7 @@ function AppRouter() {
         <Route path="/graph" component={KnowledgeGraph} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/teacher" component={TeacherDashboard} />
+        <Route path="/teacher/grade/:id" component={SpeedGrader} />
         <Route path="/demo" component={DemoShowcase} />
         <Route component={NotFound} />
       </Switch>

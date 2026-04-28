@@ -16,7 +16,7 @@ import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote, CalendarDays, Bell, CheckSquare
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -545,6 +545,84 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* ── CLASS CALENDAR & ALERTS ── */}
+        <div className="grid md:grid-cols-3 gap-5 mb-8">
+          <div className="md:col-span-2">
+            <Card className="border border-border/50 h-full overflow-hidden">
+              <CardHeader className="pb-3 pt-5 border-b border-border/40 bg-muted/20">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-primary" /> Upcoming Assignments
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">Track your deadlines and pending tasks across all classrooms.</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border/40">
+                  {/* Mock assignment 1 - Urgent */}
+                  <div className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4 relative overflow-hidden group">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />
+                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-rose-500" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-bold text-sm">Photosynthesis Pop Quiz</h4>
+                        <Badge variant="outline" className="text-[10px] text-rose-500 border-rose-500/30 bg-rose-500/5">Due Today, 11:59 PM</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Bio 101 • 3 Questions</p>
+                    </div>
+                    <Button size="sm" variant="outline" className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
+                      Start
+                    </Button>
+                  </div>
+
+                  {/* Mock assignment 2 - Upcoming */}
+                  <div className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4 relative overflow-hidden group">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500/50" />
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-bold text-sm">Introduction to Variables</h4>
+                        <Badge variant="outline" className="text-[10px]">Due in 3 days</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Math • 5 Questions</p>
+                    </div>
+                    <Button size="sm" variant="outline" className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
+                      Start
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Alerts Panel */}
+          <div className="md:col-span-1">
+            <Card className="border border-border/50 bg-gradient-to-br from-background to-amber-500/5 h-full">
+              <CardHeader className="pb-3 pt-5 border-b border-border/40">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-amber-500" /> System Alerts
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+                  <p className="font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" /> Deadline Extended
+                  </p>
+                  <p className="text-xs text-muted-foreground">Your teacher has granted an adaptive extension for the "Cell Structure" essay. New due date is Friday.</p>
+                </div>
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm">
+                  <p className="font-bold text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-1.5">
+                    <CheckSquare className="w-3.5 h-3.5" /> Assignment Graded
+                  </p>
+                  <p className="text-xs text-muted-foreground">"Newton's Laws" has been graded! You scored 92%. Review your feedback.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* ── LEARNING REFLECTIONS ── */}
         <Card className="border border-border/50 mb-8 overflow-hidden">

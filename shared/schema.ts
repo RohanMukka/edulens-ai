@@ -1,4 +1,4 @@
-import { pgTable, text, integer, real, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, serial, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -85,6 +85,44 @@ export const earnedBadges = pgTable("earned_badges", {
   earnedAt: text("earned_at").notNull().default("now"),
 });
 
+export const assignments = pgTable("assignments", {
+  id: serial("id").primaryKey(),
+  classroomId: integer("classroom_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  dueDate: text("due_date"),
+  aiStrictness: text("ai_strictness").notNull().default("standard"),
+  adaptiveDeadlines: boolean("adaptive_deadlines").notNull().default(false),
+  createdAt: text("created_at").notNull().default("now"),
+});
+
+export const assignmentQuestions = pgTable("assignment_questions", {
+  id: serial("id").primaryKey(),
+  assignmentId: integer("assignment_id").notNull(),
+  question: text("question").notNull(),
+  idealAnswer: text("ideal_answer").notNull(),
+});
+
+export const studentAssignments = pgTable("student_assignments", {
+  id: serial("id").primaryKey(),
+  studentId: integer("student_id").notNull(),
+  assignmentId: integer("assignment_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  score: real("score"),
+  feedback: text("feedback"),
+  submittedAt: text("submitted_at"),
+});
+
+export const studentAssignmentAnswers = pgTable("student_assignment_answers", {
+  id: serial("id").primaryKey(),
+  studentAssignmentId: integer("student_assignment_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  answer: text("answer").notNull(),
+  aiScore: real("ai_score"),
+  aiFeedback: text("ai_feedback"),
+});
+
+
 // Insert schemas
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true, createdAt: true });
 export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, startedAt: true, endedAt: true });
@@ -93,6 +131,12 @@ export const insertInteractionSchema = createInsertSchema(interactions).omit({ i
 export const insertMasteryScoreSchema = createInsertSchema(masteryScores).omit({ id: true, updatedAt: true });
 export const insertReflectionSchema = createInsertSchema(reflections).omit({ id: true, createdAt: true });
 export const insertEarnedBadgeSchema = createInsertSchema(earnedBadges).omit({ id: true, earnedAt: true });
+
+export const insertAssignmentSchema = createInsertSchema(assignments).omit({ id: true, createdAt: true });
+export const insertAssignmentQuestionSchema = createInsertSchema(assignmentQuestions).omit({ id: true });
+export const insertStudentAssignmentSchema = createInsertSchema(studentAssignments).omit({ id: true, submittedAt: true });
+export const insertStudentAssignmentAnswerSchema = createInsertSchema(studentAssignmentAnswers).omit({ id: true });
+
 
 // Types
 export type Student = typeof students.$inferSelect;
@@ -115,3 +159,13 @@ export type Reflection = typeof reflections.$inferSelect;
 export type InsertReflection = z.infer<typeof insertReflectionSchema>;
 export type EarnedBadge = typeof earnedBadges.$inferSelect;
 export type InsertEarnedBadge = z.infer<typeof insertEarnedBadgeSchema>;
+
+export type Assignment = typeof assignments.$inferSelect;
+export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
+export type AssignmentQuestion = typeof assignmentQuestions.$inferSelect;
+export type InsertAssignmentQuestion = z.infer<typeof insertAssignmentQuestionSchema>;
+export type StudentAssignment = typeof studentAssignments.$inferSelect;
+export type InsertStudentAssignment = z.infer<typeof insertStudentAssignmentSchema>;
+export type StudentAssignmentAnswer = typeof studentAssignmentAnswers.$inferSelect;
+export type InsertStudentAssignmentAnswer = z.infer<typeof insertStudentAssignmentAnswerSchema>;
+
