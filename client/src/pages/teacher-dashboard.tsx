@@ -22,6 +22,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from "recharts";
 import { AssignmentWizard } from "@/components/assignment-wizard";
+import { TutorialOverlay } from "@/components/tutorial-overlay";
 
 
 type StudentStat = {
@@ -534,6 +535,7 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TutorialOverlay role="educator" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
         {/* ── HEADER ── */}

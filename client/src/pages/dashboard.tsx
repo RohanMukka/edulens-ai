@@ -21,6 +21,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { TutorialOverlay } from "@/components/tutorial-overlay";
 
 interface MisconceptionPattern {
   type: string;
@@ -233,6 +234,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TutorialOverlay role="student" />
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* ── HEADER ── */}
