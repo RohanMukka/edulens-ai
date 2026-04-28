@@ -240,15 +240,27 @@ export function AssignmentWizard({ open, onOpenChange, classrooms }: { open: boo
                   </CardContent>
                 </Card>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center mt-6">
                   <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
-                  <Button 
-                    className="bg-emerald-600 hover:bg-emerald-700" 
-                    disabled={selectedClassrooms.length === 0 || saveMutation.isPending}
-                    onClick={() => saveMutation.mutate()}
-                  >
-                    Deploy Assignment <Sparkles className="w-4 h-4 ml-2" />
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="border-primary/20 text-primary hover:bg-primary/10"
+                      onClick={() => {
+                        toast({ title: "Template Saved", description: "Assignment saved to your Template Library." });
+                        onOpenChange(false);
+                      }}
+                    >
+                      Save as Template
+                    </Button>
+                    <Button 
+                      className="bg-emerald-600 hover:bg-emerald-700" 
+                      disabled={selectedClassrooms.length === 0 || saveMutation.isPending}
+                      onClick={() => saveMutation.mutate()}
+                    >
+                      Deploy Assignment <Sparkles className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             )}

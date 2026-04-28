@@ -77,6 +77,35 @@ export default function SpeedGrader() {
   // Local state for the current student's grading
   const [finalScore, setFinalScore] = useState<number | "">("");
   const [finalFeedback, setFinalFeedback] = useState("");
+  const [evaluatingIndex, setEvaluatingIndex] = useState<number | null>(null);
+
+  const gradeMutation = useMutation({
+    mutationFn: async (data: { rubric: string; question: string; studentResponse: string; answerIndex: number }) => {
+      const res = await apiRequest("POST", "/api/ai/grade", data);
+      const json = await res.json();
+      return { ...json, answerIndex: data.answerIndex };
+    },
+    onSuccess: (data) => {
+      setSubmissions((prev) => {
+        const updated = [...prev];
+        const studentSub = { ...updated[currentIndex] };
+        studentSub.answers = [...studentSub.answers];
+        studentSub.answers[data.answerIndex] = {
+          ...studentSub.answers[data.answerIndex],
+          aiScore: data.score / 100, // Convert percentage to 0-1 range
+          aiFeedback: data.feedback
+        };
+        updated[currentIndex] = studentSub;
+        return updated;
+      });
+      setEvaluatingIndex(null);
+      toast({ title: "Re-graded successfully", description: "AI has updated its assessment based on the engine." });
+    },
+    onError: (error: any) => {
+      setEvaluatingIndex(null);
+      toast({ title: "Engine Error", description: error.message, variant: "destructive" });
+    }
+  });
 
   const suggestedTotal = currentSubmission 
     ? Math.round((currentSubmission.answers.reduce((acc, ans) => acc + ans.aiScore, 0) / currentSubmission.answers.length) * 100)
@@ -184,6 +213,24 @@ export default function SpeedGrader() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">AI Pre-Grade</span>
                       <span className="text-xs font-black bg-violet-500/10 text-violet-600 px-2 py-0.5 rounded-full">{Math.round(ans.aiScore * 100)}% Match</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 px-2 text-[10px] ml-2 text-violet-600 hover:text-violet-700 hover:bg-violet-500/10"
+                        onClick={() => {
+                          setEvaluatingIndex(idx);
+                          gradeMutation.mutate({
+                            rubric: ans.idealAnswer,
+                            question: ans.question,
+                            studentResponse: ans.studentAnswer,
+                            answerIndex: idx
+                          });
+                        }}
+                        disabled={evaluatingIndex === idx}
+                      >
+                        {evaluatingIndex === idx ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                        {evaluatingIndex === idx ? "Engine Running..." : "Live Grade"}
+                      </Button>
                     </div>
                     <p className="text-sm text-muted-foreground">{ans.aiFeedback}</p>
                   </div>

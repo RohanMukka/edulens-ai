@@ -16,7 +16,7 @@ import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote, CalendarDays, Bell, CheckSquare
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote, CalendarDays, Bell, CheckSquare, MessageCircle
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -247,6 +247,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
             <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} className="shrink-0">
               <Network className="w-4 h-4 mr-1.5" /> Graph
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setLocation("/forums")} className="shrink-0 border-blue-500/30 text-blue-600 hover:bg-blue-500/10">
+              <MessageCircle className="w-4 h-4 mr-1.5" /> Forums
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setLocation("/scheduler")} className="shrink-0 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10">
+              <CalendarDays className="w-4 h-4 mr-1.5" /> Scheduler
             </Button>
             <Button size="sm" onClick={() => setLocation("/subjects")} className="shrink-0">
               <BookOpen className="w-4 h-4 mr-1.5" /> Continue Learning

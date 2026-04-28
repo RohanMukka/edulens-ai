@@ -16,8 +16,10 @@ import TeacherDashboard from "@/pages/teacher-dashboard";
 import NotFound from "@/pages/not-found";
 import DemoShowcase from "@/pages/demo-showcase";
 import SpeedGrader from "@/pages/speedgrader";
-
+import Forums from "@/pages/forums";
+import Scheduler from "@/pages/scheduler";
 import { Layout } from "@/components/layout";
+import { GlobalChatbot } from "@/components/global-chatbot";
 
 function AppRouter() {
   return (
@@ -30,6 +32,8 @@ function AppRouter() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/teacher" component={TeacherDashboard} />
         <Route path="/teacher/grade/:id" component={SpeedGrader} />
+        <Route path="/forums" component={Forums} />
+        <Route path="/scheduler" component={Scheduler} />
         <Route path="/demo" component={DemoShowcase} />
         <Route component={NotFound} />
       </Switch>
@@ -47,6 +51,7 @@ function App() {
             <Toaster />
             <Router hook={useHashLocation}>
               <AppRouter />
+              <GlobalChatbot />
             </Router>
           </TooltipProvider>
         </AuthProvider>

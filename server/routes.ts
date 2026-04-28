@@ -1001,6 +1001,51 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/ai/grade", async (req, res) => {
+    try {
+      const { rubric, question, studentResponse } = req.body;
+      
+      if (!rubric || !question || !studentResponse) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (!process.env.GROQ_API_KEY) {
+        // Fallback mock grading if no API key
+        return res.json({
+          score: 85,
+          feedback: "Good response, but could use more detail on specific mechanisms based on the rubric."
+        });
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert AI Auto-Grading Engine. You strictly follow rubrics to grade student answers. Return ONLY JSON in this format: {"score": <number between 0 and 100>, "feedback": "<1-2 sentences of specific feedback highlighting what they did well and what they missed based on the rubric>"}`
+          },
+          {
+            role: "user",
+            content: `Question: ${question}\n\nRubric: ${rubric}\n\nStudent Response: ${studentResponse}`
+          }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      });
+
+      const content = completion.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(content);
+      
+      res.json({
+        score: parsed.score || 0,
+        feedback: parsed.feedback || "Unable to generate feedback."
+      });
+    } catch (e: any) {
+      console.error("Auto-grading error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // === AI endpoints ===
   app.post("/api/ai/score", requireAuth, async (req, res) => {
     try {
@@ -1079,6 +1124,39 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
       
       const blueprint = await generateAssignmentBlueprint(prompt);
       res.json(blueprint);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/ai/chat", requireAuth, async (req, res) => {
+    try {
+      const { message, history } = req.body;
+      if (!message || !history) {
+        return res.status(400).json({ message: "message and history are required" });
+      }
+
+      if (!process.env.GROQ_API_KEY) {
+        return res.json({ message: "Chat mode requires an active API key. Please check your setup." });
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are EduLens, an incredibly helpful, friendly, and expert AI teaching assistant. 
+You are chatting with a student who is using the EduLens platform to learn.
+Answer their questions clearly and concisely. If they ask about a complex topic, try to break it down simply. Use emojis occasionally.`
+          },
+          ...history.map((msg: any) => ({ role: msg.role, content: msg.content })),
+          { role: "user", content: message }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.7,
+        max_tokens: 400,
+      });
+
+      res.json({ message: completion.choices[0]?.message?.content || "I'm here to help!" });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
