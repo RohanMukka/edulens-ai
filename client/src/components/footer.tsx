@@ -52,7 +52,7 @@ export function Footer() {
         <div>
           <h4 className="font-bold text-sm uppercase tracking-wider mb-6">Built For</h4>
           <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10">
-            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-widest">Nira Hackathon 2026</p>
+            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-widest">The Future of Learning</p>
             <p className="text-sm text-muted-foreground mb-4">
               A competition-grade implementation of agentic EdTech systems.
             </p>

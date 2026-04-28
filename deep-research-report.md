@@ -109,7 +109,7 @@ We suggest adding high-impact features that play to EduLens’s AI strengths and
 - **AI Tutor Chatbot:**  
   - *User story:* As a *student*, I want an AI tutor chat (conversational assistant) that answers my questions about course content so I can get help immediately.  
   - *Acceptance:* A “Chat with Tutor” button on the lesson page launches a chat window. Students can ask natural-language questions (e.g. “Explain photosynthesis”). The AI responds with relevant explanations or links to content. Answers are context-sensitive to the course material.  
-  - *Complexity:* High (requires robust NLP integration, current Gemma/API usage).  
+  - *Complexity:* High (requires robust NLP integration, current LLM/API usage).  
   - *Impact:* High (differentiator that boosts learning support; addresses help/doc need).  
 - **Assignment Templates & Auto-Grading:**  
   - *User story:* As a *teacher*, I want to quickly create standard assignments (essays, multiple-choice) from templates and have the system auto-grade objective questions so I save grading time.  

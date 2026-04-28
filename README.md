@@ -1,6 +1,6 @@
 # 🔍 EduLens AI — The Future of Adaptive Learning
 
-**Winner-tier submission for the Nira 2026 Innovation Challenge: Transforming Education.**
+**Premier submission for the Future of Learning: Transforming Education.**
 
 EduLens AI is an advanced adaptive learning platform that solves the "Shallow Learning" problem in modern education. Unlike traditional platforms that rely on multiple-choice questions, EduLens uses an **Explain-First** pedagogy powered by state-of-the-art NLP to decode a student's true mental models.
 
@@ -11,7 +11,7 @@ EduLens AI is an advanced adaptive learning platform that solves the "Shallow Le
 Most EdTech platforms test recognition (picking the right choice). EduLens tests **recollection and synthesis** (explaining the concept).
 
 ### 🧠 Bloom's Taxonomy Cognitive Classification
-Every student response is analyzed by our **Gemma 2 (gemma2-9b-it)** engine to classify the student's cognitive depth according to Bloom's Taxonomy:
+Every student response is analyzed by our **Advanced AI** engine to classify the student's cognitive depth according to Bloom's Taxonomy:
 - **Remembering**: Can they recall the basic facts?
 - **Understanding**: Can they explain the "why" and "how" in their own words?
 - **Analyzing/Evaluating**: Can they draw connections or justify a stand?
@@ -23,7 +23,7 @@ EduLens doesn't just teach; it ensures you remember. We've implemented the **Sup
 
 ## 🛠️ Elite Technical Stack
 
-- **Inference Engine**: [Groq SDK](https://groq.com/) powering **Gemma 2 (gemma2-9b-it)**. Feedback latency is < 2.0 seconds.
+- **Inference Engine**: [Groq SDK](https://groq.com/) powering **High-Performance LLMs**. Feedback latency is < 2.0 seconds.
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS + Framer Motion.
 - **Design System**: Custom-built premium **Glassmorphism UI** with a global motion layout.
 - **Real-time Engine**: **WebSockets (ws)** for live educator dashboards, allowing teachers to see student cognitive depth *as they type*.
@@ -52,7 +52,7 @@ graph TD
     subgraph "Educator Control Plane"
         C -->|Real-time Feed| I[Teacher Dashboard]
         I -->|Action| J[Assignment Wizard]
-        J -->|Generate| K[Groq Gemma 2]
+        J -->|Generate| K[Groq AI]
     end
 
     subgraph "Data & Persistence"
@@ -89,7 +89,7 @@ graph TD
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL Database (Neon.tech recommended)
-- Groq API Key (for Gemma 2 inference)
+- Groq API Key (for AI inference)
 
 ### Installation
 1. Clone the repo: `git clone https://github.com/your-repo/edulens-ai.git`
@@ -104,7 +104,7 @@ graph TD
 
 We don't just "use AI"—we validate it. EduLens AI features an automated validation suite that benchmarks our diagnostic engine against human-graded student responses.
 
-### 📊 Diagnostic Accuracy (Gemma 2)
+### 📊 Diagnostic Accuracy (AI Scorer)
 | Metric | Result |
 | --- | --- |
 | **Misconception Diagnosis Accuracy** | **83.3%** |

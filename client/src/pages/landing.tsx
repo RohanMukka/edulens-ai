@@ -295,7 +295,7 @@ export default function Landing() {
               className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-1.5 mb-8 text-xs font-bold uppercase tracking-widest"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Nira Hackathon 2026 · Transforming Education
+              Next-Gen Adaptive Learning
             </motion.div>
 
             <motion.h1
@@ -829,7 +829,7 @@ export default function Landing() {
             <span className="text-primary">is personal.</span>
           </motion.h2>
           <p className="text-muted-foreground text-xl mb-12 max-w-xl mx-auto font-medium">
-            Join the Nira Hackathon beta and experience what it feels like when
+            Join the early access beta and experience what it feels like when
             an AI truly understands how <em>you</em> think.
           </p>
           <Button
