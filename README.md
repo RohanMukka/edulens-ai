@@ -1,6 +1,6 @@
 # 🔍 EduLens AI — The Future of Adaptive Learning
 
-**Premier submission for the Future of Learning: Transforming Education.**
+**A state-of-the-art adaptive learning platform designed for the future of personalized education.**
 
 EduLens AI is an advanced adaptive learning platform that solves the "Shallow Learning" problem in modern education. Unlike traditional platforms that rely on multiple-choice questions, EduLens uses an **Explain-First** pedagogy powered by state-of-the-art NLP to decode a student's true mental models.
 
@@ -69,6 +69,9 @@ graph TD
 - **🎯 AI Diagnostic Engine**: Pinpoints specific misconceptions (Terminology Confusion, Cause-Effect Reversal, etc.) and provides targeted remediation.
 - **📊 Knowledge Graph**: An interactive 2D visualization of the curriculum. Students can see their mastery levels, prerequisites, and learning paths.
 - **📡 Live Classroom Feed**: Educators get a "God-view" of the classroom, seeing real-time responses and Bloom's level badges as students progress.
+- **📅 Smart Study Scheduler**: AI-integrated calendar that helps students distribute their cognitive load and plan sessions based on spaced repetition needs.
+- **💬 Peer Collaboration Forums**: AI-moderated forums for student discussion, concept clarification, and peer support.
+- **📥 Data Portability**: Educators can export high-fidelity grade reports as CSV for integration with existing SIS (Student Information Systems).
 - **💎 Premium UX**: Shimmering skeleton screens, smooth page transitions, and a high-fidelity design tailored for an elite user experience.
 
 ---
@@ -119,13 +122,14 @@ Our **Gatekeeper Agent** ensures that plagiarized or off-topic responses are cau
 
 ---
 
-## 🏆 Hackathon Judges' Guide
+## 🏆 Platform Highlights
 
-When evaluating EduLens AI, please focus on:
+When exploring EduLens AI, notice the following core innovations:
 1. **The pedagogical innovation**: Moving from "picking choices" to "explaining concepts."
 2. **Technical depth**: The integration of SM-2, Bloom's Taxonomy, and sub-2s AI feedback loops.
 3. **Real-time architecture**: The seamless WebSocket sync between the student interface and the teacher dashboard.
-4. **Visual Excellence**: The professional design language and fluid motion system.
+4. **Enterprise Readiness**: Built-in rate limiting, accessibility compliance (WCAG 2.1), and robust data persistence.
+5. **Visual Excellence**: A professional design language and fluid motion system built with Framer Motion.
 
 ---
 
