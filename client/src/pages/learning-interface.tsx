@@ -61,6 +61,7 @@ import {
   Quote,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
@@ -293,6 +294,7 @@ export default function LearningInterface() {
   const [, setLocation] = useLocation();
   const { student } = useAuth();
   const qc = useQueryClient();
+  const { toast } = useToast();
 
   const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
   const [response, setResponse] = useState("");
@@ -472,6 +474,11 @@ export default function LearningInterface() {
 
       if (prevMastery !== null && prevMastery < 0.5 && data.score >= 0.7) {
         setShowReflection(true);
+        badgeMutation.mutate({ badgeType: "COMEBACK_KID", conceptId: currentConcept?.id });
+      }
+
+      if (data.score >= 0.8) {
+        badgeMutation.mutate({ badgeType: "CONCEPT_MASTER", conceptId: currentConcept?.id });
       }
 
       if (data.score >= 0.7) {
@@ -514,6 +521,13 @@ export default function LearningInterface() {
         });
       }
     },
+    onError: (error: any) => {
+      toast({
+        title: "Evaluation Failed",
+        description: error.message || "Something went wrong evaluating your response. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const explainMutation = useMutation({
@@ -526,6 +540,13 @@ export default function LearningInterface() {
       return res.json();
     },
     onSuccess: (data) => setExplanation(data.explanation),
+    onError: (error: any) => {
+      toast({
+        title: "Failed to load explanation",
+        description: error.message || "Could not connect to AI service. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const socraticMutation = useMutation({
@@ -543,12 +564,41 @@ export default function LearningInterface() {
         { role: "assistant", content: data.message },
       ]);
     },
+    onError: (error: any) => {
+      toast({
+        title: "Tutor Error",
+        description: error.message || "The tutor ran into an issue responding.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const badgeMutation = useMutation({
+    mutationFn: async (data: { badgeType: string; conceptId?: number }) => {
+      const res = await apiRequest("POST", "/api/badges", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.earned) {
+        const names: Record<string, string> = {
+          "CONCEPT_MASTER": "Concept Master 👑",
+          "COMEBACK_KID": "Comeback Kid 🔥",
+          "SOCRATES": "Socratic Thinker 🦉"
+        };
+        toast({
+          title: "🏆 Badge Unlocked!",
+          description: `You earned: ${names[data.badge.badgeType] || data.badge.badgeType}`,
+        });
+        qc.invalidateQueries({ queryKey: ["/api/students", student.id, "badges"] });
+      }
+    }
   });
 
   const handleStartSocratic = () => {
     if (!currentConcept || !lastScore?.misconceptionType) return;
     setIsSocraticActive(true);
     setSocraticHistory([]);
+    badgeMutation.mutate({ badgeType: "SOCRATES" });
     socraticMutation.mutate({
       history: [],
       conceptName: currentConcept.name,
@@ -640,6 +690,17 @@ export default function LearningInterface() {
       setShowReflection(false);
       setReflectionText("");
       qc.invalidateQueries({ queryKey: ["/api/students", student.id, "reflections"] });
+      toast({
+        title: "Reflection Saved",
+        description: "Your insights have been added to your learning artifacts.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to save reflection",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1458,6 +1519,7 @@ export default function LearningInterface() {
                             !socraticInput.trim() || socraticMutation.isPending
                           }
                           className="h-auto"
+                          aria-label="Send message"
                         >
                           <Send className="w-4 h-4" />
                         </Button>

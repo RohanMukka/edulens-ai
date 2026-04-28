@@ -145,6 +145,13 @@ export default function Dashboard() {
     queryFn: async () => (await apiRequest("GET", "/api/classrooms")).json(),
   });
 
+  const { data: earnedBadges } = useQuery<any[]>({
+    queryKey: ["/api/students", student.id, "badges"],
+    enabled: !!student,
+    queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/badges`)).json(),
+  });
+
+
   const { data: misconceptionHistory } = useQuery<MisconceptionPattern[]>({
     queryKey: ["/api/students", student.id, "misconception-history"],
     queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/misconception-history`)).json(),
@@ -202,6 +209,21 @@ export default function Dashboard() {
     { name: "Knowledge Pioneer",  desc: "Generated a custom topic",     icon: Sparkles,  color: "text-purple-500",  bg: "bg-purple-500/10",  earned: barData.some(d => !["Biology","Math","History"].includes(d.subject)) },
     { name: "Scholar",            desc: "Mastered 5+ concepts",         icon: Trophy,    color: "text-amber-500",   bg: "bg-amber-500/10",   earned: masteredCount >= 5 },
   ];
+
+  const dynamicBadges = (earnedBadges || []).map(b => {
+    let icon = Award, color = "text-primary", bg = "bg-primary/10", name = b.badgeType, desc = "Earned an achievement";
+    if (b.badgeType === "CONCEPT_MASTER") {
+      name = "Concept Master"; desc = "Mastered a new concept with >80% score"; icon = Trophy; color = "text-amber-500"; bg = "bg-amber-500/10";
+    } else if (b.badgeType === "COMEBACK_KID") {
+      name = "Comeback Kid"; desc = "Bounced back from <50% to >70%"; icon = Flame; color = "text-rose-500"; bg = "bg-rose-500/10";
+    } else if (b.badgeType === "SOCRATES") {
+      name = "Socratic Thinker"; desc = "Used the Socratic Tutor to solve a problem"; icon = Brain; color = "text-blue-500"; bg = "bg-blue-500/10";
+    }
+    return { name, desc, icon, color, bg, earned: true };
+  }).filter(b => b.name);
+
+  // Combine them for display, showing earned ones first
+  const displayBadges = [...dynamicBadges, ...allBadgeDefs].filter((b, idx, self) => self.findIndex(t => t.name === b.name) === idx).sort((a, b) => Number(b.earned) - Number(a.earned));
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -282,6 +304,28 @@ export default function Dashboard() {
 
           </div>
         </div>
+
+        {/* ── TROPHY CASE ── */}
+        <Card className="border border-border/50 mb-8 overflow-hidden bg-card/40 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-amber-500" /> Trophy Case
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {displayBadges.map(badge => (
+                <div key={badge.name} className={`flex flex-col items-center p-4 rounded-xl border transition-all ${badge.earned ? "bg-background/80 border-border/50 shadow-sm" : "bg-muted/10 border-border/20 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"}`}>
+                  <div className={`w-12 h-12 rounded-full ${badge.bg} flex items-center justify-center mb-3`}>
+                    <badge.icon className={`w-6 h-6 ${badge.color}`} />
+                  </div>
+                  <p className="text-xs font-bold text-center mb-1">{badge.name}</p>
+                  <p className="text-[9px] text-muted-foreground text-center leading-tight">{badge.desc}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ── SUBJECT BREAKDOWN ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

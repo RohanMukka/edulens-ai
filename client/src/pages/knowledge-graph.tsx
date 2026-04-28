@@ -197,7 +197,7 @@ export default function KnowledgeGraph() {
     <div className="min-h-screen bg-background flex flex-col overflow-hidden pb-12 sm:pb-0">
       <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm px-6 py-3 flex flex-wrap items-center justify-between shrink-0 gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} data-testid="button-back">
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} data-testid="button-back" aria-label="Back to subjects">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">
@@ -284,12 +284,12 @@ export default function KnowledgeGraph() {
               initial={{ x: 400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}
-              className="absolute top-4 right-4 bottom-4 w-full max-w-[360px] bg-card/80 backdrop-blur-xl border border-border/60 rounded-2xl shadow-2xl z-[1000] overflow-hidden flex flex-col"
+              className="absolute top-[20%] sm:top-4 right-0 sm:right-4 bottom-0 sm:bottom-4 w-full max-w-none sm:max-w-[360px] bg-card/95 sm:bg-card/80 backdrop-blur-xl border-t sm:border border-border/60 rounded-t-3xl sm:rounded-2xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] sm:shadow-2xl z-[1000] overflow-hidden flex flex-col"
             >
               <div className="p-6 overflow-y-auto flex-1 no-scrollbar">
                 <div className="flex items-center justify-between mb-6">
                   <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">{selectedConcept.subject}</Badge>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedConcept(null)} className="h-8 w-8 p-0 rounded-full">✕</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedConcept(null)} className="h-8 w-8 p-0 rounded-full" aria-label="Close concept panel">✕</Button>
                 </div>
 
                 <h2 className="text-2xl font-black mb-2 leading-tight">{selectedConcept.name}</h2>

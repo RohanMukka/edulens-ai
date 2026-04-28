@@ -6,6 +6,8 @@ import {
   type MasteryScore, masteryScores,
   type Classroom, type InsertClassroom, classrooms,
   type ClassroomStudent, type InsertClassroomStudent, classroomStudents,
+  type Reflection, type InsertReflection, reflections,
+  type EarnedBadge, type InsertEarnedBadge, earnedBadges,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -53,6 +55,8 @@ export interface IStorage {
   leaveClassroom(studentId: number, classroomId: number): Promise<void>;
   createReflection(reflection: InsertReflection): Promise<Reflection>;
   getStudentReflections(studentId: number): Promise<Reflection[]>;
+  awardBadge(badge: InsertEarnedBadge): Promise<EarnedBadge>;
+  getStudentBadges(studentId: number): Promise<EarnedBadge[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -268,6 +272,15 @@ export class DatabaseStorage implements IStorage {
 
   async getStudentReflections(studentId: number): Promise<Reflection[]> {
     return await db.select().from(reflections).where(eq(reflections.studentId, studentId)).orderBy(desc(reflections.createdAt));
+  }
+
+  async awardBadge(badge: InsertEarnedBadge): Promise<EarnedBadge> {
+    const [res] = await db.insert(earnedBadges).values({ ...badge, earnedAt: new Date().toISOString() }).returning();
+    return res;
+  }
+
+  async getStudentBadges(studentId: number): Promise<EarnedBadge[]> {
+    return await db.select().from(earnedBadges).where(eq(earnedBadges.studentId, studentId)).orderBy(desc(earnedBadges.earnedAt));
   }
 }
 

@@ -633,6 +633,51 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/students/:id/badges", requireStudentOrEducator, async (req, res) => {
+    try {
+      const studentId = Number(req.params.id);
+      const student = await storage.getStudent(studentId);
+      if (!student) return res.status(404).json({ message: "Student not found" });
+      const allIds = await storage.getStudentIdsByEmail(student.email);
+      
+      const allBadges = [];
+      for (const sid of allIds) {
+        const studentBadges = await storage.getStudentBadges(sid);
+        allBadges.push(...studentBadges);
+      }
+      
+      // Deduplicate by badgeType just in case
+      const uniqueBadges = Array.from(new Map(allBadges.map(b => [b.badgeType, b])).values());
+      uniqueBadges.sort((a, b) => new Date(b.earnedAt).getTime() - new Date(a.earnedAt).getTime());
+      
+      res.json(uniqueBadges);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/badges", requireAuth, async (req, res) => {
+    try {
+      const { badgeType, conceptId } = req.body;
+      if (!badgeType) return res.status(400).json({ message: "badgeType is required" });
+      
+      // Prevent duplicate badge types
+      const existingBadges = await storage.getStudentBadges(req.session.studentId!);
+      if (existingBadges.some(b => b.badgeType === badgeType)) {
+        return res.json({ message: "Badge already earned", earned: false });
+      }
+
+      const badge = await storage.awardBadge({
+        studentId: req.session.studentId!,
+        badgeType,
+        conceptId
+      });
+      res.json({ badge, earned: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // === Classrooms ===
   app.post("/api/classrooms", requireEducator, async (req, res) => {
     try {

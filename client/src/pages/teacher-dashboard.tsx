@@ -598,7 +598,7 @@ export default function TeacherDashboard() {
                         onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
                         className="text-sm bg-background/50"
                       />
-                      <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="shadow-lg shadow-primary/20 shrink-0">
+                      <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="shadow-lg shadow-primary/20 shrink-0" aria-label="Create classroom">
                         {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                       </Button>
                     </div>
@@ -639,6 +639,7 @@ export default function TeacherDashboard() {
                               size="icon" 
                               className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                               onClick={() => c.isOwner ? handleDeleteClassroom(c.id, c.name) : handleLeaveClassroom(c.id, c.name)}
+                              aria-label={c.isOwner ? "Delete classroom" : "Leave classroom"}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
