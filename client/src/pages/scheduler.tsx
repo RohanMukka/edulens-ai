@@ -1,19 +1,38 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CalendarDays, Clock, Brain, Download, Plus, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock, Brain, Download, Plus, CheckCircle2, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 
 export default function Scheduler() {
   const [, setLocation] = useLocation();
   const { student } = useAuth();
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<"weekly" | "ai-plan">("weekly");
+
+  const { data: tasks, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/scheduler/tasks"],
+    queryFn: async () => (await apiRequest("GET", "/api/scheduler/tasks")).json(),
+  });
+
+  const addTaskMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/scheduler/tasks", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/scheduler/tasks"] });
+      toast({ title: "Task Scheduled!", description: "Your study session has been added." });
+    }
+  });
 
   const handleExport = () => {
     toast({
@@ -23,21 +42,26 @@ export default function Scheduler() {
   };
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const timeSlots = ["4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM"];
+  const timeSlots = ["04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM"];
 
-  // Mock schedule data
-  const scheduleData: Record<string, Record<string, { subject: string, color: string, task: string }>> = {
-    "Monday": {
-      "5:00 PM": { subject: "Biology", color: "bg-emerald-500/20 text-emerald-600", task: "Review Photosynthesis" },
-      "6:00 PM": { subject: "Math", color: "bg-blue-500/20 text-blue-600", task: "Algebra Practice" }
-    },
-    "Wednesday": {
-      "4:00 PM": { subject: "History", color: "bg-amber-500/20 text-amber-600", task: "Read Chapter 4" },
-      "7:00 PM": { subject: "Biology", color: "bg-emerald-500/20 text-emerald-600", task: "Cell Structures Quiz" }
-    },
-    "Friday": {
-      "5:00 PM": { subject: "Computer Science", color: "bg-violet-500/20 text-violet-600", task: "Variables Project" }
-    }
+  // Map tasks to grid
+  const scheduleData: Record<string, Record<string, any>> = {};
+  tasks?.forEach(task => {
+    const date = new Date(task.startTime);
+    const day = days[date.getDay() === 0 ? 6 : date.getDay() - 1];
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    if (!scheduleData[day]) scheduleData[day] = {};
+    scheduleData[day][time] = task;
+  });
+
+  const getSubjectColor = (subject: string) => {
+    const s = subject.toLowerCase();
+    if (s.includes("bio")) return "bg-emerald-500/20 text-emerald-600";
+    if (s.includes("math")) return "bg-blue-500/20 text-blue-600";
+    if (s.includes("hist")) return "bg-amber-500/20 text-amber-600";
+    if (s.includes("comp")) return "bg-violet-500/20 text-violet-600";
+    return "bg-slate-500/20 text-slate-600";
   };
 
   return (
@@ -99,17 +123,38 @@ export default function Scheduler() {
                       <div className="p-4 flex items-center justify-center font-semibold text-xs text-muted-foreground border-r border-border bg-muted/10">
                         {time}
                       </div>
-                      {days.map(day => {
+                      {days.map((day, dayIdx) => {
                         const block = scheduleData[day]?.[time];
                         return (
                           <div key={day + time} className="p-2 border-r border-border last:border-0 min-h-[100px] hover:bg-muted/30 transition-colors relative group">
                             {block ? (
-                              <div className={`w-full h-full rounded-lg p-2 flex flex-col ${block.color} border border-current/20`}>
+                              <div className={`w-full h-full rounded-lg p-2 flex flex-col ${getSubjectColor(block.subject)} border border-current/20`}>
                                 <span className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-80">{block.subject}</span>
-                                <span className="text-sm font-semibold leading-tight">{block.task}</span>
+                                <span className="text-sm font-semibold leading-tight">{block.title}</span>
                               </div>
                             ) : (
-                              <button className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary">
+                              <button 
+                                className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  // Simplified add for demo
+                                  const now = new Date();
+                                  const targetDate = new Date();
+                                  targetDate.setDate(now.getDate() + (dayIdx - (now.getDay() === 0 ? 6 : now.getDay() - 1)));
+                                  const [h, m, p] = time.split(/[: ]/);
+                                  let hour = parseInt(h);
+                                  if (p === "PM" && hour < 12) hour += 12;
+                                  targetDate.setHours(hour, 0, 0, 0);
+                                  
+                                  addTaskMutation.mutate({
+                                    title: "Study Session",
+                                    subject: "General",
+                                    startTime: targetDate.toISOString(),
+                                    endTime: new Date(targetDate.getTime() + 3600000).toISOString(),
+                                    type: "Focus",
+                                    priority: "medium"
+                                  });
+                                }}
+                              >
                                 <Plus className="w-5 h-5" />
                               </button>
                             )}

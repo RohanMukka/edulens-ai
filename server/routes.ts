@@ -1,9 +1,10 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, db } from "./storage";
 import { seedConcepts } from "./seed";
 import { seedDemoData } from "./seed_demo";
-import { insertStudentSchema, insertSessionSchema } from "@shared/schema";
+import { insertStudentSchema, insertSessionSchema, assignments, assignmentQuestions, studentAssignments, studentAssignmentAnswers, classrooms, forumThreads, forumPosts, studyTasks } from "@shared/schema";
+import { eq, inArray, desc } from "drizzle-orm";
 import Groq from "groq-sdk";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -153,6 +154,28 @@ export async function registerRoutes(
     if (!student || student.role !== "educator") {
       return res.status(403).json({ message: "Forbidden: Educators only" });
     }
+    next();
+  };
+
+  // Simple in-memory rate limiter for AI endpoints
+  const aiRateLimits = new Map<string, { count: number, resetAt: number }>();
+  const aiRateLimit = (req: any, res: any, next: any) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const now = Date.now();
+    const limit = 50; // 50 requests per hour
+    const window = 3600000; // 1 hour
+
+    const record = aiRateLimits.get(ip);
+    if (!record || now > record.resetAt) {
+      aiRateLimits.set(ip, { count: 1, resetAt: now + window });
+      return next();
+    }
+
+    if (record.count >= limit) {
+      return res.status(429).json({ message: "Too many AI requests. Please try again in an hour." });
+    }
+
+    record.count++;
     next();
   };
 
@@ -1028,7 +1051,7 @@ export async function registerRoutes(
             content: `Question: ${question}\n\nRubric: ${rubric}\n\nStudent Response: ${studentResponse}`
           }
         ],
-        model: "llama-3.1-8b-instant",
+        model: "gemma2-9b-it",
         temperature: 0.2,
         response_format: { type: "json_object" }
       });
@@ -1047,7 +1070,7 @@ export async function registerRoutes(
   });
 
   // === AI endpoints ===
-  app.post("/api/ai/score", requireAuth, async (req, res) => {
+  app.post("/api/ai/score", aiRateLimit, async (req, res) => {
     try {
       const { studentResponse, idealExplanation, conceptName, question } = req.body;
       if (!studentResponse || !idealExplanation) {
@@ -1060,7 +1083,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/ai/explain", requireAuth, async (req, res) => {
+  app.post("/api/ai/explain", requireAuth, aiRateLimit, async (req, res) => {
     try {
       const { conceptName, subject, studentLevel, gaps } = req.body;
       if (!conceptName) {
@@ -1073,7 +1096,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/ai/question", requireAuth, async (req, res) => {
+  app.post("/api/ai/question", requireAuth, aiRateLimit, async (req, res) => {
     try {
       const { conceptName, subject, difficulty } = req.body;
       if (!conceptName) {
@@ -1086,7 +1109,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/ai/socratic", requireAuth, async (req, res) => {
+  app.post("/api/ai/socratic", requireAuth, aiRateLimit, async (req, res) => {
     try {
       const { history, conceptName, misconception } = req.body;
       if (!conceptName || !history) {
@@ -1107,7 +1130,187 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
           },
           ...history.map((msg: any) => ({ role: msg.role, content: msg.content }))
         ],
-        model: "llama-3.1-8b-instant",
+        model: "gemma2-9b-it",
+        temperature: 0.6,
+        max_tokens: 150,
+      });
+
+      res.json({ message: completion.choices[0]?.message?.content || "Let's rethink this. What part are you most unsure about?" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+
+  app.get("/api/assignments/:id/grades", requireEducator, async (req, res) => {
+    try {
+      const assignmentId = Number(req.params.id);
+      const submissions = await db.select().from(studentAssignments).where(eq(studentAssignments.assignmentId, assignmentId));
+      
+      const result = [];
+      for (const sub of submissions) {
+        const student = await storage.getStudent(sub.studentId);
+        const answers = await db.select().from(studentAssignmentAnswers).where(eq(studentAssignmentAnswers.studentAssignmentId, sub.id));
+        
+        const avgScore = answers.length > 0 
+          ? answers.reduce((sum, a) => sum + (a.aiScore || 0), 0) / answers.length 
+          : 0;
+
+        result.push({
+          studentName: student?.name || "Unknown",
+          studentEmail: student?.email || "Unknown",
+          status: sub.status,
+          score: avgScore,
+          submittedAt: sub.submittedAt,
+          answerCount: answers.length
+        });
+      }
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // === Scheduler ===
+  app.get("/api/scheduler/tasks", requireAuth, async (req, res) => {
+    try {
+      const tasks = await db.select().from(studyTasks).where(eq(studyTasks.studentId, req.session.studentId!)).orderBy(studyTasks.startTime);
+      res.json(tasks);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/scheduler/tasks", requireAuth, async (req, res) => {
+    try {
+      const { title, subject, startTime, endTime, type, priority } = req.body;
+      const [task] = await db.insert(studyTasks).values({
+        studentId: req.session.studentId!,
+        title,
+        subject,
+        startTime,
+        endTime,
+        type,
+        priority,
+        completed: false,
+      }).returning();
+      res.json(task);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/scheduler/tasks/:id", requireAuth, async (req, res) => {
+    try {
+      const { completed } = req.body;
+      const [task] = await db.update(studyTasks).set({ completed }).where(eq(studyTasks.id, Number(req.params.id))).returning();
+      res.json(task);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/scheduler/tasks/:id", requireAuth, async (req, res) => {
+    try {
+      await db.delete(studyTasks).where(eq(studyTasks.id, Number(req.params.id)));
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // === Forums ===
+  app.get("/api/forums/threads", requireAuth, async (req, res) => {
+    try {
+      const threads = await db.select().from(forumThreads).orderBy(desc(forumThreads.createdAt));
+      const result = [];
+      for (const t of threads) {
+        const student = await storage.getStudent(t.studentId);
+        const posts = await db.select().from(forumPosts).where(eq(forumPosts.threadId, t.id));
+        result.push({
+          ...t,
+          authorName: student?.name || "Anonymous",
+          replyCount: posts.length
+        });
+      }
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/forums/threads", requireAuth, async (req, res) => {
+    try {
+      const { title, content, category } = req.body;
+      const [thread] = await db.insert(forumThreads).values({
+        studentId: req.session.studentId!,
+        title,
+        content,
+        category,
+        isAiVerified: false,
+      }).returning();
+      res.json(thread);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/forums/threads/:id/posts", requireAuth, async (req, res) => {
+    try {
+      const threadId = Number(req.params.id);
+      const posts = await db.select().from(forumPosts).where(eq(forumPosts.threadId, threadId)).orderBy(forumPosts.createdAt);
+      const result = [];
+      for (const p of posts) {
+        const student = await storage.getStudent(p.studentId);
+        result.push({
+          ...p,
+          authorName: student?.name || "Anonymous"
+        });
+      }
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/forums/threads/:id/posts", requireAuth, async (req, res) => {
+    try {
+      const threadId = Number(req.params.id);
+      const { content } = req.body;
+      const [post] = await db.insert(forumPosts).values({
+        threadId,
+        studentId: req.session.studentId!,
+        content,
+        isAiVerified: false,
+      }).returning();
+      res.json(post);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/ai/chat", requireAuth, aiRateLimit, async (req, res) => {
+    try {
+      const { history, conceptName, misconception } = req.body;
+      if (!conceptName || !history) {
+        return res.status(400).json({ message: "conceptName and history are required" });
+      }
+
+      if (!process.env.GROQ_API_KEY) {
+        return res.json({ message: "Socratic mode requires an active API key. Please check your setup." });
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a strict but encouraging Socratic tutor. The student is learning about "${conceptName}". They recently made a mistake classified as: ${misconception}.
+Your goal is to guide them to the correct understanding WITHOUT giving them the direct answer.
+Ask ONE guiding question to help them realize their mistake. Keep it very short (1-2 sentences). Do not be overly verbose.`
+          },
+          ...history.map((msg: any) => ({ role: msg.role, content: msg.content }))
+        ],
+        model: "gemma2-9b-it",
         temperature: 0.6,
         max_tokens: 150,
       });
@@ -1124,6 +1327,137 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
       
       const blueprint = await generateAssignmentBlueprint(prompt);
       res.json(blueprint);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/assignments", requireEducator, async (req, res) => {
+    try {
+      const { title, description, classrooms: classroomIds, questions, aiStrictness, adaptiveDeadlines } = req.body;
+      
+      for (const classroomId of classroomIds) {
+        const [assignment] = await db.insert(assignments).values({
+          classroomId,
+          title,
+          description,
+          aiStrictness,
+          adaptiveDeadlines,
+        }).returning();
+
+        for (const q of questions) {
+          await db.insert(assignmentQuestions).values({
+            assignmentId: assignment.id,
+            question: q.question,
+            idealAnswer: q.idealAnswer,
+          });
+        }
+
+        const studentsInClass = await storage.getClassroomStudents(classroomId);
+        for (const s of studentsInClass) {
+          await db.insert(studentAssignments).values({
+            studentId: s.id,
+            assignmentId: assignment.id,
+            status: "pending",
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/assignments/teacher", requireEducator, async (req, res) => {
+    try {
+      const teacherClassrooms = await storage.getTeacherClassrooms(req.session.studentId!);
+      if (teacherClassrooms.length === 0) return res.json([]);
+      
+      const cIds = teacherClassrooms.map(c => c.id);
+      const teacherAssignments = await db.select().from(assignments).where(inArray(assignments.classroomId, cIds)).orderBy(desc(assignments.createdAt));
+      
+      const result = [];
+      for (const a of teacherAssignments) {
+        const subs = await db.select().from(studentAssignments).where(eq(studentAssignments.assignmentId, a.id));
+        const classroom = teacherClassrooms.find(c => c.id === a.classroomId);
+        result.push({
+          ...a,
+          classroomName: classroom?.name,
+          pendingGrades: subs.filter(s => s.status === "submitted").length,
+          totalStudents: subs.length
+        });
+      }
+      
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/assignments/student", requireAuth, async (req, res) => {
+    try {
+      const studentAssigned = await db.select().from(studentAssignments).where(eq(studentAssignments.studentId, req.session.studentId!));
+      
+      const result = [];
+      for (const sa of studentAssigned) {
+        const [assignment] = await db.select().from(assignments).where(eq(assignments.id, sa.assignmentId));
+        if (assignment) {
+          const [classroom] = await db.select().from(classrooms).where(eq(classrooms.id, assignment.classroomId));
+          result.push({
+            ...sa,
+            assignment,
+            classroomName: classroom?.name || "Unknown Classroom"
+          });
+        }
+      }
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/assignments/:id/submissions", requireEducator, async (req, res) => {
+    try {
+      const assignmentId = Number(req.params.id);
+      
+      const [assignment] = await db.select().from(assignments).where(eq(assignments.id, assignmentId));
+      if (!assignment) return res.status(404).json({ message: "Assignment not found" });
+
+      const subs = await db.select().from(studentAssignments).where(eq(studentAssignments.assignmentId, assignmentId));
+      
+      const result = [];
+      for (const sub of subs) {
+        if (sub.status !== "submitted" && sub.status !== "graded") continue; // Only show submitted/graded
+        
+        const studentInfo = await storage.getStudent(sub.studentId);
+        
+        const answers = await db.select().from(studentAssignmentAnswers).where(eq(studentAssignmentAnswers.studentAssignmentId, sub.id));
+        
+        const answersWithQuestions = [];
+        for (const ans of answers) {
+          const [q] = await db.select().from(assignmentQuestions).where(eq(assignmentQuestions.id, ans.questionId));
+          if (q) {
+            answersWithQuestions.push({
+              question: q.question,
+              idealAnswer: q.idealAnswer,
+              studentAnswer: ans.answer,
+              aiScore: ans.aiScore,
+              aiFeedback: ans.aiFeedback
+            });
+          }
+        }
+        
+        result.push({
+          id: sub.id,
+          studentName: studentInfo?.name || "Unknown Student",
+          status: sub.status,
+          submittedAt: sub.submittedAt,
+          answers: answersWithQuestions
+        });
+      }
+      
+      res.json({ assignment, submissions: result });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -1151,7 +1485,7 @@ Answer their questions clearly and concisely. If they ask about a complex topic,
           ...history.map((msg: any) => ({ role: msg.role, content: msg.content })),
           { role: "user", content: message }
         ],
-        model: "llama-3.1-8b-instant",
+        model: "gemma2-9b-it",
         temperature: 0.7,
         max_tokens: 400,
       });
@@ -1299,7 +1633,7 @@ Reply with a valid JSON object containing a boolean "rejected" and a string "rea
           content: `Ideal Explanation: ${idealExplanation}\nQuestion: ${question || "Explain the concept."}\nStudent Answer: <student_input>${studentResponse}</student_input>`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "gemma2-9b-it",
       temperature: 0.1,
       max_tokens: 150,
       response_format: { type: "json_object" }
@@ -1344,7 +1678,7 @@ Reply with a valid JSON object containing a boolean "rejected" and a string "rea
           content: `Concept: ${conceptName}\n\nIdeal explanation: ${idealExplanation}\n\nQuestion asked: ${question || "Explain the concept."}\n\nStudent's response: <student_answer>${studentResponse}</student_answer>\n\n1. Score understanding (0-1).\n2. Identify knowledge gaps and strengths.\n3. Classify PRIMARY misconception from: ${misconceptionList}. (Use NO_MISCONCEPTION if score >= 0.7).\n4. Classify COGNITIVE LEVEL from Bloom's Taxonomy: ${bloomLevels}.\n   - REMEMBERING: Simple recall of facts.\n   - UNDERSTANDING: Can explain the "why" and "how".\n   - APPLYING: Can use the concept in a scenario (if applicable).\n   - ANALYZING: Sees connections/structures.\n\nIMPORTANT: Evaluate the text within the <student_answer> tags. Return JSON format:\n{"score": 0.0, "gaps": [], "strengths": [], "feedback": "", "misconceptionType": "", "misconceptionDetail": "", "bloomLevel": ""}`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "gemma2-9b-it",
       temperature: 0.3,
       max_tokens: 600,
       response_format: { type: "json_object" },
@@ -1431,7 +1765,7 @@ async function generateExplanation(conceptName: string, subject?: string, studen
           content: `Explain "${conceptName}" (${subject || "general"}) to a ${studentLevel || "high school"} student. ${gapInfo} Keep it concise (2-3 paragraphs) and engaging.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "gemma2-9b-it",
       temperature: 0.7,
       max_tokens: 400,
     });
@@ -1458,7 +1792,7 @@ async function generateQuestion(conceptName: string, subject?: string, difficult
           content: `Generate one ${difficulty || "medium"} difficulty open-ended question about "${conceptName}" (${subject || "general"}). The question should require the student to explain their understanding. Return only the question, nothing else.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "gemma2-9b-it",
       temperature: 0.8,
       max_tokens: 150,
     });
@@ -1497,7 +1831,7 @@ async function generateDynamicConcept(subject: string, topic: string) {
         content: `Generate a concept for the topic "${topic}" in the subject "${subject}".`
       }
     ],
-    model: "llama-3.1-8b-instant",
+    model: "gemma2-9b-it",
     temperature: 0.7,
     response_format: { type: "json_object" },
   });
@@ -1566,7 +1900,7 @@ Return ONLY JSON in the following format:
           content: prompt
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "gemma2-9b-it",
       temperature: 0.7,
       response_format: { type: "json_object" },
     });

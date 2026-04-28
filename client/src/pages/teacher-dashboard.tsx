@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Users, GraduationCap, Activity, LogOut, Plus, Copy,
   ArrowLeft, Loader2, CheckCircle2, BookOpen, TrendingUp, CheckCheck, AlertTriangle,
-  Flame, Brain, Trash2, ArrowRight, Sparkles
+  Flame, Brain, Trash2, ArrowRight, Sparkles, Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
@@ -400,6 +400,45 @@ export default function TeacherDashboard() {
     }
   }, [activeLiveRoom, student]);
 
+  const handleExportGrades = async (assignmentId: number, title: string) => {
+    try {
+      const res = await apiRequest("GET", `/api/assignments/${assignmentId}/grades`);
+      const data = await res.json();
+      
+      if (data.length === 0) {
+        toast({ title: "No data", description: "No submissions yet for this assignment.", variant: "destructive" });
+        return;
+      }
+
+      const headers = ["Student Name", "Email", "Status", "Average Score", "Submitted At", "Answers"];
+      const csvContent = [
+        headers.join(","),
+        ...data.map((r: any) => [
+          `"${r.studentName}"`,
+          r.studentEmail,
+          r.status,
+          r.score.toFixed(2),
+          r.submittedAt ? new Date(r.submittedAt).toLocaleString() : "N/A",
+          r.answerCount
+        ].join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `EduLens_Grades_${title.replace(/\s+/g, '_')}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({ title: "Export Successful", description: "Grade report has been downloaded." });
+    } catch (e: any) {
+      toast({ title: "Export Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
   const { data: classrooms, isLoading: classroomsLoading } = useQuery<Classroom[]>({
     queryKey: ["/api/classrooms"],
     queryFn: async () => (await apiRequest("GET", "/api/classrooms")).json(),
@@ -408,6 +447,11 @@ export default function TeacherDashboard() {
   const { data: students, isLoading } = useQuery<StudentStat[]>({
     queryKey: ["/api/teacher/students"],
     queryFn: async () => (await apiRequest("GET", "/api/teacher/students")).json(),
+  });
+
+  const { data: assignments } = useQuery<any[]>({
+    queryKey: ["/api/assignments/teacher"],
+    queryFn: async () => (await apiRequest("GET", "/api/assignments/teacher")).json(),
   });
 
   const handleCreateClassroom = async () => {
@@ -768,34 +812,36 @@ export default function TeacherDashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-border/50">
-              <div className="p-4 flex items-center justify-between hover:bg-muted/5 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-5 h-5 text-violet-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold">Photosynthesis Pop Quiz</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">Bio 101 • 2 pending grades • Due Yesterday</p>
-                  </div>
+              {assignments?.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
+                  <BookOpen className="w-8 h-8 opacity-50" />
+                  <p>No active assignments. Click "New" to create one.</p>
                 </div>
-                <Button onClick={() => setLocation("/teacher/grade/1")} className="bg-violet-600 hover:bg-violet-700 shadow-sm">
-                  SpeedGrader <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-              <div className="p-4 flex items-center justify-between hover:bg-muted/5 transition-colors opacity-70">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
+              ) : (
+                assignments?.map(assignment => (
+                  <div key={assignment.id} className="p-4 flex items-center justify-between hover:bg-muted/5 transition-colors">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-5 h-5 text-violet-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold">{assignment.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {assignment.classroomName} • {assignment.pendingGrades} pending grades • {new Date(assignment.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleExportGrades(assignment.id, assignment.title)} className="border-violet-500/30 text-violet-600 hover:bg-violet-50">
+                        <Download className="w-4 h-4 mr-2" /> Export
+                      </Button>
+                      <Button onClick={() => setLocation(`/teacher/grade/${assignment.id}`)} className="bg-violet-600 hover:bg-violet-700 shadow-sm">
+                        SpeedGrader <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold">Introduction to Variables</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">Math • 0 pending grades • Due Last Week</p>
-                  </div>
-                </div>
-                <Button variant="outline" onClick={() => setLocation("/teacher/grade/2")}>
-                  Review
-                </Button>
-              </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

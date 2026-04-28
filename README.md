@@ -11,7 +11,7 @@ EduLens AI is an advanced adaptive learning platform that solves the "Shallow Le
 Most EdTech platforms test recognition (picking the right choice). EduLens tests **recollection and synthesis** (explaining the concept).
 
 ### 🧠 Bloom's Taxonomy Cognitive Classification
-Every student response is analyzed by our **Llama 3.1-8b** engine to classify the student's cognitive depth according to Bloom's Taxonomy:
+Every student response is analyzed by our **Gemma 2 (gemma2-9b-it)** engine to classify the student's cognitive depth according to Bloom's Taxonomy:
 - **Remembering**: Can they recall the basic facts?
 - **Understanding**: Can they explain the "why" and "how" in their own words?
 - **Analyzing/Evaluating**: Can they draw connections or justify a stand?
@@ -23,11 +23,44 @@ EduLens doesn't just teach; it ensures you remember. We've implemented the **Sup
 
 ## 🛠️ Elite Technical Stack
 
-- **Inference Engine**: [Groq SDK](https://groq.com/) powering **Llama 3.1-8b-instant**. Feedback latency is < 2.0 seconds.
+- **Inference Engine**: [Groq SDK](https://groq.com/) powering **Gemma 2 (gemma2-9b-it)**. Feedback latency is < 2.0 seconds.
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS + Framer Motion.
 - **Design System**: Custom-built premium **Glassmorphism UI** with a global motion layout.
 - **Real-time Engine**: **WebSockets (ws)** for live educator dashboards, allowing teachers to see student cognitive depth *as they type*.
 - **Database**: PostgreSQL (Neon) + Drizzle ORM for high-performance relational data.
+
+
+---
+
+## 🏗️ Technical Architecture
+
+```mermaid
+graph TD
+    subgraph "Student Interface"
+        A[Learning Interface] -->|Mutation| B(API /api/sessions/respond)
+        A -->|Socket| C{Classroom WebSocket}
+    end
+
+    subgraph "AI Agentic Pipeline"
+        B --> D[Gatekeeper Agent]
+        D -->|Valid| E[Diagnostic Agent]
+        E -->|Classification| F[Bloom's Classifier]
+        F --> G[Adaptive Remediation Engine]
+        G --> H[SM-2 Spaced Repetition]
+    end
+
+    subgraph "Educator Control Plane"
+        C -->|Real-time Feed| I[Teacher Dashboard]
+        I -->|Action| J[Assignment Wizard]
+        J -->|Generate| K[Groq Gemma 2]
+    end
+
+    subgraph "Data & Persistence"
+        B --> L[(PostgreSQL/Drizzle)]
+        L --> I
+        L --> A
+    end
+```
 
 ---
 
@@ -56,7 +89,7 @@ EduLens doesn't just teach; it ensures you remember. We've implemented the **Sup
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL Database (Neon.tech recommended)
-- Groq API Key (for Llama 3.1 inference)
+- Groq API Key (for Gemma 2 inference)
 
 ### Installation
 1. Clone the repo: `git clone https://github.com/your-repo/edulens-ai.git`
@@ -71,7 +104,7 @@ EduLens doesn't just teach; it ensures you remember. We've implemented the **Sup
 
 We don't just "use AI"—we validate it. EduLens AI features an automated validation suite that benchmarks our diagnostic engine against human-graded student responses.
 
-### 📊 Diagnostic Accuracy (Llama-3.1-8b)
+### 📊 Diagnostic Accuracy (Gemma 2)
 | Metric | Result |
 | --- | --- |
 | **Misconception Diagnosis Accuracy** | **83.3%** |

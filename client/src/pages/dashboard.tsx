@@ -163,6 +163,12 @@ export default function Dashboard() {
     queryFn: async () => (await apiRequest("GET", `/api/students/${student.id}/reflections`)).json(),
   });
 
+  const { data: assignments } = useQuery<any[]>({
+    queryKey: ["/api/assignments/student"],
+    enabled: !!student,
+    queryFn: async () => (await apiRequest("GET", "/api/assignments/student")).json(),
+  });
+
   const subjects = ["Biology", "Math", "History", "Computer Science", "Physics", "Chemistry", "Economics"];
   const conceptQueries = subjects.map(subject =>
     useQuery<Concept[]>({
@@ -566,41 +572,33 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-border/40">
-                  {/* Mock assignment 1 - Urgent */}
-                  <div className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4 relative overflow-hidden group">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />
-                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
-                      <AlertTriangle className="w-5 h-5 text-rose-500" />
+                  {(!assignments || assignments.length === 0) ? (
+                    <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
+                      <BookOpen className="w-8 h-8 opacity-50" />
+                      <p>You have no active assignments. Enjoy your free time!</p>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-sm">Photosynthesis Pop Quiz</h4>
-                        <Badge variant="outline" className="text-[10px] text-rose-500 border-rose-500/30 bg-rose-500/5">Due Today, 11:59 PM</Badge>
+                  ) : (
+                    assignments.map((sa: any) => (
+                      <div key={sa.id} className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4 relative overflow-hidden group">
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${sa.status === 'pending' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${sa.status === 'pending' ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`}>
+                          {sa.status === 'pending' ? <AlertTriangle className="w-5 h-5 text-rose-500" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-bold text-sm">{sa.assignment.title}</h4>
+                            <Badge variant="outline" className={`text-[10px] ${sa.status === 'pending' ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' : 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5'}`}>
+                              {sa.status === 'pending' ? 'Pending' : 'Completed'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{sa.classroomName}</p>
+                        </div>
+                        <Button size="sm" variant="outline" disabled={sa.status !== 'pending'} className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
+                          {sa.status === 'pending' ? 'Start' : 'Review'}
+                        </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">Bio 101 • 3 Questions</p>
-                    </div>
-                    <Button size="sm" variant="outline" className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
-                      Start
-                    </Button>
-                  </div>
-
-                  {/* Mock assignment 2 - Upcoming */}
-                  <div className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4 relative overflow-hidden group">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500/50" />
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-sm">Introduction to Variables</h4>
-                        <Badge variant="outline" className="text-[10px]">Due in 3 days</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Math • 5 Questions</p>
-                    </div>
-                    <Button size="sm" variant="outline" className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
-                      Start
-                    </Button>
-                  </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -7,108 +7,78 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { ArrowLeft, MessageCircle, ThumbsUp, Sparkles, User, Brain, Search, Plus } from "lucide-react";
+import { ArrowLeft, MessageCircle, ThumbsUp, Sparkles, User, Brain, Search, Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock Data for Hackathon
-const MOCK_THREADS = [
-  {
-    id: 1,
-    author: "Alex Chen",
-    title: "Help with Calvin Cycle Carbon counting?",
-    content: "I'm struggling to understand how the 3 RuBP molecules end up making exactly one G3P that exits the cycle. Where do the carbons go?",
-    tags: ["Biology", "Photosynthesis"],
-    likes: 12,
-    replies: [
-      {
-        author: "Sarah Jenkins",
-        content: "Think of it like currency. 3 RuBP (15 carbons) + 3 CO2 (3 carbons) = 18 carbons total. That splits into 6 G3P (18 carbons). One leaves (3 carbons), and 5 stay (15 carbons) to remake the 3 RuBP!",
-        isAiVerified: false,
-        likes: 5
-      },
-      {
-        author: "EduLens AI Assistant",
-        content: "Sarah's explanation is completely correct! To visualize it: 5 G3P molecules (each with 3 carbons) are rearranged through a complex series of reactions using ATP to form 3 molecules of RuBP (each with 5 carbons).",
-        isAiVerified: true,
-        likes: 24
-      }
-    ]
-  },
-  {
-    id: 2,
-    author: "Marcus Johnson",
-    title: "What's the best way to memorize the steps of Mitosis?",
-    content: "I keep mixing up Metaphase and Anaphase. Any good mnemonic devices?",
-    tags: ["Biology", "Study Tips"],
-    likes: 8,
-    replies: [
-      {
-        author: "Emma Watson",
-        content: "I use PMAT! Prophase (Prepare), Metaphase (Middle), Anaphase (Apart), Telophase (Two).",
-        isAiVerified: false,
-        likes: 15
-      }
-    ]
-  }
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Forums() {
   const [, setLocation] = useLocation();
   const { student } = useAuth();
   const { toast } = useToast();
   
-  const [threads, setThreads] = useState(MOCK_THREADS);
-  const [searchQuery, setSearchQuery] = useState("");
+  const qc = useQueryClient();
   const [activeThread, setActiveThread] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newThreadTitle, setNewThreadTitle] = useState("");
 
-  const filteredThreads = threads.filter(t => 
+  const { data: threads, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/forums/threads"],
+    queryFn: async () => (await apiRequest("GET", "/api/forums/threads")).json(),
+  });
+
+  const { data: posts, isLoading: postsLoading } = useQuery<any[]>({
+    queryKey: ["/api/forums/threads", activeThread, "posts"],
+    queryFn: async () => (await apiRequest("GET", `/api/forums/threads/${activeThread}/posts`)).json(),
+    enabled: activeThread !== null
+  });
+
+  const createThreadMutation = useMutation({
+    mutationFn: async (data: { title: string, content: string, category: string }) => {
+      const res = await apiRequest("POST", "/api/forums/threads", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/forums/threads"] });
+      setIsCreating(false);
+      setNewThreadTitle("");
+      setNewPostContent("");
+      toast({ title: "Thread Created!", description: "Your peers can now see your question." });
+    }
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: async (data: { threadId: number, content: string }) => {
+      const res = await apiRequest("POST", `/api/forums/threads/${data.threadId}/posts`, { content: data.content });
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/forums/threads", activeThread, "posts"] });
+      qc.invalidateQueries({ queryKey: ["/api/forums/threads"] }); // Update reply count
+      setNewPostContent("");
+      toast({ title: "Reply Posted!", description: "Your contribution has been saved." });
+    }
+  });
+
+  const filteredThreads = threads?.filter(t => 
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    t.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+    t.category.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   const handleCreateThread = () => {
     if (!newThreadTitle.trim() || !newPostContent.trim()) return;
-    
-    const newThread = {
-      id: threads.length + 1,
-      author: student?.name || "Student",
-      title: newThreadTitle,
-      content: newPostContent,
-      tags: ["General"],
-      likes: 0,
-      replies: []
-    };
-    
-    setThreads([newThread, ...threads]);
-    setIsCreating(false);
-    setNewThreadTitle("");
-    setNewPostContent("");
-    toast({ title: "Thread Created!", description: "Your peers can now see your question." });
+    createThreadMutation.mutate({ 
+      title: newThreadTitle, 
+      content: newPostContent, 
+      category: "General" 
+    });
   };
 
   const handleReply = (threadId: number) => {
     if (!newPostContent.trim()) return;
-    
-    setThreads(prev => prev.map(t => {
-      if (t.id === threadId) {
-        return {
-          ...t,
-          replies: [...t.replies, {
-            author: student?.name || "Student",
-            content: newPostContent,
-            isAiVerified: false,
-            likes: 0
-          }]
-        };
-      }
-      return t;
-    }));
-    
-    setNewPostContent("");
-    toast({ title: "Reply sent!", description: "Thanks for helping out your peers." });
+    replyMutation.mutate({ threadId, content: newPostContent });
   };
 
   return (
@@ -188,16 +158,14 @@ export default function Forums() {
                           <div className="flex justify-between items-start mb-1">
                             <h3 className="font-bold text-lg group-hover:text-blue-500 transition-colors">{thread.title}</h3>
                             <div className="flex gap-1">
-                              {thread.tags.map(t => (
-                                <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
-                              ))}
+                              <Badge variant="secondary" className="text-[10px]">{thread.category}</Badge>
                             </div>
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{thread.content}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
-                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {thread.replies.length} Replies</span>
-                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {thread.likes} Likes</span>
-                            <span>By {thread.author}</span>
+                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {thread.replyCount} Replies</span>
+                            <span>By {thread.authorName}</span>
+                            <span>{new Date(thread.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
@@ -214,7 +182,7 @@ export default function Forums() {
 
             {/* Active Thread View */}
             {activeThread !== null && !isCreating && (() => {
-              const thread = threads.find(t => t.id === activeThread);
+              const thread = threads?.find(t => t.id === activeThread);
               if (!thread) return null;
               
               return (
@@ -227,23 +195,24 @@ export default function Forums() {
                           <User className="w-5 h-5 text-muted-foreground" />
                         </div>
                         <div>
-                          <p className="font-bold text-sm">{thread.author}</p>
+                          <p className="font-bold text-sm">{thread.authorName}</p>
                           <p className="text-xs text-muted-foreground">Original Poster</p>
                         </div>
                       </div>
                       <h2 className="text-xl font-bold mb-3">{thread.title}</h2>
                       <p className="text-foreground/80 leading-relaxed mb-4">{thread.content}</p>
                       <div className="flex gap-2">
-                        {thread.tags.map(t => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
+                        <Badge variant="outline" className="text-xs">{thread.category}</Badge>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Replies */}
-                  <h3 className="font-bold text-lg px-2">Replies ({thread.replies.length})</h3>
+                  <h3 className="font-bold text-lg px-2">Replies ({posts?.length || 0})</h3>
                   <div className="space-y-4">
-                    {thread.replies.map((reply, idx) => (
-                      <Card key={idx} className={`border-border/50 shadow-sm ${reply.isAiVerified ? 'bg-violet-500/5 border-violet-500/30' : ''}`}>
+                    {postsLoading && <Loader2 className="w-6 h-6 animate-spin mx-auto" />}
+                    {posts?.map((reply, idx) => (
+                      <Card key={reply.id} className={`border-border/50 shadow-sm ${reply.isAiVerified ? 'bg-violet-500/5 border-violet-500/30' : ''}`}>
                         <CardContent className="p-5">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -251,7 +220,7 @@ export default function Forums() {
                                 {reply.isAiVerified ? <Brain className="w-4 h-4" /> : <User className="w-4 h-4" />}
                               </div>
                               <p className={`font-bold text-sm ${reply.isAiVerified ? 'text-violet-600 dark:text-violet-400' : ''}`}>
-                                {reply.author}
+                                {reply.authorName}
                               </p>
                             </div>
                             {reply.isAiVerified && (
@@ -262,7 +231,7 @@ export default function Forums() {
                           </div>
                           <p className="text-sm leading-relaxed">{reply.content}</p>
                           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Button variant="ghost" size="sm" className="h-6 px-2"><ThumbsUp className="w-3 h-3 mr-1" /> {reply.likes}</Button>
+                            <span>{new Date(reply.createdAt).toLocaleString()}</span>
                           </div>
                         </CardContent>
                       </Card>

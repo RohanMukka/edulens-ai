@@ -49,20 +49,33 @@ export function AssignmentWizard({ open, onOpenChange, classrooms }: { open: boo
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // For now, we just pretend to save to show the flow, or we could add a save route
-      // In a full implementation, this would POST to /api/assignments
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return true;
+      if (!blueprint) throw new Error("No blueprint generated");
+      const payload = {
+        title: blueprint.title,
+        description: blueprint.description,
+        questions: blueprint.questions,
+        classrooms: selectedClassrooms,
+        aiStrictness,
+        adaptiveDeadlines
+      };
+      const res = await apiRequest("POST", "/api/assignments", payload);
+      if (!res.ok) throw new Error("Failed to deploy assignment");
+      return res.json();
     },
     onSuccess: () => {
       toast({ title: "Magic Complete! ✨", description: "Assignment deployed successfully." });
+      qc.invalidateQueries({ queryKey: ["/api/assignments/teacher"] });
       onOpenChange(false);
       // Reset
       setTimeout(() => {
         setStep(1);
         setBlueprint(null);
         setPrompt("");
+        setSelectedClassrooms([]);
       }, 500);
+    },
+    onError: (e: any) => {
+      toast({ title: "Deployment failed", description: e.message, variant: "destructive" });
     }
   });
 

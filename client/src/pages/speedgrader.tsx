@@ -14,53 +14,7 @@ import {
   ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Sparkles, Brain, Loader2
 } from "lucide-react";
 
-// Mock Data for demonstration
-const mockSubmissions = [
-  {
-    id: 1,
-    studentName: "Alex Chen",
-    status: "submitted",
-    submittedAt: "10 mins ago",
-    answers: [
-      {
-        question: "Explain the light-dependent reactions of photosynthesis.",
-        idealAnswer: "They take place in the thylakoid membrane, use light energy to make ATP and NADPH, and release oxygen from water.",
-        studentAnswer: "Light hits the plant and it makes ATP and oxygen. The water is split.",
-        aiScore: 0.7,
-        aiFeedback: "Good start, but missing mention of the thylakoid membrane and NADPH."
-      },
-      {
-        question: "What is the role of the Calvin Cycle?",
-        idealAnswer: "To use ATP and NADPH to convert CO2 into glucose (sugar).",
-        studentAnswer: "It uses the energy from the light reactions to turn carbon dioxide into sugar.",
-        aiScore: 0.9,
-        aiFeedback: "Excellent understanding. Very concise."
-      }
-    ]
-  },
-  {
-    id: 2,
-    studentName: "Sarah Jenkins",
-    status: "submitted",
-    submittedAt: "2 hours ago",
-    answers: [
-      {
-        question: "Explain the light-dependent reactions of photosynthesis.",
-        idealAnswer: "They take place in the thylakoid membrane, use light energy to make ATP and NADPH, and release oxygen from water.",
-        studentAnswer: "It makes sugar from sunlight.",
-        aiScore: 0.2,
-        aiFeedback: "This describes photosynthesis as a whole, but misses the specific mechanics of the light-dependent reactions (ATP, NADPH, oxygen)."
-      },
-      {
-        question: "What is the role of the Calvin Cycle?",
-        idealAnswer: "To use ATP and NADPH to convert CO2 into glucose (sugar).",
-        studentAnswer: "I think it is the part that needs darkness.",
-        aiScore: 0.3,
-        aiFeedback: "Common misconception. The Calvin Cycle doesn't *need* darkness, it just doesn't directly need light. Missing the core function of converting CO2 to glucose."
-      }
-    ]
-  }
-];
+
 
 export default function SpeedGrader() {
   const { id } = useParams(); // Assignment ID
@@ -68,8 +22,18 @@ export default function SpeedGrader() {
   const { student: teacher } = useAuth();
   const { toast } = useToast();
   
+  const qc = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [submissions, setSubmissions] = useState(mockSubmissions);
+  
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/assignments", id, "submissions"],
+    queryFn: async () => (await apiRequest("GET", `/api/assignments/${id}/submissions`)).json(),
+    enabled: !!id
+  });
+
+  const submissions = data?.submissions || [];
+  const assignmentData = data?.assignment;
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const currentSubmission = submissions[currentIndex];
@@ -85,19 +49,8 @@ export default function SpeedGrader() {
       const json = await res.json();
       return { ...json, answerIndex: data.answerIndex };
     },
-    onSuccess: (data) => {
-      setSubmissions((prev) => {
-        const updated = [...prev];
-        const studentSub = { ...updated[currentIndex] };
-        studentSub.answers = [...studentSub.answers];
-        studentSub.answers[data.answerIndex] = {
-          ...studentSub.answers[data.answerIndex],
-          aiScore: data.score / 100, // Convert percentage to 0-1 range
-          aiFeedback: data.feedback
-        };
-        updated[currentIndex] = studentSub;
-        return updated;
-      });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/assignments", id, "submissions"] });
       setEvaluatingIndex(null);
       toast({ title: "Re-graded successfully", description: "AI has updated its assessment based on the engine." });
     },
@@ -108,12 +61,12 @@ export default function SpeedGrader() {
   });
 
   const suggestedTotal = currentSubmission 
-    ? Math.round((currentSubmission.answers.reduce((acc, ans) => acc + ans.aiScore, 0) / currentSubmission.answers.length) * 100)
+    ? Math.round((currentSubmission.answers.reduce((acc: number, ans: any) => acc + (ans.aiScore || 0), 0) / currentSubmission.answers.length) * 100)
     : 0;
 
   const handleAcceptAI = () => {
     setFinalScore(suggestedTotal);
-    setFinalFeedback(`AI Pre-Assessment Summary:\n${currentSubmission.answers.map((a, i) => `Q${i+1}: ${a.aiFeedback}`).join("\n")}\n\nGreat effort!`);
+    setFinalFeedback(`AI Pre-Assessment Summary:\n${currentSubmission.answers.map((a: any, i: number) => `Q${i+1}: ${a.aiFeedback}`).join("\n")}\n\nGreat effort!`);
   };
 
   const handleSaveNext = async () => {
@@ -123,13 +76,10 @@ export default function SpeedGrader() {
     }
     
     setIsSubmitting(true);
-    // Simulate API call
+    // Simulation for demo: in reality, we'd have a PATCH /api/assignments/:id/submissions/:subId
     await new Promise(r => setTimeout(r, 600));
     
-    const updated = [...submissions];
-    updated[currentIndex].status = "graded";
-    setSubmissions(updated);
-    
+    qc.invalidateQueries({ queryKey: ["/api/assignments", id, "submissions"] });
     toast({ title: "Grade Saved", description: `Graded ${currentSubmission.studentName}.` });
     setIsSubmitting(false);
     
@@ -144,7 +94,19 @@ export default function SpeedGrader() {
     }
   };
 
-  if (!currentSubmission) return <div>No submissions found.</div>;
+  if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (!currentSubmission) return (
+    <div className="flex flex-col h-screen items-center justify-center bg-background gap-4">
+      <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
+        <CheckCircle2 className="w-8 h-8 text-muted-foreground" />
+      </div>
+      <h2 className="text-xl font-bold">No Pending Submissions</h2>
+      <p className="text-muted-foreground">There are no ungraded submissions for this assignment.</p>
+      <Button variant="outline" onClick={() => setLocation("/teacher")}>
+        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+      </Button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col h-screen overflow-hidden">
@@ -155,7 +117,7 @@ export default function SpeedGrader() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="font-bold text-sm">Photosynthesis Pop Quiz</h1>
+            <h1 className="font-bold text-sm">{assignmentData?.title || "Assignment"}</h1>
             <p className="text-xs text-muted-foreground">SpeedGrader™ Mode</p>
           </div>
         </div>
@@ -187,7 +149,7 @@ export default function SpeedGrader() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Student Answers */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {currentSubmission.answers.map((ans, idx) => (
+          {currentSubmission.answers.map((ans: any, idx: number) => (
             <Card key={idx} className="border-border/50 shadow-sm relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20" />
               <CardContent className="p-6">

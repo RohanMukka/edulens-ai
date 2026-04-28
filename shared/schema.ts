@@ -1,4 +1,4 @@
-import { pgTable, text, integer, real, serial, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -147,7 +147,56 @@ export type Classroom = typeof classrooms.$inferSelect;
 export type InsertClassroom = z.infer<typeof insertClassroomSchema>;
 export type ClassroomStudent = typeof classroomStudents.$inferSelect;
 export type InsertClassroomStudent = z.infer<typeof insertClassroomStudentSchema>;
+
+export const forumThreads = pgTable("forum_threads", {
+  id: serial("id").primaryKey(),
+  studentId: integer("student_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: text("category").notNull(), // e.g. "Biology", "Math"
+  isAiVerified: boolean("is_ai_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const forumPosts = pgTable("forum_posts", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").notNull(),
+  studentId: integer("student_id").notNull(),
+  content: text("content").notNull(),
+  isAiVerified: boolean("is_ai_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertForumThreadSchema = createInsertSchema(forumThreads).omit({ id: true, createdAt: true });
+export const insertForumPostSchema = createInsertSchema(forumPosts).omit({ id: true, createdAt: true });
+
+
+export const studyTasks = pgTable("study_tasks", {
+  id: serial("id").primaryKey(),
+  studentId: integer("student_id").notNull(),
+  title: text("title").notNull(),
+  subject: text("subject").notNull(),
+  startTime: text("start_time").notNull(), // ISO string
+  endTime: text("end_time").notNull(), // ISO string
+  type: text("type").notNull(), // "Focus", "Review", "Practice"
+  priority: text("priority").notNull(), // "high", "medium", "low"
+  completed: boolean("completed").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertStudyTaskSchema = createInsertSchema(studyTasks).omit({ id: true, createdAt: true });
+
+export type StudyTask = typeof studyTasks.$inferSelect;
+export type InsertStudyTask = z.infer<typeof insertStudyTaskSchema>;
+
+export type ForumThread = typeof forumThreads.$inferSelect;
+
+export type InsertForumThread = z.infer<typeof insertForumThreadSchema>;
+export type ForumPost = typeof forumPosts.$inferSelect;
+export type InsertForumPost = z.infer<typeof insertForumPostSchema>;
+
 export type Session = typeof sessions.$inferSelect;
+
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Concept = typeof concepts.$inferSelect;
 export type InsertConcept = z.infer<typeof insertConceptSchema>;
