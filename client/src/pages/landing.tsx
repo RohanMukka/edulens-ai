@@ -846,42 +846,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-border/40 bg-muted/40 backdrop-blur-md relative z-10">
-        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <Brain className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="font-bold text-xl tracking-tight">
-                EduLens AI
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground font-medium">
-              © 2026 EduLens AI · Transforming the Future of Education
-            </p>
-          </div>
-          <div className="flex flex-col items-center sm:items-end gap-2">
-            <div className="flex items-center gap-6">
-              {["Platform", "NLP Technology", "For Educators", "Privacy"].map(
-                (link) => (
-                  <a
-                    key={link}
-                    href="#"
-                    className="text-sm font-bold hover:text-primary transition-colors"
-                  >
-                    {link}
-                  </a>
-                ),
-              )}
-            </div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mt-4">
-              Powered by Groq & Llama 3.1
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
