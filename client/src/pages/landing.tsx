@@ -829,7 +829,7 @@ export default function Landing() {
             <span className="text-primary">is personal.</span>
           </motion.h2>
           <p className="text-muted-foreground text-xl mb-12 max-w-xl mx-auto font-medium">
-            Join the Nira Hackathon beta and experience what it feels like when
+            Join the EduLens Alpha and experience what it feels like when
             an AI truly understands how <em>you</em> think.
           </p>
           <Button

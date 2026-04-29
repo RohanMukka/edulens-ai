@@ -93,7 +93,7 @@ export async function seedDemoData() {
   // Create a Demo Classroom
   console.log("Creating demo classroom...");
   const classroom = await storage.createClassroom({
-    name: "Hackathon Demo Class",
+    name: "EduLens Demo Class",
     teacherId: teacher.id,
     code: "DEMO26",
   });
