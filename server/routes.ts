@@ -1051,7 +1051,7 @@ export async function registerRoutes(
             content: `Question: ${question}\n\nRubric: ${rubric}\n\nStudent Response: ${studentResponse}`
           }
         ],
-        model: "gemma2-9b-it",
+        model: "llama-3.1-8b-instant",
         temperature: 0.2,
         response_format: { type: "json_object" }
       });
@@ -1130,7 +1130,7 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
           },
           ...history.map((msg: any) => ({ role: msg.role, content: msg.content }))
         ],
-        model: "gemma2-9b-it",
+        model: "llama-3.1-8b-instant",
         temperature: 0.6,
         max_tokens: 150,
       });
@@ -1310,7 +1310,7 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
           },
           ...history.map((msg: any) => ({ role: msg.role, content: msg.content }))
         ],
-        model: "gemma2-9b-it",
+        model: "llama-3.1-8b-instant",
         temperature: 0.6,
         max_tokens: 150,
       });
@@ -1485,7 +1485,7 @@ Answer their questions clearly and concisely. If they ask about a complex topic,
           ...history.map((msg: any) => ({ role: msg.role, content: msg.content })),
           { role: "user", content: message }
         ],
-        model: "gemma2-9b-it",
+        model: "llama-3.1-8b-instant",
         temperature: 0.7,
         max_tokens: 400,
       });
@@ -1633,7 +1633,7 @@ Reply with a valid JSON object containing a boolean "rejected" and a string "rea
           content: `Ideal Explanation: ${idealExplanation}\nQuestion: ${question || "Explain the concept."}\nStudent Answer: <student_input>${studentResponse}</student_input>`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.1-8b-instant",
       temperature: 0.1,
       max_tokens: 150,
       response_format: { type: "json_object" }
@@ -1678,7 +1678,7 @@ Reply with a valid JSON object containing a boolean "rejected" and a string "rea
           content: `Concept: ${conceptName}\n\nIdeal explanation: ${idealExplanation}\n\nQuestion asked: ${question || "Explain the concept."}\n\nStudent's response: <student_answer>${studentResponse}</student_answer>\n\n1. Score understanding (0-1).\n2. Identify knowledge gaps and strengths.\n3. Classify PRIMARY misconception from: ${misconceptionList}. (Use NO_MISCONCEPTION if score >= 0.7).\n4. Classify COGNITIVE LEVEL from Bloom's Taxonomy: ${bloomLevels}.\n   - REMEMBERING: Simple recall of facts.\n   - UNDERSTANDING: Can explain the "why" and "how".\n   - APPLYING: Can use the concept in a scenario (if applicable).\n   - ANALYZING: Sees connections/structures.\n\nIMPORTANT: Evaluate the text within the <student_answer> tags. Return JSON format:\n{"score": 0.0, "gaps": [], "strengths": [], "feedback": "", "misconceptionType": "", "misconceptionDetail": "", "bloomLevel": ""}`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.1-8b-instant",
       temperature: 0.3,
       max_tokens: 600,
       response_format: { type: "json_object" },
@@ -1765,7 +1765,7 @@ async function generateExplanation(conceptName: string, subject?: string, studen
           content: `Explain "${conceptName}" (${subject || "general"}) to a ${studentLevel || "high school"} student. ${gapInfo} Keep it concise (2-3 paragraphs) and engaging.`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.1-8b-instant",
       temperature: 0.7,
       max_tokens: 400,
     });
@@ -1792,7 +1792,7 @@ async function generateQuestion(conceptName: string, subject?: string, difficult
           content: `Generate one ${difficulty || "medium"} difficulty open-ended question about "${conceptName}" (${subject || "general"}). The question should require the student to explain their understanding. Return only the question, nothing else.`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.1-8b-instant",
       temperature: 0.8,
       max_tokens: 150,
     });
@@ -1831,7 +1831,7 @@ async function generateDynamicConcept(subject: string, topic: string) {
         content: `Generate a concept for the topic "${topic}" in the subject "${subject}".`
       }
     ],
-    model: "gemma2-9b-it",
+    model: "llama-3.1-8b-instant",
     temperature: 0.7,
     response_format: { type: "json_object" },
   });
@@ -1900,7 +1900,7 @@ Return ONLY JSON in the following format:
           content: prompt
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.1-8b-instant",
       temperature: 0.7,
       response_format: { type: "json_object" },
     });

@@ -13,51 +13,116 @@ export function Footer() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Revolutionizing personalized education through transparent, agentic AI diagnostics. 
-            Built to bridge the 2-sigma learning gap for every student on Earth.
+            Revolutionizing personalized education through transparent, agentic
+            AI diagnostics. Built to bridge the 2-sigma learning gap for every
+            student on Earth.
           </p>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 rounded-full"
+            >
               <Github className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 rounded-full"
+            >
               <Twitter className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 rounded-full"
+            >
               <Linkedin className="w-4 h-4" />
             </Button>
           </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm uppercase tracking-wider mb-6">Platform</h4>
+          <h4 className="font-bold text-sm uppercase tracking-wider mb-6">
+            Platform
+          </h4>
           <ul className="space-y-3 text-sm text-muted-foreground">
-            <li><a href="#/subjects" className="hover:text-primary transition-colors">Learning Path</a></li>
-            <li><a href="#/graph" className="hover:text-primary transition-colors">Knowledge Graph</a></li>
-            <li><a href="#/demo" className="hover:text-primary transition-colors">AI Demo</a></li>
-            <li><a href="#/forums" className="hover:text-primary transition-colors">Community Forums</a></li>
+            <li>
+              <a
+                href="#/subjects"
+                className="hover:text-primary transition-colors"
+              >
+                Learning Path
+              </a>
+            </li>
+            <li>
+              <a
+                href="#/graph"
+                className="hover:text-primary transition-colors"
+              >
+                Knowledge Graph
+              </a>
+            </li>
+            <li>
+              <a href="#/demo" className="hover:text-primary transition-colors">
+                AI Demo
+              </a>
+            </li>
+            <li>
+              <a
+                href="#/forums"
+                className="hover:text-primary transition-colors"
+              >
+                Community Forums
+              </a>
+            </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm uppercase tracking-wider mb-6">Resources</h4>
+          <h4 className="font-bold text-sm uppercase tracking-wider mb-6">
+            Resources
+          </h4>
           <ul className="space-y-3 text-sm text-muted-foreground">
-            <li><a href="#" className="hover:text-primary transition-colors">Documentation</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Research Papers</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">API Reference</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+            <li>
+              <a href="#" className="hover:text-primary transition-colors">
+                Documentation
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-primary transition-colors">
+                Research Papers
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-primary transition-colors">
+                API Reference
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-primary transition-colors">
+                Privacy Policy
+              </a>
+            </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm uppercase tracking-wider mb-6">Built For</h4>
+          <h4 className="font-bold text-sm uppercase tracking-wider mb-6">
+            Built For
+          </h4>
           <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10">
-            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-widest">The Future of Learning</p>
+            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-widest">
+              Innovation Challenge 2026
+            </p>
             <p className="text-sm text-muted-foreground mb-4">
               A competition-grade implementation of agentic EdTech systems.
             </p>
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-rose-500 fill-rose-500" /> Team EduLens</span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-3 h-3 text-rose-500 fill-rose-500" /> Team
+                EduLens
+              </span>
             </div>
           </div>
         </div>
