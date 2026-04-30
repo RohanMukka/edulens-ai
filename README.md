@@ -121,17 +121,6 @@ Our **Gatekeeper Agent** ensures that plagiarized or off-topic responses are cau
 > [!TIP]
 > Run the validation suite yourself: `npx tsx script/validate_ai.ts`
 
----
 
-## 🏆 Hackathon Judges' Guide
-
-When evaluating EduLens AI, please focus on:
-
-1. **The pedagogical innovation**: Moving from "picking choices" to "explaining concepts."
-2. **Technical depth**: The integration of SM-2, Bloom's Taxonomy, and sub-2s AI feedback loops.
-3. **Real-time architecture**: The seamless WebSocket sync between the student interface and the teacher dashboard.
-4. **Visual Excellence**: The professional design language and fluid motion system.
-
----
 
 **Built with ❤️ for the future of education.**
