@@ -8,6 +8,8 @@ import {
   type ClassroomStudent, type InsertClassroomStudent, classroomStudents,
   type Reflection, type InsertReflection, reflections,
   type EarnedBadge, type InsertEarnedBadge, earnedBadges,
+  type ForumThread, type InsertForumThread, forumThreads,
+  type ForumPost, type InsertForumPost, forumPosts,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -57,6 +59,13 @@ export interface IStorage {
   getStudentReflections(studentId: number): Promise<Reflection[]>;
   awardBadge(badge: InsertEarnedBadge): Promise<EarnedBadge>;
   getStudentBadges(studentId: number): Promise<EarnedBadge[]>;
+
+  // Forum methods
+  getForumThreads(): Promise<any[]>;
+  createForumThread(thread: InsertForumThread): Promise<ForumThread>;
+  getThreadPosts(threadId: number): Promise<any[]>;
+  createForumPost(post: InsertForumPost): Promise<ForumPost>;
+  updatePostAiVerification(id: number, verified: boolean): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -281,6 +290,49 @@ export class DatabaseStorage implements IStorage {
 
   async getStudentBadges(studentId: number): Promise<EarnedBadge[]> {
     return await db.select().from(earnedBadges).where(eq(earnedBadges.studentId, studentId)).orderBy(desc(earnedBadges.earnedAt));
+  }
+
+  // Forum Methods
+  async getForumThreads(): Promise<any[]> {
+    const threads = await db.select().from(forumThreads).orderBy(desc(forumThreads.createdAt));
+    const result = [];
+    for (const t of threads) {
+      const author = await this.getStudent(t.studentId);
+      const [replyCountRes] = await db.select({ count: count() }).from(forumPosts).where(eq(forumPosts.threadId, t.id));
+      result.push({
+        ...t,
+        authorName: author?.name || "Unknown",
+        replyCount: replyCountRes?.count || 0
+      });
+    }
+    return result;
+  }
+
+  async createForumThread(thread: InsertForumThread): Promise<ForumThread> {
+    const [res] = await db.insert(forumThreads).values(thread).returning();
+    return res;
+  }
+
+  async getThreadPosts(threadId: number): Promise<any[]> {
+    const posts = await db.select().from(forumPosts).where(eq(forumPosts.threadId, threadId)).orderBy(desc(forumPosts.createdAt));
+    const result = [];
+    for (const p of posts) {
+      const author = await this.getStudent(p.studentId);
+      result.push({
+        ...p,
+        authorName: author?.name || "Unknown"
+      });
+    }
+    return result.reverse(); // Show oldest first for conversation flow
+  }
+
+  async createForumPost(post: InsertForumPost): Promise<ForumPost> {
+    const [res] = await db.insert(forumPosts).values(post).returning();
+    return res;
+  }
+
+  async updatePostAiVerification(id: number, verified: boolean): Promise<void> {
+    await db.update(forumPosts).set({ isAiVerified: verified }).where(eq(forumPosts.id, id));
   }
 }
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,37 +6,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 239 84% 67%;
-    --radius: 1rem;
-  }
-
-  .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 20% 98%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
@@ -47,7 +24,39 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --ring: 263.4 70% 50.4%;
+    --radius: 1.25rem;
+    
+    /* Premium Palette Extensions */
+    --brand-vibrant: 263 90% 60%;
+    --brand-glow: 263 90% 60% / 0.15;
+    --surface-glass: 0 0% 100% / 0.03;
+    --surface-border: 0 0% 100% / 0.08;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 262.1 83.3% 57.8%;
+    
+    --surface-glass: 240 10% 3.9% / 0.02;
+    --surface-border: 240 10% 3.9% / 0.06;
   }
 }
 
@@ -56,88 +65,115 @@
     @apply border-border selection:bg-primary/20 selection:text-primary;
     font-family: 'Inter', sans-serif;
   }
+  
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Outfit', sans-serif;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased overflow-x-hidden;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(var(--primary) / 0.05) 0, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(280, 80%, 50%, 0.05) 0, transparent 50%);
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-card/40 backdrop-blur-xl border-border/50 shadow-2xl;
+    @apply backdrop-blur-xl border border-white/10 shadow-2xl;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
   }
 
   .premium-card {
-    @apply relative overflow-hidden transition-all duration-300;
-    background: linear-gradient(135deg, hsla(var(--card) / 0.8), hsla(var(--secondary) / 0.4));
+    @apply relative overflow-hidden transition-all duration-500 rounded-[2rem] border border-white/5;
+    background: linear-gradient(165deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
   }
 
-  .premium-card::after {
+  .premium-card:hover {
+    @apply -translate-y-2 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)];
+    background: linear-gradient(165deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  }
+
+  .premium-card::before {
     content: '';
     @apply absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none;
-    background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), hsla(var(--primary) / 0.15), transparent 40%);
+    background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), hsla(var(--primary) / 0.1), transparent 40%);
   }
 
-  .premium-card:hover::after {
+  .premium-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px hsla(var(--primary) / 0.5);
+  }
+
+  .bg-glow {
+    @apply relative;
+  }
+
+  .bg-glow::after {
+    content: '';
+    @apply absolute -inset-4 bg-primary/20 blur-2xl -z-10 rounded-full opacity-0 transition-opacity duration-500;
+  }
+
+  .bg-glow:hover::after {
     @apply opacity-100;
   }
 
   .shimmer {
-    @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent;
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    animation: shimmer 3s infinite;
   }
 
   @keyframes shimmer {
-    100% {
-      transform: translateX(100%);
-    }
+    100% { transform: translateX(100%); }
   }
 
   .premium-gradient {
-    background: radial-gradient(circle at top left, hsla(var(--primary) / 0.15), transparent 40%),
-                radial-gradient(circle at bottom right, hsla(var(--chart-4) / 0.1), transparent 40%);
+    background: 
+      radial-gradient(circle at 20% 20%, hsla(var(--primary) / 0.15), transparent 40%),
+      radial-gradient(circle at 80% 80%, hsla(280, 80%, 50%, 0.1), transparent 40%);
+  }
+
+  .nav-glass {
+    @apply sticky top-0 z-50 backdrop-blur-md border-b border-white/5;
+    background: rgba(var(--background), 0.7);
   }
 }
 
 @layer utilities {
-  input[type='search']::-webkit-search-cancel-button {
-    @apply hidden;
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
   }
 
-  [contenteditable][data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: hsl(var(--muted-foreground));
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-20px) rotate(1deg); }
   }
 
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  .animate-pulse-slow {
+    animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.05); }
   }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
-/* Animations */
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.animate-glow {
-  animation: glow 4s ease-in-out infinite;
-}
-
-@keyframes glow {
-  0%, 100% { opacity: 0.5; filter: blur(20px); }
-  50% { opacity: 0.8; filter: blur(30px); }
-}
-
-/* Scrollbar styling */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -145,14 +181,16 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border/50 rounded-full hover:bg-border transition-colors;
+  @apply bg-white/5 rounded-full border-4 border-background hover:bg-white/10 transition-colors;
 }
 
-/* Custom Chart Tooltip Styles */
+/* Chart Tooltip Enhancements */
 .recharts-tooltip-wrapper {
-  @apply !bg-card/90 !backdrop-blur-md !border-border/50 !rounded-xl !shadow-2xl;
+  @apply !bg-card/80 !backdrop-blur-xl !border-white/10 !rounded-2xl !shadow-2xl;
 }
 
-.recharts-default-tooltip {
-  @apply !bg-transparent !border-none !p-2;
+/* Auth Page specific glows */
+.auth-glow {
+  @apply absolute -z-10 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full;
 }
+

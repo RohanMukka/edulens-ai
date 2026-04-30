@@ -238,36 +238,65 @@ export default function Landing() {
     <div className="min-h-screen bg-background selection:bg-primary/20 premium-gradient">
       {/* ── BACKGROUND ELEMENTS ── */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/15 rounded-full blur-[140px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[140px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]" />
+        
+        {/* Floating background shapes */}
+        <motion.div 
+          animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[10%] opacity-20"
+        >
+          <Brain className="w-24 h-24 text-primary blur-sm" />
+        </motion.div>
+        <motion.div 
+          animate={{ y: [0, 20, 0], rotate: [0, -5, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[20%] right-[15%] opacity-20"
+        >
+          <Sparkles className="w-32 h-32 text-purple-500 blur-sm" />
+        </motion.div>
       </div>
 
       {/* ── NAV ── */}
-      <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/60 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <nav className="nav-glass">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2.5"
+            className="flex items-center gap-3 group cursor-pointer"
+            onClick={() => setLocation("/")}
           >
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Brain className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+              <Brain className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              EduLens AI
+            <span className="font-display font-black text-2xl tracking-tight bg-gradient-to-r from-foreground via-foreground to-foreground/50 bg-clip-text text-transparent">
+              EduLens <span className="text-primary">AI</span>
             </span>
           </motion.div>
+          
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-6"
           >
+            <div className="hidden md:flex items-center gap-8 mr-4">
+              {['Features', 'Methodology', 'Showcase'].map((item) => (
+                <button 
+                  key={item}
+                  onClick={() => document.getElementById(item.toLowerCase().replace(' ', '-'))?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setLocation("/demo")}
-              className="font-semibold border-primary/30 text-primary hover:bg-primary/10"
+              className="hidden sm:flex font-bold border-primary/20 text-primary hover:bg-primary/5 rounded-full px-6"
             >
               See It Work
             </Button>
@@ -275,7 +304,7 @@ export default function Landing() {
               variant="ghost"
               size="sm"
               onClick={() => setIsLogin(true)}
-              className="font-semibold"
+              className="font-bold rounded-full px-6"
             >
               Sign in
             </Button>
@@ -285,16 +314,16 @@ export default function Landing() {
 
       {/* ── HERO ── */}
       <section className="relative pt-20 pb-24 lg:pt-32 lg:pb-40 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
           {/* Left: Copy */}
           <div className="relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-1.5 mb-8 text-xs font-bold uppercase tracking-widest"
+              className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-5 py-2 mb-8 text-xs font-black uppercase tracking-[0.2em]"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4" />
               Agentic EdTech · Transforming Education
             </motion.div>
 
@@ -302,18 +331,18 @@ export default function Landing() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-8"
+              className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.95] mb-10"
             >
-              The AI that reads{" "}
-              <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-primary via-violet-500 to-cyan-500 bg-clip-text text-transparent">
-                  how you think
+              Mastery through <br />
+              <span className="relative inline-block mt-2">
+                <span className="bg-gradient-to-r from-primary via-purple-500 to-indigo-400 bg-clip-text text-transparent text-glow">
+                  Understanding
                 </span>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: "100%" }}
-                  transition={{ delay: 0.8, duration: 0.8 }}
-                  className="absolute -bottom-2 left-0 h-1.5 bg-primary/20 rounded-full"
+                  transition={{ delay: 0.8, duration: 1 }}
+                  className="absolute -bottom-3 left-0 h-2 bg-primary/20 rounded-full"
                 />
               </span>
             </motion.h1>
@@ -322,44 +351,43 @@ export default function Landing() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-xl text-muted-foreground leading-relaxed mb-10 max-w-xl"
+              className="text-xl text-muted-foreground leading-relaxed mb-12 max-w-xl font-medium"
             >
-              EduLens doesn't ask you to pick A, B, or C. It asks you to{" "}
-              <span className="text-foreground font-semibold underline decoration-primary/30 underline-offset-4">
-                explain
-              </span>{" "}
-              — then uses advanced NLP to decode your mental models.
+              EduLens analyzes your free-text explanations — not just multiple choice — to decode your <span className="text-foreground font-bold">mental models</span> in real time.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 mb-12"
+              className="flex flex-col sm:row gap-6 mb-16"
             >
               <Button
                 size="lg"
-                className="text-base px-10 h-14 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5"
+                className="text-lg px-12 h-16 rounded-[1.5rem] bg-primary hover:bg-primary/90 shadow-[0_20px_40px_rgba(var(--primary),0.3)] hover:shadow-[0_20px_50px_rgba(var(--primary),0.4)] transition-all hover:-translate-y-1 group"
                 onClick={() =>
                   document
                     .getElementById("auth-form")
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
               >
-                Start Learning Free <ArrowRight className="ml-2 w-5 h-5" />
+                Start Learning Free 
+                <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-base px-10 h-14 rounded-2xl border-border/60 hover:bg-muted/50 transition-all"
-                onClick={() =>
-                  document
-                    .getElementById("how-it-works")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-              >
-                See the NLP Moat
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-base px-8 h-16 rounded-[1.5rem] border-white/10 hover:bg-white/5 transition-all"
+                  onClick={() =>
+                    document
+                      .getElementById("how-it-works")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
+                  Our Methodology
+                </Button>
+              </div>
             </motion.div>
 
             {/* Trust badges */}
@@ -367,15 +395,17 @@ export default function Landing() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground font-medium"
+              className="flex flex-wrap items-center gap-x-10 gap-y-4 text-sm text-muted-foreground font-bold"
             >
               {[
-                { text: "No credit card required", icon: Lock },
-                { text: "Groq-powered (< 2s)", icon: Zap },
-                { text: "Worldwide access", icon: Globe },
+                { text: "Secure Auth", icon: Lock },
+                { text: "Inference < 2s", icon: Zap },
+                { text: "Global Scale", icon: Globe },
               ].map((t, idx) => (
-                <span key={idx} className="flex items-center gap-2 group">
-                  <t.icon className="w-4 h-4 text-emerald-500 transition-transform group-hover:scale-110" />{" "}
+                <span key={idx} className="flex items-center gap-3 group">
+                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                    <t.icon className="w-4 h-4 text-primary transition-transform group-hover:scale-110" />
+                  </div>
                   {t.text}
                 </span>
               ))}
@@ -384,12 +414,15 @@ export default function Landing() {
 
           {/* Right: Auth Form */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, x: 20 }}
+            initial={{ opacity: 0, scale: 0.9, x: 20 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
             id="auth-form"
+            className="relative"
           >
-            <Card className="glass-card relative overflow-hidden border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)]">
+            <div className="absolute -inset-4 bg-primary/20 blur-[100px] rounded-full opacity-50" />
+            <Card className="glass-card relative overflow-hidden border border-white/10 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] rounded-[2.5rem]">
+
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16" />
               <CardContent className="relative z-10 pt-8 pb-8 px-8 sm:px-10">
                 <AnimatePresence mode="wait">
@@ -575,8 +608,8 @@ export default function Landing() {
       </section>
 
       {/* ── STATS BANNER ── */}
-      <section className="border-y border-border/40 bg-muted/30 backdrop-blur-sm relative z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section className="border-y border-white/5 bg-white/[0.02] backdrop-blur-md relative z-10">
+        <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
           {stats.map((s, idx) => (
             <motion.div
               key={s.value}
@@ -584,15 +617,15 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
-              className="text-center"
+              className="text-center group"
             >
-              <div className="text-4xl font-black text-primary mb-2">
+              <div className="text-5xl font-black text-primary mb-3 group-hover:scale-110 transition-transform duration-500 font-display">
                 {s.value}
               </div>
-              <div className="text-sm font-bold mb-1 tracking-tight">
+              <div className="text-sm font-bold mb-1.5 tracking-tight uppercase text-foreground/80">
                 {s.label}
               </div>
-              <div className="text-xs text-muted-foreground font-medium">
+              <div className="text-xs text-muted-foreground font-semibold">
                 {s.sub}
               </div>
             </motion.div>
@@ -601,33 +634,33 @@ export default function Landing() {
       </section>
 
       {/* ── AI PIPELINE EVIDENCE ── */}
-      <section className="max-w-6xl mx-auto px-6 py-24 relative z-10">
-        <div className="text-center mb-16">
+      <section id="showcase" className="max-w-7xl mx-auto px-6 py-32 relative z-10">
+        <div className="text-center mb-20">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-full px-4 py-1.5 mb-6 text-xs font-bold uppercase tracking-widest"
+            className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-full px-5 py-2 mb-8 text-xs font-black uppercase tracking-widest"
           >
-            <Brain className="w-3.5 h-3.5" /> Live AI Pipeline
+            <Brain className="w-4 h-4" /> Live AI Pipeline
           </motion.div>
-          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            Watch the AI{" "}
-            <span className="bg-gradient-to-r from-violet-500 to-primary bg-clip-text text-transparent">
-              diagnose reasoning
+          <h2 className="text-5xl sm:text-6xl font-black tracking-tight mb-6 font-display">
+            The engine behind the <br />
+            <span className="bg-gradient-to-r from-violet-400 to-primary bg-clip-text text-transparent">
+              reasoning diagnosis
             </span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-xl max-w-2xl mx-auto font-medium">
             Not just "right or wrong" — our multi-agent pipeline decodes <em>why</em> a student is confused and prescribes the exact next step.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-5 gap-4 mb-12">
+        <div className="grid md:grid-cols-5 gap-6 mb-16">
           {[
-            { step: "01", title: "Student Explains", desc: "Free-text response — no MCQ, no guessing", icon: "✍️", color: "bg-blue-500/10 border-blue-500/20 text-blue-500" },
-            { step: "02", title: "Gatekeeper Agent", desc: "Anti-plagiarism & jailbreak detection", icon: "🛡️", color: "bg-amber-500/10 border-amber-500/20 text-amber-500" },
-            { step: "03", title: "Diagnostic Agent", desc: "6-type misconception taxonomy + NLP scoring", icon: "🧠", color: "bg-violet-500/10 border-violet-500/20 text-violet-500" },
-            { step: "04", title: "Bloom's Classifier", desc: "Cognitive depth: Remembering → Creating", icon: "📊", color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" },
-            { step: "05", title: "Adaptive Engine", desc: "SM-2 spaced repetition + Socratic tutoring", icon: "🎯", color: "bg-primary/10 border-primary/20 text-primary" },
+            { step: "01", title: "Student Explains", desc: "Free-text response — no MCQ, no guessing", icon: "✍️", color: "from-blue-500/20 to-blue-600/5 border-blue-500/20 text-blue-400" },
+            { step: "02", title: "Gatekeeper Agent", desc: "Anti-plagiarism & jailbreak detection", icon: "🛡️", color: "from-amber-500/20 to-amber-600/5 border-amber-500/20 text-amber-400" },
+            { step: "03", title: "Diagnostic Agent", desc: "6-type misconception taxonomy + NLP scoring", icon: "🧠", color: "from-violet-500/20 to-violet-600/5 border-violet-500/20 text-violet-400" },
+            { step: "04", title: "Bloom's Classifier", desc: "Cognitive depth: Remembering → Creating", icon: "📊", color: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/20 text-emerald-400" },
+            { step: "05", title: "Adaptive Engine", desc: "SM-2 spaced repetition + Socratic tutoring", icon: "🎯", color: "from-primary/20 to-primary/5 border-primary/20 text-primary" },
           ].map((s, i) => (
             <motion.div
               key={s.step}
@@ -635,12 +668,12 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className={`rounded-2xl border p-5 text-center ${s.color} transition-all hover:scale-105`}
+              className={`rounded-[2rem] border p-8 text-center bg-gradient-to-br ${s.color} backdrop-blur-sm transition-all hover:-translate-y-2 hover:shadow-2xl shadow-primary/5 group`}
             >
-              <div className="text-3xl mb-3">{s.icon}</div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Step {s.step}</p>
-              <p className="font-bold text-sm mb-1.5">{s.title}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+              <div className="text-4xl mb-6 group-hover:scale-125 transition-transform duration-500">{s.icon}</div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-2">Step {s.step}</p>
+              <p className="font-bold text-lg mb-2 font-display leading-tight">{s.title}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed font-medium">{s.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -649,13 +682,14 @@ export default function Landing() {
           <Button
             size="lg"
             variant="outline"
-            className="rounded-2xl h-14 px-10 text-base border-primary/30 text-primary hover:bg-primary/10 shadow-lg shadow-primary/10"
+            className="rounded-full h-16 px-12 text-lg border-primary/30 text-primary hover:bg-primary/5 shadow-2xl shadow-primary/10 group font-bold"
             onClick={() => setLocation("/demo")}
           >
-            <Sparkles className="w-5 h-5 mr-2" /> Try the Live Demo
+            <Sparkles className="w-6 h-6 mr-3 group-hover:rotate-12 transition-transform" /> Try the Live Demo
           </Button>
         </div>
       </section>
+
 
       {/* ── PROBLEM STATEMENT ── */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center relative z-10">

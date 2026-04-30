@@ -23,6 +23,7 @@ export default function Forums() {
   const [newPostContent, setNewPostContent] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newThreadTitle, setNewThreadTitle] = useState("");
+  const [newThreadCategory, setNewThreadCategory] = useState("General");
 
   const { data: threads, isLoading } = useQuery<any[]>({
     queryKey: ["/api/forums/threads"],
@@ -72,7 +73,7 @@ export default function Forums() {
     createThreadMutation.mutate({ 
       title: newThreadTitle, 
       content: newPostContent, 
-      category: "General" 
+      category: newThreadCategory
     });
   };
 
@@ -127,8 +128,28 @@ export default function Forums() {
                       <Input placeholder="What do you need help with?" value={newThreadTitle} onChange={e => setNewThreadTitle(e.target.value)} className="mt-1 bg-muted/50" />
                     </div>
                     <div>
+                      <label className="text-sm font-bold">Category</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {["General", "Biology", "Math", "Computer Science", "History"].map(cat => (
+                          <Badge 
+                            key={cat} 
+                            variant={newThreadCategory === cat ? "default" : "outline"}
+                            className="cursor-pointer px-3 py-1"
+                            onClick={() => setNewThreadCategory(cat)}
+                          >
+                            {cat}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
                       <label className="text-sm font-bold">Details</label>
-                      <Textarea placeholder="Explain your question in detail..." value={newPostContent} onChange={e => setNewPostContent(e.target.value)} className="mt-1 bg-muted/50 min-h-[150px] resize-none" />
+                      <Textarea 
+                        placeholder="Explain your question in detail... The AI will verify the first correct answer!" 
+                        value={newPostContent} 
+                        onChange={e => setNewPostContent(e.target.value)} 
+                        className="mt-1 bg-muted/50 min-h-[150px] resize-none focus:ring-blue-500/50" 
+                      />
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-end gap-3 border-t p-4 bg-muted/20">
@@ -142,30 +163,34 @@ export default function Forums() {
             {/* List Threads View */}
             {activeThread === null && !isCreating && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                {filteredThreads.map(thread => (
+                {isLoading ? (
+                  [...Array(3)].map((_, i) => (
+                    <Card key={i} className="border-border/20 animate-pulse">
+                      <CardContent className="p-5 h-32 bg-muted/20" />
+                    </Card>
+                  ))
+                ) : filteredThreads.map(thread => (
                   <Card 
                     key={thread.id} 
-                    className="border-border/50 hover:border-blue-500/50 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                    className="border-border/50 hover:border-blue-500/50 hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden bg-card/50 backdrop-blur-sm"
                     onClick={() => setActiveThread(thread.id)}
                   >
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500/50 scale-y-0 group-hover:scale-y-100 transition-transform origin-top" />
-                    <CardContent className="p-5">
-                      <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <User className="w-5 h-5 text-muted-foreground" />
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500/50 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
+                    <CardContent className="p-6">
+                      <div className="flex gap-5">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/10 to-violet-500/10 flex items-center justify-center shrink-0 border border-blue-500/10">
+                          <User className="w-6 h-6 text-blue-500/70" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex justify-between items-start mb-1">
-                            <h3 className="font-bold text-lg group-hover:text-blue-500 transition-colors">{thread.title}</h3>
-                            <div className="flex gap-1">
-                              <Badge variant="secondary" className="text-[10px]">{thread.category}</Badge>
-                            </div>
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-bold text-xl group-hover:text-blue-500 transition-colors tracking-tight">{thread.title}</h3>
+                            <Badge variant="secondary" className="bg-blue-500/5 text-blue-600 border-blue-500/10 px-2.5 py-0.5">{thread.category}</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{thread.content}</p>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
-                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {thread.replyCount} Replies</span>
-                            <span>By {thread.authorName}</span>
-                            <span>{new Date(thread.createdAt).toLocaleDateString()}</span>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">{thread.content}</p>
+                          <div className="flex items-center gap-5 text-xs text-muted-foreground/80 font-semibold uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5"><MessageCircle className="w-4 h-4 text-blue-400" /> {thread.replyCount} Replies</span>
+                            <span className="flex items-center gap-1.5"><User className="w-4 h-4 text-slate-400" /> {thread.authorName}</span>
+                            <span>{new Date(thread.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                           </div>
                         </div>
                       </div>

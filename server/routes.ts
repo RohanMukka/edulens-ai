@@ -25,6 +25,7 @@ declare module "express-session" {
   }
 }
 
+
 export const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
 export async function registerRoutes(
@@ -192,6 +193,44 @@ export async function registerRoutes(
       });
     } catch (e: any) {
       res.status(500).json({ status: "error", message: e.message });
+    }
+  });
+
+  app.post("/api/ai/chat", requireAuth, async (req, res) => {
+    try {
+      const { message, history } = req.body;
+      console.log(`Global Chat request received: ${message}, history length: ${history?.length}`);
+
+      if (!message || !history) {
+        return res.status(400).json({ message: "message and history are required" });
+      }
+
+      if (!process.env.GROQ_API_KEY) {
+        console.warn("GROQ_API_KEY missing");
+        return res.json({ message: "Chat mode requires an active API key. Please check your setup." });
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are EduLens, an incredibly helpful, friendly, and expert AI teaching assistant. 
+You are chatting with a student who is using the EduLens platform to learn.
+Answer their questions clearly and concisely. If they ask about a complex topic, try to break it down simply. Use emojis occasionally.`
+          },
+          ...history.map((msg: any) => ({ role: msg.role, content: msg.content })),
+          { role: "user", content: message }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.7,
+        max_tokens: 400,
+      });
+
+      console.log("Groq response received successfully");
+      res.json({ message: completion.choices[0]?.message?.content || "I'm here to help!" });
+    } catch (e: any) {
+      console.error("Groq Chat Error:", e);
+      res.status(500).json({ message: e.message });
     }
   });
 
@@ -1220,20 +1259,10 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
   });
 
   // === Forums ===
-  app.get("/api/forums/threads", requireAuth, async (req, res) => {
+  app.get("/api/forums/threads", requireAuth, async (_req, res) => {
     try {
-      const threads = await db.select().from(forumThreads).orderBy(desc(forumThreads.createdAt));
-      const result = [];
-      for (const t of threads) {
-        const student = await storage.getStudent(t.studentId);
-        const posts = await db.select().from(forumPosts).where(eq(forumPosts.threadId, t.id));
-        result.push({
-          ...t,
-          authorName: student?.name || "Anonymous",
-          replyCount: posts.length
-        });
-      }
-      res.json(result);
+      const threads = await storage.getForumThreads();
+      res.json(threads);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -1242,13 +1271,16 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
   app.post("/api/forums/threads", requireAuth, async (req, res) => {
     try {
       const { title, content, category } = req.body;
-      const [thread] = await db.insert(forumThreads).values({
+      if (!title || !content || !category) {
+        return res.status(400).json({ message: "Title, content, and category are required" });
+      }
+      const thread = await storage.createForumThread({
         studentId: req.session.studentId!,
         title,
         content,
         category,
         isAiVerified: false,
-      }).returning();
+      });
       res.json(thread);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -1257,17 +1289,8 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
 
   app.get("/api/forums/threads/:id/posts", requireAuth, async (req, res) => {
     try {
-      const threadId = Number(req.params.id);
-      const posts = await db.select().from(forumPosts).where(eq(forumPosts.threadId, threadId)).orderBy(forumPosts.createdAt);
-      const result = [];
-      for (const p of posts) {
-        const student = await storage.getStudent(p.studentId);
-        result.push({
-          ...p,
-          authorName: student?.name || "Anonymous"
-        });
-      }
-      res.json(result);
+      const posts = await storage.getThreadPosts(Number(req.params.id));
+      res.json(posts);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -1277,49 +1300,33 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
     try {
       const threadId = Number(req.params.id);
       const { content } = req.body;
-      const [post] = await db.insert(forumPosts).values({
+      if (!content) return res.status(400).json({ message: "Content is required" });
+
+      const post = await storage.createForumPost({
         threadId,
         studentId: req.session.studentId!,
         content,
         isAiVerified: false,
-      }).returning();
+      });
+
+      // Background AI Verification
+      const threads = await storage.getForumThreads();
+      const thread = threads.find(t => t.id === threadId);
+      if (thread) {
+        verifyForumPost(content, thread.title, thread.content).then(verified => {
+          if (verified) {
+            storage.updatePostAiVerification(post.id, true);
+          }
+        });
+      }
+
       res.json(post);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   });
 
-  app.post("/api/ai/socratic", requireAuth, aiRateLimit, async (req, res) => {
-    try {
-      const { history, conceptName, misconception } = req.body;
-      if (!conceptName || !history) {
-        return res.status(400).json({ message: "conceptName and history are required" });
-      }
 
-      if (!process.env.GROQ_API_KEY) {
-        return res.json({ message: "Socratic mode requires an active API key. Please check your setup." });
-      }
-
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: `You are a strict but encouraging Socratic tutor. The student is learning about "${conceptName}". They recently made a mistake classified as: ${misconception}.
-Your goal is to guide them to the correct understanding WITHOUT giving them the direct answer.
-Ask ONE guiding question to help them realize their mistake. Keep it very short (1-2 sentences). Do not be overly verbose.`
-          },
-          ...history.map((msg: any) => ({ role: msg.role, content: msg.content }))
-        ],
-        model: "llama-3.1-8b-instant",
-        temperature: 0.6,
-        max_tokens: 150,
-      });
-
-      res.json({ message: completion.choices[0]?.message?.content || "Let's rethink this. What part are you most unsure about?" });
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
   app.post("/api/ai/generate-assignment", requireEducator, async (req, res) => {
     try {
       const { prompt } = req.body;
@@ -1463,40 +1470,35 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
     }
   });
 
-  app.post("/api/ai/chat", requireAuth, async (req, res) => {
-    try {
-      const { message, history } = req.body;
-      if (!message || !history) {
-        return res.status(400).json({ message: "message and history are required" });
-      }
 
-      if (!process.env.GROQ_API_KEY) {
-        return res.json({ message: "Chat mode requires an active API key. Please check your setup." });
-      }
-
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: `You are EduLens, an incredibly helpful, friendly, and expert AI teaching assistant. 
-You are chatting with a student who is using the EduLens platform to learn.
-Answer their questions clearly and concisely. If they ask about a complex topic, try to break it down simply. Use emojis occasionally.`
-          },
-          ...history.map((msg: any) => ({ role: msg.role, content: msg.content })),
-          { role: "user", content: message }
-        ],
-        model: "llama-3.1-8b-instant",
-        temperature: 0.7,
-        max_tokens: 400,
-      });
-
-      res.json({ message: completion.choices[0]?.message?.content || "I'm here to help!" });
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
 
   return httpServer;
+}
+
+// AI Verification helper
+async function verifyForumPost(content: string, threadTitle: string, threadContent: string): Promise<boolean> {
+  if (!process.env.GROQ_API_KEY) return false;
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert academic moderator. Determine if a forum reply is accurate, helpful, and free of misconceptions. If it is a high-quality academic contribution that correctly explains a concept or helps a peer, reply with 'VERIFIED'. Otherwise reply with 'NOT_VERIFIED'. Keep it strict."
+        },
+        {
+          role: "user",
+          content: `Thread Title: ${threadTitle}\nThread Content: ${threadContent}\nReply to verify: ${content}`
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.1,
+      max_tokens: 10,
+    });
+    const result = completion.choices[0]?.message?.content?.trim().toUpperCase();
+    return result === "VERIFIED";
+  } catch {
+    return false;
+  }
 }
 
 // === Misconception Taxonomy ===

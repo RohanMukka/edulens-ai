@@ -30,7 +30,7 @@ export function GlobalChatbot() {
       setHistory((prev) => [...prev, { role: "assistant", content: data.message }]);
     },
     onError: (error: any) => {
-      setHistory((prev) => [...prev, { role: "assistant", content: "Oops, I ran into an error connecting to my brain. Please try again." }]);
+      setHistory((prev) => [...prev, { role: "assistant", content: `Error: ${error.message || "Could not connect to the AI brain."}` }]);
     }
   });
 
