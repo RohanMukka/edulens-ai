@@ -11,6 +11,7 @@ import { ArrowLeft, MessageCircle, ThumbsUp, Sparkles, User, Brain, Search, Plus
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import ReactMarkdown from "react-markdown";
 
 export default function Forums() {
   const [, setLocation] = useLocation();
@@ -315,8 +316,12 @@ export default function Forums() {
                         </div>
                         <div className="space-y-4">
                           <h2 className="text-3xl font-black tracking-tighter leading-tight">{thread.title}</h2>
-                          <div className="text-foreground/90 text-lg leading-relaxed whitespace-pre-wrap font-medium">
-                            {thread.content}
+                          <div className="text-foreground/90 text-lg leading-relaxed font-medium">
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown>
+                                {thread.content}
+                              </ReactMarkdown>
+                            </div>
                           </div>
                         </div>
                         <div className="pt-6 border-t border-border/40 flex items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -378,9 +383,13 @@ export default function Forums() {
                                       </span>
                                     </div>
                                     
-                                    <p className={`text-base leading-relaxed ${reply.isAiVerified ? 'text-foreground font-semibold' : 'text-foreground/80 font-medium'}`}>
-                                      {reply.content}
-                                    </p>
+                                    <div className={`text-base leading-relaxed ${reply.isAiVerified ? 'text-foreground font-semibold' : 'text-foreground/80 font-medium'}`}>
+                                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                                        <ReactMarkdown>
+                                          {reply.content}
+                                        </ReactMarkdown>
+                                      </div>
+                                    </div>
                                     
                                     {reply.isAiVerified && (
                                       <div className="mt-4 p-4 rounded-xl bg-violet-500/5 border border-violet-500/20 flex items-start gap-3">

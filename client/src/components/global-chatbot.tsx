@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, X, Send, Bot, Loader2, Sparkles, Minus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import ReactMarkdown from "react-markdown";
 
 export function GlobalChatbot() {
   const { student } = useAuth();
@@ -92,7 +93,11 @@ export function GlobalChatbot() {
                 <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border rounded-tl-sm text-foreground"}`}>
                     {msg.role === "assistant" && idx > 0 && <Sparkles className="w-3 h-3 text-primary mb-1 opacity-50" />}
-                    {msg.content}
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-muted prose-pre:text-muted-foreground">
+                      <ReactMarkdown>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               ))}
