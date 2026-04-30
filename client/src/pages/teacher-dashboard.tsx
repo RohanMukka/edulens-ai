@@ -354,6 +354,13 @@ export default function TeacherDashboard() {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeLiveRoom, setActiveLiveRoom] = useState<Classroom | null>(null);
   const [liveUpdates, setLiveUpdates] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("Command Center");
+
+  const scrollToSection = (id: string, label: string) => {
+    setActiveTab(label);
+    // Removed scrolling in favor of tabbed view for a more premium experience
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (activeLiveRoom && student) {
@@ -570,18 +577,19 @@ export default function TeacherDashboard() {
 
           <nav className="flex-1 space-y-2">
             {[
-              { icon: Activity, label: "Command Center", active: true },
-              { icon: Users, label: "Student Roster" },
-              { icon: BookOpen, label: "Course Materials" },
-              { icon: Brain, label: "AI Insights" },
+              { icon: Activity, label: "Command Center", id: "command-center" },
+              { icon: Users, label: "Student Roster", id: "student-roster" },
+              { icon: BookOpen, label: "Course Materials", id: "course-materials" },
+              { icon: Brain, label: "AI Insights", id: "ai-insights" },
             ].map((item) => (
               <button
                 key={item.label}
+                onClick={() => scrollToSection(item.id, item.label)}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group ${
-                  item.active ? "bg-primary/10 text-primary" : "text-white/40 hover:text-white hover:bg-white/5"
+                  activeTab === item.label ? "bg-primary/10 text-primary" : "text-white/40 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${item.active ? "text-primary" : "group-hover:scale-110 transition-transform"}`} />
+                <item.icon className={`w-5 h-5 ${activeTab === item.label ? "text-primary" : "group-hover:scale-110 transition-transform"}`} />
                 <span className="hidden lg:block font-black uppercase tracking-widest text-[10px]">{item.label}</span>
               </button>
             ))}
@@ -612,16 +620,26 @@ export default function TeacherDashboard() {
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div>
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} key={activeTab}>
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest py-1 px-3 mb-4">
-                    Educator Portal v4.0
+                    Educator Portal v4.0 • {activeTab}
                   </Badge>
                   <h1 className="text-4xl lg:text-6xl font-black font-display tracking-tighter mb-4 uppercase">
-                    Command <span className="text-primary">Center</span>
+                    {activeTab === "Command Center" ? (
+                      <>Command <span className="text-primary">Center</span></>
+                    ) : activeTab === "Student Roster" ? (
+                      <>Personnel <span className="text-primary">Registry</span></>
+                    ) : activeTab === "Course Materials" ? (
+                      <>Learning <span className="text-primary">Assets</span></>
+                    ) : (
+                      <>Cognitive <span className="text-primary">Intelligence</span></>
+                    )}
                   </h1>
                   <p className="text-lg text-white/40 font-medium max-w-xl">
-                    Aggregated real-time pedagogical insights for {student?.name || "Educator"}. 
-                    Monitoring {students?.length || 0} active learning paths.
+                    {activeTab === "Command Center" && `Aggregated real-time pedagogical insights for ${student?.name || "Educator"}. Monitoring ${students?.length || 0} active learning paths.`}
+                    {activeTab === "Student Roster" && `Granular performance tracking and individual progress monitoring for your cohort.`}
+                    {activeTab === "Course Materials" && `Management of assignments, conceptual nodes, and instructional deployments.`}
+                    {activeTab === "AI Insights" && `Deep-dive diagnostic data on conceptual friction points and cognitive misconceptions.`}
                   </p>
                 </motion.div>
               </div>
@@ -641,347 +659,360 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            {/* ── STATS ROW ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { label: "Active Cohort", value: students?.length || 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-                { label: "Avg Class Mastery", value: `${Math.round(avgClassScore * 100)}%`, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-                { label: "AI Diagnoses", value: totalInteractions, icon: Activity, color: "text-blue-400", bg: "bg-blue-500/10" },
-                { label: "Concepts Locked", value: totalMastered, icon: CheckCheck, color: "text-violet-400", bg: "bg-violet-500/10" },
-              ].map((stat, idx) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <Card className="rounded-3xl border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
-                    <CardContent className="p-8">
-                      <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center mb-6`}>
-                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                      </div>
-                      <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-1">{stat.label}</p>
-                      <p className="text-4xl font-black font-display tracking-tight">{stat.value}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* ── CLASSROOMS ── */}
-              <div className="lg:col-span-1">
-                <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 h-full overflow-hidden">
-                  <CardHeader className="p-8 pb-4">
-                    <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
-                      <BookOpen className="w-5 h-5 text-primary" /> Learning Nodes
-                    </CardTitle>
-                    <CardDescription className="text-white/40 font-medium">Manage and join classroom clusters</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-8 pt-0 space-y-8">
-                    <div className="space-y-6">
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-white/20 ml-1">Deploy New Node</p>
-                        <div className="flex gap-2 p-1.5 rounded-2xl bg-black/40 border border-white/5">
-                          <Input
-                            placeholder="Cluster Name..."
-                            value={newClassName}
-                            onChange={e => setNewClassName(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
-                            className="bg-transparent border-none focus-visible:ring-0 text-sm font-medium h-11"
-                          />
-                          <Button size="icon" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="rounded-xl bg-primary shadow-lg shadow-primary/20 shrink-0 h-11 w-11">
-                            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
-                          </Button>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-12"
+              >
+                {activeTab === "Command Center" && (
+                  <>
+                    {/* ── STATS ROW ── */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {[
+                        { label: "Active Cohort", value: students?.length || 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+                        { label: "Avg Class Mastery", value: `${Math.round(avgClassScore * 100)}%`, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                        { label: "AI Diagnoses", value: totalInteractions, icon: Activity, color: "text-blue-400", bg: "bg-blue-500/10" },
+                        { label: "Concepts Locked", value: totalMastered, icon: CheckCheck, color: "text-violet-400", bg: "bg-violet-500/10" },
+                      ].map((stat, idx) => (
+                        <div key={stat.label}>
+                          <Card className="rounded-3xl border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+                            <CardContent className="p-8">
+                              <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center mb-6`}>
+                                <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                              </div>
+                              <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-1">{stat.label}</p>
+                              <p className="text-4xl font-black font-display tracking-tight">{stat.value}</p>
+                            </CardContent>
+                          </Card>
                         </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-white/20 ml-1">Sync Existing</p>
-                        <div className="flex gap-2 p-1.5 rounded-2xl bg-black/40 border border-white/5">
-                          <Input
-                            placeholder="6-Digit Access Key"
-                            value={joinCode}
-                            onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                            onKeyDown={e => e.key === "Enter" && handleJoinClassroom()}
-                            maxLength={6}
-                            className="bg-transparent border-none focus-visible:ring-0 text-sm font-black tracking-[0.2em] h-11"
-                          />
-                          <Button variant="ghost" size="sm" onClick={handleJoinClassroom} disabled={joining || joinCode.length !== 6} className="rounded-xl hover:bg-white/5 shrink-0 px-4 h-11 text-[10px] font-black uppercase tracking-widest">
-                            {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Link"}
-                          </Button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
 
-                    {classrooms && classrooms.length > 0 ? (
-                      <div className="space-y-4 pt-8 border-t border-white/5">
-                        {classrooms.map((c) => (
-                          <div key={c.id} className="group p-6 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-primary/30 transition-all">
-                            <div className="flex items-center justify-between mb-6">
-                              <div>
-                                <p className="font-black font-display text-sm group-hover:text-primary transition-colors mb-1">{c.name}</p>
-                                <div className="flex items-center gap-2">
-                                  {c.isOwner ? (
-                                    <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase tracking-widest">Master Node</Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-white/10">Connected</Badge>
-                                  )}
+                    <div className="grid lg:grid-cols-3 gap-8">
+                      {/* ── CLASSROOMS ── */}
+                      <div className="lg:col-span-1">
+                        <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 h-full overflow-hidden">
+                          <CardHeader className="p-8 pb-4">
+                            <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                              <BookOpen className="w-5 h-5 text-primary" /> Learning Nodes
+                            </CardTitle>
+                            <CardDescription className="text-white/40 font-medium">Manage and join classroom clusters</CardDescription>
+                          </CardHeader>
+                          <CardContent className="p-8 pt-0 space-y-8">
+                            <div className="space-y-6">
+                              <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white/20 ml-1">Deploy New Node</p>
+                                <div className="flex gap-2 p-1.5 rounded-2xl bg-black/40 border border-white/5">
+                                  <Input
+                                    placeholder="Cluster Name..."
+                                    value={newClassName}
+                                    onChange={e => setNewClassName(e.target.value)}
+                                    onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
+                                    className="bg-transparent border-none focus-visible:ring-0 text-sm font-medium h-11"
+                                  />
+                                  <Button size="icon" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="rounded-xl bg-primary shadow-lg shadow-primary/20 shrink-0 h-11 w-11">
+                                    {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
+                                  </Button>
                                 </div>
                               </div>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 rounded-full text-white/20 hover:text-rose-400 hover:bg-rose-400/10"
-                                onClick={() => c.isOwner ? handleDeleteClassroom(c.id, c.name) : handleLeaveClassroom(c.id, c.name)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <div className="flex items-center justify-between bg-black/40 rounded-2xl px-4 py-3 border border-white/5 shadow-inner">
-                              <code className="text-xl font-black tracking-[0.4em] text-primary">{c.code}</code>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-9 w-9 rounded-xl hover:bg-white/5 transition-all"
-                                  onClick={() => handleCopy(c.code)}
-                                >
-                                  {copied === c.code ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 opacity-40 group-hover:opacity-100" />}
-                                </Button>
-                                {c.isOwner && (
-                                  <Button
-                                    size="sm"
-                                    className="h-9 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-xl"
-                                    onClick={() => { setLiveUpdates([]); setActiveLiveRoom(c); }}
-                                  >
-                                    <Activity className="w-4 h-4 mr-2 text-primary" /> Live
+
+                              <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white/20 ml-1">Sync Existing</p>
+                                <div className="flex gap-2 p-1.5 rounded-2xl bg-black/40 border border-white/5">
+                                  <Input
+                                    placeholder="6-Digit Access Key"
+                                    value={joinCode}
+                                    onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                                    onKeyDown={e => e.key === "Enter" && handleJoinClassroom()}
+                                    maxLength={6}
+                                    className="bg-transparent border-none focus-visible:ring-0 text-sm font-black tracking-[0.2em] h-11"
+                                  />
+                                  <Button variant="ghost" size="sm" onClick={handleJoinClassroom} disabled={joining || joinCode.length !== 6} className="rounded-xl hover:bg-white/5 shrink-0 px-4 h-11 text-[10px] font-black uppercase tracking-widest">
+                                    {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Link"}
                                   </Button>
-                                )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center gap-4 opacity-40">
-                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
-                          <BookOpen className="w-8 h-8" />
-                        </div>
-                        <p className="text-xs font-black uppercase tracking-widest">No Active Nodes</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
 
-              {/* ── CLASS PERFORMANCE CHART ── */}
-              <div className="lg:col-span-2">
-                <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 h-full overflow-hidden">
-                  <CardHeader className="p-8 pb-4">
-                    <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
-                      <TrendingUp className="w-5 h-5 text-primary" /> Performance Analytics
-                    </CardTitle>
-                    <CardDescription className="text-white/40 font-medium">Average mastery levels across active students</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-8 pt-0">
-                    {chartData.length > 0 ? (
-                      <div className="h-[300px] mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={chartData} barCategoryGap="35%">
-                            <defs>
-                              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
-                              </linearGradient>
-                            </defs>
-                            <XAxis 
-                              dataKey="name" 
-                              axisLine={false} 
-                              tickLine={false} 
-                              tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontWeight: 800 }} 
-                            />
-                            <YAxis 
-                              domain={[0, 100]} 
-                              axisLine={false} 
-                              tickLine={false} 
-                              tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontWeight: 800 }} 
-                              tickFormatter={v => `${v}%`} 
-                            />
-                            <Tooltip
-                              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                              contentStyle={{ 
-                                fontSize: 12, 
-                                borderRadius: 16, 
-                                border: "1px solid rgba(255,255,255,0.1)", 
-                                background: "rgba(0,0,0,0.8)",
-                                backdropFilter: "blur(12px)",
-                                fontWeight: 600
-                              }}
-                              formatter={(v: number) => [`${v}%`, "Mastery"]}
-                            />
-                            <Bar
-                              dataKey="score"
-                              fill="url(#barGradient)"
-                              radius={[12, 12, 4, 4]}
-                              barSize={40}
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
+                            {classrooms && classrooms.length > 0 ? (
+                              <div className="space-y-4 pt-8 border-t border-white/5">
+                                {classrooms.map((c) => (
+                                  <div key={c.id} className="group p-6 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-primary/30 transition-all">
+                                    <div className="flex items-center justify-between mb-6">
+                                      <div>
+                                        <p className="font-black font-display text-sm group-hover:text-primary transition-colors mb-1">{c.name}</p>
+                                        <div className="flex items-center gap-2">
+                                          {c.isOwner ? (
+                                            <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase tracking-widest">Master Node</Badge>
+                                          ) : (
+                                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-white/10">Connected</Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 rounded-full text-white/20 hover:text-rose-400 hover:bg-rose-400/10"
+                                        onClick={() => c.isOwner ? handleDeleteClassroom(c.id, c.name) : handleLeaveClassroom(c.id, c.name)}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                    <div className="flex items-center justify-between bg-black/40 rounded-2xl px-4 py-3 border border-white/5 shadow-inner">
+                                      <code className="text-xl font-black tracking-[0.4em] text-primary">{c.code}</code>
+                                      <div className="flex items-center gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 rounded-xl hover:bg-white/5 transition-all"
+                                          onClick={() => handleCopy(c.code)}
+                                        >
+                                          {copied === c.code ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 opacity-40 group-hover:opacity-100" />}
+                                        </Button>
+                                        {c.isOwner && (
+                                          <Button
+                                            size="sm"
+                                            className="h-9 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-xl"
+                                            onClick={() => { setLiveUpdates([]); setActiveLiveRoom(c); }}
+                                          >
+                                            <Activity className="w-4 h-4 mr-2 text-primary" /> Live
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center py-12 text-center gap-4 opacity-40">
+                                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
+                                  <BookOpen className="w-8 h-8" />
+                                </div>
+                                <p className="text-xs font-black uppercase tracking-widest">No Active Nodes</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-[300px] gap-4 opacity-40">
-                        <Users className="w-10 h-10" />
-                        <p className="text-xs font-black uppercase tracking-widest">No Performance Data</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
 
-            {/* ── ASSIGNMENTS LIST ── */}
-            <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
-              <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
-                    <BookOpen className="w-5 h-5 text-primary" /> Active Deployments
-                  </CardTitle>
-                  <CardDescription className="text-white/40 font-medium">Instructional materials ready for evaluation</CardDescription>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setShowWizard(true)} className="rounded-full hover:bg-white/5">
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </CardHeader>
-              <CardContent className="p-0 border-t border-white/5">
-                <div className="divide-y divide-white/5">
-                  {assignments?.length === 0 ? (
-                    <div className="p-16 text-center text-white/20 flex flex-col items-center justify-center gap-4">
-                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
-                        <BookOpen className="w-8 h-8" />
+                      {/* ── CLASS PERFORMANCE CHART ── */}
+                      <div className="lg:col-span-2">
+                        <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 h-full overflow-hidden">
+                          <CardHeader className="p-8 pb-4">
+                            <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                              <TrendingUp className="w-5 h-5 text-primary" /> Performance Analytics
+                            </CardTitle>
+                            <CardDescription className="text-white/40 font-medium">Average mastery levels across active students</CardDescription>
+                          </CardHeader>
+                          <CardContent className="p-8 pt-0">
+                            {chartData.length > 0 ? (
+                              <div className="h-[300px] mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={chartData} barCategoryGap="35%">
+                                    <defs>
+                                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                                      </linearGradient>
+                                    </defs>
+                                    <XAxis 
+                                      dataKey="name" 
+                                      axisLine={false} 
+                                      tickLine={false} 
+                                      tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontWeight: 800 }} 
+                                    />
+                                    <YAxis 
+                                      domain={[0, 100]} 
+                                      axisLine={false} 
+                                      tickLine={false} 
+                                      tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontWeight: 800 }} 
+                                      tickFormatter={v => `${v}%`} 
+                                    />
+                                    <Tooltip
+                                      cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                                      contentStyle={{ 
+                                        fontSize: 12, 
+                                        borderRadius: 16, 
+                                        border: "1px solid rgba(255,255,255,0.1)", 
+                                        background: "rgba(0,0,0,0.8)",
+                                        backdropFilter: "blur(12px)",
+                                        fontWeight: 600
+                                      }}
+                                      formatter={(v: number) => [`${v}%`, "Mastery"]}
+                                    />
+                                    <Bar
+                                      dataKey="score"
+                                      fill="url(#barGradient)"
+                                      radius={[12, 12, 4, 4]}
+                                      barSize={40}
+                                    />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-[300px] gap-4 opacity-40">
+                                <Users className="w-10 h-10" />
+                                <p className="text-xs font-black uppercase tracking-widest">No Performance Data</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       </div>
-                      <p className="text-xs font-black uppercase tracking-widest">No Active Deployments</p>
                     </div>
-                  ) : (
-                    assignments?.map(assignment => (
-                      <div key={assignment.id} className="p-8 flex flex-col md:flex-row items-center justify-between hover:bg-white/[0.01] transition-all gap-6">
-                        <div className="flex items-start gap-6">
-                          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 shadow-lg shadow-primary/10">
-                            <Sparkles className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="text-xl font-black font-display tracking-tight mb-1 uppercase">{assignment.title}</h4>
-                            <div className="flex flex-wrap items-center gap-3">
-                              <Badge className="bg-white/5 text-white/50 border-white/10 text-[8px] font-black uppercase tracking-widest">{assignment.classroomName}</Badge>
-                              <Badge className="bg-amber-500/10 text-amber-400 border-none text-[8px] font-black uppercase tracking-widest">{assignment.pendingGrades} Action Items</Badge>
-                              <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">Deployed {new Date(assignment.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-4 w-full md:w-auto">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleExportGrades(assignment.id, assignment.title)} 
-                            className="flex-1 h-12 px-6 rounded-xl text-white/40 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-[10px]"
-                          >
-                            <Download className="w-4 h-4 mr-2" /> Export
-                          </Button>
-                          <Button 
-                            onClick={() => setLocation(`/teacher/grade/${assignment.id}`)} 
-                            className="flex-1 h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
-                          >
-                            SpeedGrader <ArrowRight className="w-4 h-4 ml-3" />
-                          </Button>
-                        </div>
+                  </>
+                )}
+
+                {activeTab === "Course Materials" && (
+                  <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+                    <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                          <BookOpen className="w-5 h-5 text-primary" /> Active Deployments
+                        </CardTitle>
+                        <CardDescription className="text-white/40 font-medium">Instructional materials ready for evaluation</CardDescription>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ── INTERVENTION QUEUE ── */}
-            <InterventionQueue />
-
-            {/* ── MISCONCEPTION HEATMAP ── */}
-            <MisconceptionHeatmap />
-
-            {/* ── STUDENT ROSTER TABLE ── */}
-            <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
-              <CardHeader className="p-8 pb-4">
-                <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
-                  <Users className="w-5 h-5 text-primary" /> Personnel Registry
-                </CardTitle>
-                <CardDescription className="text-white/40 font-medium">Granular performance metrics for all active learners</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 border-t border-white/5">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-white/5 bg-white/[0.01]">
-                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20">Learner</th>
-                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20 hidden sm:table-cell">Identity</th>
-                        <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-white/20">Engagements</th>
-                        <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-white/20">Mastery Lock</th>
-                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20">Efficiency Index</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {students && students.length > 0 ? students.map((s, idx) => (
-                        <tr key={`${s.id}-${idx}`} className="hover:bg-white/[0.01] transition-colors group">
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                <span className="text-sm font-black text-primary">
-                                  {s.name.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <span className="font-black font-display uppercase tracking-tight">{s.name}</span>
+                      <Button variant="ghost" size="icon" onClick={() => setShowWizard(true)} className="rounded-full hover:bg-white/5">
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="p-0 border-t border-white/5">
+                      <div className="divide-y divide-white/5">
+                        {assignments?.length === 0 ? (
+                          <div className="p-16 text-center text-white/20 flex flex-col items-center justify-center gap-4">
+                            <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
+                              <BookOpen className="w-8 h-8" />
                             </div>
-                          </td>
-                          <td className="px-8 py-6 text-white/40 font-medium hidden sm:table-cell">{s.email}</td>
-                          <td className="px-8 py-6 text-center">
-                            <Badge className="bg-white/5 text-white/60 border-white/10 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                              {s.totalInteractions}
-                            </Badge>
-                          </td>
-                          <td className="px-8 py-6 text-center">
-                            <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black">
-                              {s.masteryCount}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-6 min-w-[200px]">
-                              <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden ring-1 ring-white/5">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${s.avgScore * 100}%` }}
-                                  className={`h-full ${s.avgScore >= 0.7 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : s.avgScore >= 0.4 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`}
-                                />
+                            <p className="text-xs font-black uppercase tracking-widest">No Active Deployments</p>
+                          </div>
+                        ) : (
+                          assignments?.map(assignment => (
+                            <div key={assignment.id} className="p-8 flex flex-col md:flex-row items-center justify-between hover:bg-white/[0.01] transition-all gap-6">
+                              <div className="flex items-start gap-6">
+                                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 shadow-lg shadow-primary/10">
+                                  <Sparkles className="w-6 h-6 text-primary" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xl font-black font-display tracking-tight mb-1 uppercase">{assignment.title}</h4>
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <Badge className="bg-white/5 text-white/50 border-white/10 text-[8px] font-black uppercase tracking-widest">{assignment.classroomName}</Badge>
+                                    <Badge className="bg-amber-500/10 text-amber-400 border-none text-[8px] font-black uppercase tracking-widest">{assignment.pendingGrades} Action Items</Badge>
+                                    <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">Deployed {new Date(assignment.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
                               </div>
-                              <ScorePill score={s.avgScore} />
-                            </div>
-                          </td>
-                        </tr>
-                      )) : (
-                        <tr>
-                          <td colSpan={5} className="px-8 py-20 text-center">
-                            <div className="flex flex-col items-center gap-6 opacity-40">
-                              <Users className="w-16 h-16" />
-                              <div className="space-y-2">
-                                <p className="text-xs font-black uppercase tracking-widest">No Registered Learners</p>
-                                <p className="text-[10px] font-medium max-w-xs mx-auto">Create a classroom and share the deployment code to begin population.</p>
+                              <div className="flex gap-4 w-full md:w-auto">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleExportGrades(assignment.id, assignment.title)} 
+                                  className="flex-1 h-12 px-6 rounded-xl text-white/40 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-[10px]"
+                                >
+                                  <Download className="w-4 h-4 mr-2" /> Export
+                                </Button>
+                                <Button 
+                                  onClick={() => setLocation(`/teacher/grade/${assignment.id}`)} 
+                                  className="flex-1 h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                                >
+                                  SpeedGrader <ArrowRight className="w-4 h-4 ml-3" />
+                                </Button>
                               </div>
                             </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {activeTab === "AI Insights" && (
+                  <>
+                    <InterventionQueue />
+                    <MisconceptionHeatmap />
+                  </>
+                )}
+
+                {activeTab === "Student Roster" && (
+                  <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+                    <CardHeader className="p-8 pb-4">
+                      <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                        <Users className="w-5 h-5 text-primary" /> Personnel Registry
+                      </CardTitle>
+                      <CardDescription className="text-white/40 font-medium">Granular performance metrics for all active learners</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0 border-t border-white/5">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-white/5 bg-white/[0.01]">
+                              <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20">Learner</th>
+                              <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20 hidden sm:table-cell">Identity</th>
+                              <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-white/20">Engagements</th>
+                              <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-white/20">Mastery Lock</th>
+                              <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20">Efficiency Index</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {students && students.length > 0 ? students.map((s, idx) => (
+                              <tr key={`${s.id}-${idx}`} className="hover:bg-white/[0.01] transition-colors group">
+                                <td className="px-8 py-6">
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                      <span className="text-sm font-black text-primary">
+                                        {s.name.charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
+                                    <span className="font-black font-display uppercase tracking-tight">{s.name}</span>
+                                  </div>
+                                </td>
+                                <td className="px-8 py-6 text-white/40 font-medium hidden sm:table-cell">{s.email}</td>
+                                <td className="px-8 py-6 text-center">
+                                  <Badge className="bg-white/5 text-white/60 border-white/10 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                                    {s.totalInteractions}
+                                  </Badge>
+                                </td>
+                                <td className="px-8 py-6 text-center">
+                                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black">
+                                    {s.masteryCount}
+                                  </span>
+                                </td>
+                                <td className="px-8 py-6">
+                                  <div className="flex items-center gap-6 min-w-[200px]">
+                                    <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden ring-1 ring-white/5">
+                                      <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${s.avgScore * 100}%` }}
+                                        className={`h-full ${s.avgScore >= 0.7 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : s.avgScore >= 0.4 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`}
+                                      />
+                                    </div>
+                                    <ScorePill score={s.avgScore} />
+                                  </div>
+                                </td>
+                              </tr>
+                            )) : (
+                              <tr>
+                                <td colSpan={5} className="px-8 py-20 text-center">
+                                  <div className="flex flex-col items-center gap-6 opacity-40">
+                                    <Users className="w-16 h-16" />
+                                    <div className="space-y-2">
+                                      <p className="text-xs font-black uppercase tracking-widest">No Registered Learners</p>
+                                      <p className="text-[10px] font-medium max-w-xs mx-auto">Create a classroom and share the deployment code to begin population.</p>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
       </div>

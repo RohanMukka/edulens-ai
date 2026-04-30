@@ -100,6 +100,23 @@ graph TD
 3. Set up environment variables: Create a `.env` file based on `.env.example`.
 4. Push the schema: `npm run db:push`
 5. Start development: `npm run dev`
+6. **Educator Access Code**: Use `EDULENS2026` to register as an educator.
+
+---
+
+## 🔐 Demo Credentials
+
+Use these to explore the platform without creating an account:
+
+### 🎓 Educator Account
+- **Email**: `teacher@demo.com`
+- **Password**: `demo123`
+- **Role**: Educator / Teacher
+
+### 🧑‍🎓 Student Account
+- **Email**: `student@demo.com`
+- **Password**: `demo123`
+- **Role**: Student
 
 ---
 
