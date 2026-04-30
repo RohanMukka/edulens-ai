@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, X, Send, Bot, Loader2, Sparkles } from "lucide-react";
+import { MessageSquare, X, Send, Bot, Loader2, Sparkles, Minus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 export function GlobalChatbot() {
@@ -73,9 +73,17 @@ export function GlobalChatbot() {
                   <p className="text-[10px] text-primary-foreground/80 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Online</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground relative z-10" onClick={() => setIsOpen(false)}>
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1 relative z-10">
+                <Button variant="ghost" size="icon" className="w-8 h-8 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground" onClick={() => setIsOpen(false)}>
+                  <Minus className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="w-8 h-8 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground" onClick={() => {
+                  setIsOpen(false);
+                  // Optional: Clear history or specific state if needed for "closing"
+                }}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Chat Area */}

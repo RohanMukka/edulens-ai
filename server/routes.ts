@@ -1289,7 +1289,7 @@ Ask ONE guiding question to help them realize their mistake. Keep it very short 
     }
   });
 
-  app.post("/api/ai/chat", requireAuth, aiRateLimit, async (req, res) => {
+  app.post("/api/ai/socratic", requireAuth, aiRateLimit, async (req, res) => {
     try {
       const { history, conceptName, misconception } = req.body;
       if (!conceptName || !history) {
