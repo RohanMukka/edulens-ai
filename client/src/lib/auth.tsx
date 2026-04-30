@@ -1,11 +1,24 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
 import type { Student } from "@shared/schema";
 import { apiRequest } from "./queryClient";
 
 interface AuthContextType {
   student: Student | null;
   login: (email: string, password: string) => Promise<Student>;
-  register: (name: string, email: string, password: string, role: string, educatorCode?: string) => Promise<Student>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: string,
+    educatorCode?: string,
+  ) => Promise<Student>;
   logout: () => void;
 }
 
@@ -17,24 +30,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore session on mount
   useEffect(() => {
     apiRequest("GET", "/api/auth/me")
-      .then(res => res.json())
-      .then(data => setStudent(data))
-      .catch(() => {});
+      .then((res) => res.json())
+      .then((data) => setStudent(data))
+      .catch(async () => {
+        // If no active session, attempt demo login (seeded by server) so demo features work.
+        try {
+          const res = await apiRequest("POST", "/api/auth/login", {
+            email: "demo-student@edulens.ai",
+            password: "demo1234",
+          });
+          const data = await res.json();
+          setStudent(data);
+        } catch (e) {
+          // Swallow errors — keep unauthenticated if demo login fails
+        }
+      });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiRequest("POST", "/api/auth/login", { email, password });
+    const res = await apiRequest("POST", "/api/auth/login", {
+      email,
+      password,
+    });
     const data = await res.json();
     setStudent(data);
     return data;
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string, role: string, educatorCode?: string) => {
-    const res = await apiRequest("POST", "/api/auth/register", { name, email, password, role, educatorCode });
-    const data = await res.json();
-    setStudent(data);
-    return data;
-  }, []);
+  const register = useCallback(
+    async (
+      name: string,
+      email: string,
+      password: string,
+      role: string,
+      educatorCode?: string,
+    ) => {
+      const res = await apiRequest("POST", "/api/auth/register", {
+        name,
+        email,
+        password,
+        role,
+        educatorCode,
+      });
+      const data = await res.json();
+      setStudent(data);
+      return data;
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     try {

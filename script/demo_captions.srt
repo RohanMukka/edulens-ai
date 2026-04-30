@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:12,000
+🎙️ EduLens AI — Refined Demo
+
+2
+00:00:12,000 --> 00:00:24,000
+Part 1: The Hook — Most EdTech today has a 'Shallow Learning' problem. We built an Explain-First platform that decodes a student's mental model.
+
+3
+00:00:24,000 --> 00:00:46,000
+Part 2: The "Explain-First" Challenge — Student view. Instead of multiple-choice, the student explains Photosynthesis in their own words.
+
+4
+00:00:46,000 --> 00:00:58,000
+Student types: "Plants use sunlight to make oxygen so that humans and animals can breathe." The AI will evaluate this explanation.
+
+5
+00:00:58,000 --> 00:01:12,000
+AI feedback: Identifies this as Incomplete Understanding. Notes the student focused on oxygen and missed glucose/energy production. Bloom's level: Remembering.
+
+6
+00:01:12,000 --> 00:01:26,000
+Part 3: Mastery Tools — Navigate the Knowledge Graph. Each interaction updates the graph and shows mastered concepts and prerequisites.
+
+7
+00:01:26,000 --> 00:01:36,000
+Open the EduLens Assistant (Chatbot). It uses Socratic prompts to help students bridge gaps without giving answers away.
+
+8
+00:01:36,000 --> 00:01:56,000
+Part 4: The Live Classroom — Educator Dashboard. Teachers see aggregated Misconception Heatmaps and can click "Go Live" for a real-time feed using WebSockets.
+
+9
+00:01:56,000 --> 00:02:00,000
+Intervention Queue flags struggling students so teachers can step in immediately.
+
+10
+00:02:00,000 --> 00:02:20,000
+Conclusion: EduLens AI understands students, not just scores. Thanks for watching.

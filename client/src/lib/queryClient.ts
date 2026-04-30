@@ -1,6 +1,19 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
+const API_BASE = (() => {
+  // If the client is served from a different localhost port (vite dev),
+  // point API requests to the backend on port 5000 so cookies/sessions
+  // are set by the correct origin during local development.
+  try {
+    if (typeof window !== "undefined") {
+      const port = window.location.port;
+      if (port && port !== "5000") return "http://localhost:5000";
+    }
+  } catch (e) {
+    // ignore in non-browser contexts
+  }
+  return "";
+})();
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
