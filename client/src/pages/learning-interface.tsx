@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ import type {
   MasteryScore,
 } from "@shared/schema";
 import { classroomSocket } from "@/lib/socket";
+import { TutorialOverlay } from "@/components/tutorial-overlay";
 import {
   ArrowLeft,
   ArrowRight,
@@ -98,15 +99,13 @@ const MermaidChart = ({ chart }: { chart: string }) => {
 
     mermaid
       .render(id, sanitizedChart)
-      .then((res) => {
-        setSvg(res.svg);
-      })
+      .then(({ svg }) => setSvg(svg))
       .catch((err) => {
         console.error("Mermaid error:", err);
         setSvg(
-          `<div class="text-rose-500/80 text-xs bg-rose-500/5 border border-rose-500/10 rounded-lg p-3 flex items-center justify-center gap-2">
-             <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-             Failed to render diagram
+          `<div class="text-rose-500/80 text-xs bg-rose-500/5 border border-rose-500/10 rounded-lg p-6 flex flex-col items-center justify-center gap-3">
+             <div class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+             <span class="font-black uppercase tracking-widest opacity-60">Visualization Render Error</span>
            </div>`,
         );
       });
@@ -114,11 +113,43 @@ const MermaidChart = ({ chart }: { chart: string }) => {
 
   return (
     <div
-      className="flex justify-center my-4 overflow-x-auto"
+      className="flex justify-center my-6 overflow-x-auto p-4 bg-white/5 rounded-2xl border border-white/10"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
 };
+
+function ProgressRing({ pct, size = 120, stroke = 8, color = "hsl(var(--primary))" }: { pct: number, size?: number, stroke?: number, color?: string }) {
+  const radius = (size - stroke) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (pct / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} className="rotate-[-90deg]">
+      <circle
+        stroke="rgba(255,255,255,0.05)"
+        strokeWidth={stroke}
+        fill="transparent"
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+      />
+      <motion.circle
+        stroke={color}
+        strokeWidth={stroke}
+        strokeDasharray={circumference}
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: offset }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+        strokeLinecap="round"
+        fill="transparent"
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+      />
+    </svg>
+  );
+}
 
 const VoiceVisualizer = ({ isActive }: { isActive: boolean }) => {
   return (
@@ -902,719 +933,535 @@ export default function LearningInterface() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top bar */}
-      <div className="border-b border-border/60 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowExitDialog(true)}
-              data-testid="button-back"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {session.subject}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {currentConceptIndex + 1} of {totalConcepts}
-                </span>
-                {activeClassroomCode && (
-                  <div className="flex items-center gap-1.5 ml-3 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                      Live Feed
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLocation("/graph")}
-            data-testid="button-view-graph"
-          >
-            <Brain className="w-4 h-4 mr-1" /> Graph
-          </Button>
-        </div>
-        <div className="max-w-3xl mx-auto px-6 pb-2">
-          <Progress
-            value={progressPercent}
-            className="h-3 bg-muted rounded-full shadow-inner"
-            data-testid="progress-session"
-          />
-        </div>
+    <div className="min-h-screen bg-background premium-gradient selection:bg-primary/20 overflow-hidden flex flex-col">
+      <TutorialOverlay role="student" />
+
+      {/* ── AMBIENT BACKGROUND ── */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <motion.div 
+          animate={{ 
+            scale: phase === "feedback" && lastScore?.score && lastScore.score < 0.4 ? [1, 1.2, 1] : 1,
+            opacity: phase === "feedback" && lastScore?.score && lastScore.score < 0.4 ? [0.05, 0.1, 0.05] : 0.05
+          }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px]" 
+        />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-500/10 rounded-full blur-[120px]" />
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-        {currentConcept && (
-          <>
-            {/* Prerequisite Redirect Banner */}
-            {prerequisiteRedirect && phase === "intro" && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-2"
-              >
-                <Card className="border border-amber-500/30 bg-amber-500/5">
-                  <CardContent className="py-3 px-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                      <Target className="w-4 h-4 text-amber-500" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                        Adaptive Redirect
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        You're struggling with a concept that builds on{" "}
-                        <strong className="text-foreground">
-                          {prerequisiteRedirect}
-                        </strong>
-                        . Let's strengthen that foundation first.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
+      {/* ── TOP NAV ── */}
+      <nav className="relative z-50 border-b border-white/5 bg-black/20 backdrop-blur-3xl px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowExitDialog(true)}
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="hidden sm:block">
+            <h2 className="text-sm font-black font-display uppercase tracking-widest text-primary mb-0.5">Session: {session.subject}</h2>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+              Concept {currentConceptIndex + 1} of {totalConcepts}
+            </p>
+          </div>
+        </div>
 
-            {/* Concept Introduction */}
-            {phase === "intro" && (
-              <Card
-                className="border border-border/60"
-                data-testid="card-concept-intro"
-              >
-                <CardContent className="pt-6 pb-5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-lg">
-                        {currentConcept.name}
-                      </h2>
-                      <p className="text-muted-foreground text-sm mt-1 mb-4">
-                        {currentConcept.description}
-                      </p>
+        <div className="flex items-center gap-4">
+          {activeClassroomCode && (
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Connected</span>
+            </div>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setLocation("/graph")}
+            className="h-10 px-4 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 font-black text-xs"
+          >
+            <Brain className="w-4 h-4 mr-2 text-primary" /> Analysis
+          </Button>
+        </div>
+      </nav>
 
-                      <Collapsible
-                        open={isLessonOpen}
-                        onOpenChange={setIsLessonOpen}
-                        className="mb-4"
-                      >
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full flex items-center justify-between py-2 px-3 h-auto bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg group transition-all"
-                          >
-                            <span className="flex items-center gap-2 text-sm font-semibold text-primary">
-                              <BookOpen className="w-4 h-4" />
-                              {isLessonOpen
-                                ? "Hide Mini-Lesson"
-                                : "Review Mini-Lesson"}
-                            </span>
-                            {isLessonOpen ? (
-                              <ChevronUp className="w-4 h-4 text-primary" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-primary" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="animate-in fade-in slide-in-from-top-1 duration-300">
-                          <div className="bg-primary/5 border-x border-b border-primary/20 rounded-b-lg p-5 prose dark:prose-invert prose-sm max-w-none text-left">
+      {/* ── PROGRESS BAR ── */}
+      <div className="relative z-40 h-1.5 w-full bg-white/5">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: `${progressPercent}%` }}
+          className="h-full bg-gradient-to-r from-primary via-violet-500 to-primary-foreground shadow-[0_0_20px_rgba(99,102,241,0.5)]"
+        />
+      </div>
+
+      <div className="flex-1 relative z-10 flex overflow-hidden">
+        {/* ── SIDEBAR NAV ── */}
+        <aside className="hidden lg:flex w-80 border-r border-white/5 bg-black/10 backdrop-blur-2xl flex-col p-6 overflow-y-auto no-scrollbar">
+          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6 opacity-50">Curriculum Path</h3>
+          <div className="space-y-3">
+            {concepts.map((c, i) => {
+              const isPast = i < currentConceptIndex;
+              const isCurrent = i === currentConceptIndex;
+              const mastery = studentMastery?.find(m => m.conceptId === c.id)?.score || 0;
+              
+              return (
+                <div 
+                  key={c.id} 
+                  className={`p-4 rounded-[1.25rem] border transition-all duration-300 ${
+                    isCurrent 
+                      ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/5" 
+                      : isPast 
+                        ? "bg-emerald-500/5 border-emerald-500/10 opacity-60" 
+                        : "bg-white/[0.02] border-white/5 opacity-40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${isCurrent ? "text-primary" : isPast ? "text-emerald-400" : "text-muted-foreground"}`}>
+                      {isPast ? "Mastered" : isCurrent ? "Active" : "Locked"}
+                    </span>
+                    {isPast && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                  </div>
+                  <h4 className={`text-sm font-bold font-display leading-tight ${isCurrent ? "text-white" : "text-white/60"}`}>{c.name}</h4>
+                  {mastery > 0 && (
+                    <div className="mt-3 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${mastery * 100}%` }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* ── MAIN CONTENT AREA ── */}
+        <main className="flex-1 overflow-y-auto no-scrollbar pb-20 pt-10">
+          <div className="max-w-4xl mx-auto px-6">
+            <AnimatePresence mode="wait">
+              {currentConcept && (
+                <motion.div
+                  key={`${currentConcept.id}-${phase}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-8"
+                >
+                  {/* Phase: INTRO */}
+                  {phase === "intro" && (
+                    <div className="space-y-8">
+                      {prerequisiteRedirect && (
+                        <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                            <Target className="w-6 h-6 text-amber-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-amber-400 uppercase tracking-widest mb-1">Adaptive Redirect</p>
+                            <p className="text-sm text-white/80 leading-relaxed">
+                              You're struggling with a concept that builds on <strong>{prerequisiteRedirect}</strong>. 
+                              Let's strengthen that foundation first.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-center max-w-2xl mx-auto mb-12">
+                        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary/20 ring-1 ring-primary/30">
+                          <BookOpen className="w-10 h-10 text-primary" />
+                        </div>
+                        <h1 className="text-5xl font-black font-display tracking-tighter mb-4">{currentConcept.name}</h1>
+                        <p className="text-lg text-muted-foreground font-medium">{currentConcept.description}</p>
+                      </div>
+
+                      <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden shadow-2xl">
+                        <CardContent className="p-10">
+                          <div className="prose dark:prose-invert prose-lg max-w-none mb-10">
                             <ReactMarkdown components={markdownComponents}>
                               {currentConcept.idealExplanation}
                             </ReactMarkdown>
                           </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </div>
-                  </div>
-                  {(() => {
-                    let prereqs: string[] = [];
-                    try {
-                      prereqs = JSON.parse(currentConcept.prerequisites);
-                    } catch (e) {}
-                    if (prereqs.length === 0) return null;
-                    return (
-                      <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-                        <Target className="w-4 h-4" />
-                        Prerequisites: {prereqs.join(", ")}
-                      </div>
-                    );
-                  })()}
-                  <Button
-                    onClick={handleStartConcept}
-                    className="w-full"
-                    data-testid="button-start-concept"
-                  >
-                    {questionMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                        Generating question...
-                      </>
-                    ) : (
-                      <>
-                        Ready to Practice{" "}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Question & Response */}
-            {(phase === "question" || phase === "responding") && (
-              <Card
-                className="border border-border/60"
-                data-testid="card-question"
-              >
-                <CardContent className="pt-6 pb-5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                      <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">
-                        {currentConcept.name}
-                      </h3>
-                      <div
-                        className="text-sm prose prose-sm dark:prose-invert max-w-none"
-                        data-testid="text-question"
-                      >
-                        <ReactMarkdown components={markdownComponents}>
-                          {question ||
-                            `Explain the key concepts of ${currentConcept.name} in your own words.`}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <VoiceVisualizer isActive={isRecording} />
-                    <Textarea
-                      placeholder="Type your explanation here... Be as detailed as you can!"
-                      value={response}
-                      onChange={(e) => setResponse(e.target.value)}
-                      rows={5}
-                      className={`resize-none transition-all duration-300 ${isRecording ? "border-primary shadow-lg shadow-primary/20" : ""}`}
-                      disabled={respondMutation.isPending}
-                    />
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground flex items-center gap-2">
-                        {isRecording && (
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        )}
-                        {response.length > 0
-                          ? `${response.split(/\s+/).filter(Boolean).length} words`
-                          : isRecording
-                            ? "Listening..."
-                            : "Start typing or speaking..."}
-                      </span>
-                      <div className="flex gap-2">
-                        <div className="relative">
-                          <AnimatePresence>
-                            {isRecording && (
-                              <motion.div
-                                initial={{ scale: 1, opacity: 0.5 }}
-                                animate={{ scale: 1.5, opacity: 0 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                                className="absolute inset-0 rounded-md bg-red-500 z-0"
-                              />
-                            )}
-                          </AnimatePresence>
+                          
                           <Button
-                            variant={isRecording ? "destructive" : "secondary"}
-                            onClick={toggleRecording}
-                            title={
-                              isRecording ? "Stop recording" : "Start recording"
-                            }
-                            className="relative z-10"
+                            onClick={handleStartConcept}
+                            className="w-full h-16 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                           >
-                            {isRecording ? (
-                              <>
-                                <MicOff className="w-4 h-4 mr-2" /> Stop
-                              </>
+                            {questionMutation.isPending ? (
+                              <div className="flex items-center gap-3">
+                                <Loader2 className="w-6 h-6 animate-spin" /> 
+                                Synthesizing Diagnostic Question...
+                              </div>
                             ) : (
-                              <>
-                                <Mic className="w-4 h-4 mr-2" /> Speak
-                              </>
+                              <div className="flex items-center gap-3">
+                                Begin Active Practice <ArrowRight className="w-6 h-6" />
+                              </div>
                             )}
                           </Button>
-                        </div>
-                        <Button
-                          data-testid="button-submit-response"
-                          onClick={handleSubmitResponse}
-                          disabled={
-                            !response.trim() ||
-                            respondMutation.isPending ||
-                            isRecording
-                          }
-                        >
-                          {respondMutation.isPending ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                              Scoring...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4 mr-2" /> Submit
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                    {/* Step 3: "I Don't Know" button */}
-                    <Button
-                      variant="secondary"
-                      size="lg"
-                      className="font-bold w-full sm:w-auto border-2 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground transition-all mt-4"
-                      onClick={handleIDontKnow}
-                      disabled={respondMutation.isPending}
-                      data-testid="button-i-dont-know"
-                    >
-                      Skip & Explain <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  )}
 
-            {/* Feedback */}
-            {phase === "feedback" && lastScore && (
-              <div className="space-y-4">
-                {/* ── REFLECTION PROMPT (Metacognition Loop) ── */}
-                <AnimatePresence>
-                  {showReflection && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      className="mb-6"
-                    >
-                      <Card className="border-primary/40 bg-primary/5 shadow-xl shadow-primary/10 overflow-hidden">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                              <Sparkles className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-primary">Your understanding jumped! 🚀</h3>
-                              <p className="text-xs text-muted-foreground">Take a moment to reflect on what changed in your thinking.</p>
-                            </div>
+                  {/* Phase: QUESTION */}
+                  {(phase === "question" || phase === "responding") && (
+                    <div className="space-y-8">
+                      <div className="flex items-center gap-4 mb-2">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                          <Lightbulb className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <h2 className="text-xl font-black font-display uppercase tracking-widest text-white/50">Diagnostic Challenge</h2>
+                      </div>
+
+                      <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden shadow-2xl">
+                        <CardContent className="p-10">
+                          <div className="prose dark:prose-invert prose-xl max-w-none mb-10 font-medium leading-relaxed">
+                            <ReactMarkdown components={markdownComponents}>
+                              {question || `Explain the core mechanism of ${currentConcept.name} in your own words.`}
+                            </ReactMarkdown>
                           </div>
 
-                          <div className="relative mb-4">
-                            <Quote className="absolute -top-1 -left-1 w-8 h-8 text-primary/10 -scale-x-100" />
-                            <Textarea 
-                              placeholder="What clicked for you? How would you explain this differently now?"
-                              className="min-h-[100px] bg-background/50 border-primary/20 focus:border-primary/40 relative z-10"
-                              value={reflectionText}
-                              onChange={(e) => setReflectionText(e.target.value)}
+                          <div className="relative group">
+                            <VoiceVisualizer isActive={isRecording} />
+                            <Textarea
+                              placeholder="Describe your reasoning here..."
+                              value={response}
+                              onChange={(e) => setResponse(e.target.value)}
+                              rows={6}
+                              className="text-lg bg-black/40 border-white/10 rounded-[1.5rem] p-8 focus:ring-primary/40 focus:border-primary/50 transition-all resize-none font-medium leading-relaxed"
+                              disabled={respondMutation.isPending}
                             />
+                            
+                            <div className="absolute bottom-6 right-6 flex gap-3">
+                              <Button
+                                variant={isRecording ? "destructive" : "secondary"}
+                                onClick={toggleRecording}
+                                className="h-12 w-12 rounded-xl bg-white/5 hover:bg-white/10 border-white/10"
+                              >
+                                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                              </Button>
+                              <Button
+                                onClick={handleSubmitResponse}
+                                disabled={!response.trim() || respondMutation.isPending || isRecording}
+                                className="h-12 px-8 rounded-xl bg-primary font-black shadow-lg shadow-primary/20"
+                              >
+                                {respondMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
+                                {respondMutation.isPending ? "Analyzing..." : "Submit Analysis"}
+                              </Button>
+                            </div>
                           </div>
 
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setShowReflection(false)}
+                          <div className="mt-8 flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground font-black uppercase tracking-widest opacity-40">
+                              {response.length > 0 ? `${response.split(/\s+/).filter(Boolean).length} words recorded` : "Ready for input"}
+                            </p>
+                            <Button
+                              variant="ghost"
+                              onClick={handleIDontKnow}
+                              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-white"
                             >
-                              Skip
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              disabled={!reflectionText.trim() || reflectionMutation.isPending}
-                              onClick={() => {
-                                if (currentConcept) {
-                                  reflectionMutation.mutate({
-                                    conceptId: currentConcept.id,
-                                    content: reflectionText
-                                  });
-                                }
-                              }}
-                            >
-                              {reflectionMutation.isPending ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                "Save Reflection"
-                              )}
+                              Unsure? Request Guided Explanation <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
-                    </motion.div>
+                    </div>
                   )}
-                </AnimatePresence>
 
-                {/* Score Header Card */}
-                <Card
-                  className="border border-border/60 overflow-hidden"
-                  data-testid="card-score"
-                >
-                  <CardContent className="pt-6 pb-5">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                        lastScore.score >= 0.7 ? "bg-emerald-500/10" : lastScore.score >= 0.4 ? "bg-amber-500/10" : "bg-rose-500/10"
-                      }`}>
-                        {scoreIcon(lastScore.score)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`text-3xl font-black ${scoreColor(lastScore.score)}`}
-                            data-testid="text-score"
-                          >
-                            {Math.round(lastScore.score * 100)}%
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            understanding
-                          </span>
-                          {lastScore.bloomLevel &&
-                            BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()] && (
-                              <Badge
-                                className={`ml-auto ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].bg} ${BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].color} border-none text-[10px] uppercase font-black tracking-widest`}
-                              >
-                                Bloom's: {BLOOMS_META[lastScore.bloomLevel.trim().toUpperCase()].label}
-                              </Badge>
-                            )}
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${lastScore.score * 100}%` }}
-                            transition={{ duration: 1.2, ease: "easeOut" }}
-                            className={`h-full rounded-full ${scoreBg(lastScore.score)}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AI Feedback text */}
-                    <div
-                      className="text-sm prose prose-sm dark:prose-invert max-w-none bg-muted/30 rounded-xl p-4 border border-border/30"
-                      data-testid="text-feedback"
-                    >
-                      <ReactMarkdown components={markdownComponents}>
-                        {lastScore.feedback}
-                      </ReactMarkdown>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* 4-Panel Diagnosis Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Panel 1: What You Understood */}
-                  <Card className="border-emerald-500/20 bg-emerald-500/5" data-testid="panel-strengths">
-                    <CardContent className="pt-4 pb-4 px-4">
-                      <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> What You Understood
-                      </p>
-                      <ul className="space-y-2">
-                        {lastScore.strengths.length > 0 ? lastScore.strengths.map((s, i) => (
-                          <li key={i} className="text-sm flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                            {s}
-                          </li>
-                        )) : (
-                          <li className="text-sm text-muted-foreground italic">Keep practicing to build understanding</li>
-                        )}
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  {/* Panel 2: What You Missed */}
-                  <Card className="border-rose-500/20 bg-rose-500/5" data-testid="panel-gaps">
-                    <CardContent className="pt-4 pb-4 px-4">
-                      <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <XCircle className="w-3.5 h-3.5" /> What You Missed
-                      </p>
-                      <ul className="space-y-2">
-                        {lastScore.gaps.length > 0 ? lastScore.gaps.map((g, i) => (
-                          <li key={i} className="text-sm flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
-                            {g}
-                          </li>
-                        )) : (
-                          <li className="text-sm text-muted-foreground italic">No gaps found — great work!</li>
-                        )}
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  {/* Panel 3: Why This Matters (Misconception) */}
-                  {(() => {
-                    const mc = lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION"
-                      ? (MISCONCEPTION_META[lastScore.misconceptionType] || MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING)
-                      : MISCONCEPTION_META.NO_MISCONCEPTION;
-                    const hasMisconception = lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION";
-                    return (
-                      <Card className={`border ${mc.border} ${mc.bg}`} data-testid="panel-misconception">
-                        <CardContent className="pt-4 pb-4 px-4">
-                          <p className={`text-[10px] font-black uppercase tracking-wider mb-2.5 flex items-center gap-1.5 ${mc.color}`}>
-                            <Target className="w-3.5 h-3.5" /> {hasMisconception ? "Misconception Detected" : "Diagnosis"}
-                          </p>
-                          {hasMisconception ? (
-                            <>
-                              <p className={`text-sm font-bold ${mc.color} mb-1`}>{mc.emoji} {mc.label}</p>
-                              {lastScore.misconceptionDetail && (
-                                <p className="text-sm text-muted-foreground leading-relaxed">{lastScore.misconceptionDetail}</p>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-2 italic">💡 {mc.remediation}</p>
-                            </>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">✅</span>
-                              <div>
-                                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No Misconceptions</p>
-                                <p className="text-xs text-muted-foreground">Accurate conceptual understanding demonstrated.</p>
+                  {/* Phase: FEEDBACK */}
+                  {phase === "feedback" && lastScore && (
+                    <div className="space-y-8">
+                      {/* Diagnostic Summary */}
+                      <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+                        <CardContent className="p-10">
+                          <div className="flex flex-col md:flex-row items-center gap-10 mb-12">
+                            <div className="relative shrink-0">
+                              <div className={`absolute inset-0 blur-3xl opacity-20 rounded-full ${lastScore.score >= 0.7 ? "bg-emerald-500" : lastScore.score >= 0.4 ? "bg-amber-500" : "bg-rose-500"}`} />
+                              <div className="relative bg-black/40 rounded-full p-2">
+                                <ProgressRing pct={Math.round(lastScore.score * 100)} size={160} stroke={12} color={lastScore.score >= 0.7 ? "#10b981" : lastScore.score >= 0.4 ? "#f59e0b" : "#f43f5e"} />
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <span className="text-5xl font-black font-display tracking-tighter">{Math.round(lastScore.score * 100)}%</span>
+                                  <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 opacity-50">Mastery</span>
+                                </div>
                               </div>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })()}
 
-                  {/* Panel 4: Your Next Best Activity */}
-                  <Card className="border-primary/20 bg-primary/5" data-testid="panel-next-activity">
-                    <CardContent className="pt-4 pb-4 px-4">
-                      <p className="text-[10px] font-black text-primary uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <Lightbulb className="w-3.5 h-3.5" /> Your Next Best Activity
-                      </p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {lastScore.score >= 0.7
-                          ? "🎯 You've mastered this! The system will advance you to the next concept with a harder question."
-                          : lastScore.score >= 0.4
-                          ? "🔄 Good start! Try the Socratic tutor below to address your specific gap, then retry with an easier question."
-                          : "📖 Let's go back to basics. An AI explanation is being generated, and you'll get a simpler question to rebuild your understanding."}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-
-            {/* Explanation, Socratic Tutor & Actions — shown during feedback phase */}
-            {phase === "feedback" && lastScore && (
-              <div className="space-y-4">
-                {/* AI Explanation — auto-triggered for low scores, manual button otherwise */}
-                {!explanation && (!lastScore || lastScore.score >= 0.5) && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={getExplanation}
-                    disabled={explainMutation.isPending}
-                    data-testid="button-get-explanation"
-                  >
-                    {explainMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" /> Get AI Explanation
-                      </>
-                    )}
-                  </Button>
-                )}
-                {!explanation &&
-                  lastScore &&
-                  lastScore.score < 0.5 &&
-                  explainMutation.isPending && (
-                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />{" "}
-                      Auto-generating explanation for you...
-                    </div>
-                  )}
-
-                {explanation && (
-                  <Card
-                    className="border border-primary/20 bg-primary/5"
-                    data-testid="card-explanation"
-                  >
-                    <CardContent className="pt-5 pb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        <h4 className="font-semibold text-sm">
-                          AI Explanation
-                        </h4>
-                      </div>
-                      <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown components={markdownComponents}>
-                          {explanation}
-                        </ReactMarkdown>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Socratic Chat UI */}
-                {isSocraticActive && (
-                  <Card
-                    className="border border-blue-500/30 bg-blue-500/5 mb-4"
-                    data-testid="card-socratic"
-                  >
-                    <CardContent className="pt-5 pb-4 flex flex-col gap-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare className="w-4 h-4 text-blue-500" />
-                        <h4 className="font-semibold text-sm text-blue-600 dark:text-blue-400">
-                          Socratic Tutor
-                        </h4>
-                      </div>
-
-                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                        {socraticHistory.map((msg, i) => (
-                          <div
-                            key={i}
-                            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`prose prose-sm dark:prose-invert max-w-none max-w-[85%] rounded-xl px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-blue-100 dark:bg-blue-900/40 text-foreground"}`}
-                            >
-                              <ReactMarkdown components={markdownComponents}>
-                                {msg.content}
-                              </ReactMarkdown>
+                            <div className="flex-1 text-center md:text-left">
+                              <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                                {lastScore.bloomLevel && (
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest py-1 px-3">
+                                    Cognitive Level: {lastScore.bloomLevel}
+                                  </Badge>
+                                )}
+                                <Badge className="bg-white/5 text-white/50 border-white/10 text-[10px] font-black uppercase tracking-widest py-1 px-3">
+                                  Session #{sessionId}
+                                </Badge>
+                              </div>
+                              <div className="prose dark:prose-invert prose-lg max-w-none text-white/90 font-medium">
+                                <ReactMarkdown components={markdownComponents}>
+                                  {lastScore.feedback}
+                                </ReactMarkdown>
+                              </div>
                             </div>
                           </div>
-                        ))}
-                        {socraticMutation.isPending && (
-                          <div className="flex justify-start">
-                            <div className="max-w-[85%] rounded-xl px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/40 flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />{" "}
-                              <span className="text-muted-foreground text-xs italic">
-                                Tutor is typing...
-                              </span>
+
+                          {/* 4-Panel Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="p-8 rounded-[2rem] bg-emerald-500/[0.03] border border-emerald-500/10">
+                              <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
+                                <h4 className="text-sm font-black uppercase tracking-widest text-emerald-400">Strengths</h4>
+                              </div>
+                              <ul className="space-y-3">
+                                {lastScore.strengths.map((s, i) => (
+                                  <li key={i} className="text-sm text-white/80 font-medium flex items-start gap-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                                    {s}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
+
+                            <div className="p-8 rounded-[2rem] bg-rose-500/[0.03] border border-rose-500/10">
+                              <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400"><XCircle className="w-5 h-5" /></div>
+                                <h4 className="text-sm font-black uppercase tracking-widest text-rose-400">Conceptual Gaps</h4>
+                              </div>
+                              <ul className="space-y-3">
+                                {lastScore.gaps.map((g, i) => (
+                                  <li key={i} className="text-sm text-white/80 font-medium flex items-start gap-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-2 shrink-0" />
+                                    {g}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            {/* Misconception Diagnosis */}
+                            {(() => {
+                              const mc = lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION"
+                                ? (MISCONCEPTION_META[lastScore.misconceptionType] || MISCONCEPTION_META.INCOMPLETE_UNDERSTANDING)
+                                : MISCONCEPTION_META.NO_MISCONCEPTION;
+                              return (
+                                <div className={`p-8 rounded-[2rem] border ${mc.border} ${mc.bg} backdrop-blur-3xl`}>
+                                  <div className="flex items-center gap-3 mb-6">
+                                    <div className={`p-2 rounded-lg ${mc.bg} ${mc.color}`}><Target className="w-5 h-5" /></div>
+                                    <h4 className={`text-sm font-black uppercase tracking-widest ${mc.color}`}>AI Diagnosis</h4>
+                                  </div>
+                                  <div className="flex items-start gap-4">
+                                    <span className="text-4xl">{mc.emoji}</span>
+                                    <div>
+                                      <p className={`text-lg font-black font-display mb-2 ${mc.color}`}>{mc.label}</p>
+                                      <p className="text-sm text-white/70 font-medium leading-relaxed">{lastScore.misconceptionDetail || "Accurate reasoning path identified."}</p>
+                                      {mc.remediation && <p className="text-xs text-muted-foreground mt-4 italic font-medium opacity-60">💡 {mc.remediation}</p>}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            <div className="p-8 rounded-[2rem] bg-primary/[0.03] border border-primary/10">
+                              <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-lg bg-primary/10 text-primary"><Sparkles className="w-5 h-5" /></div>
+                                <h4 className="font-black uppercase tracking-widest text-primary text-[10px]">Prescribed Action</h4>
+                              </div>
+                              <p className="text-sm text-white/80 font-medium leading-relaxed">
+                                {lastScore.score >= 0.7
+                                  ? "🎯 Concept Mastered. The system will advance you to the next challenge phase."
+                                  : lastScore.score >= 0.4
+                                  ? "🔄 Partial Gap detected. Engage the Socratic Tutor for a guided conceptual rebuild."
+                                  : "📖 Re-establishing Foundations. Requesting an in-depth AI explanation to resolve core confusion."}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* ── SECONDARY ACTIONS ── */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Explanation Card */}
+                        <AnimatePresence>
+                          {explanation && (
+                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                              <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.01] backdrop-blur-3xl overflow-hidden shadow-xl">
+                                <CardHeader className="p-8 pb-0 flex flex-row items-center gap-3">
+                                  <div className="p-2 rounded-xl bg-primary/10 text-primary"><Sparkles className="w-5 h-5" /></div>
+                                  <CardTitle className="text-lg font-black font-display">Deep-Dive Explanation</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8">
+                                  <div className="prose dark:prose-invert prose-sm max-w-none text-white/70 leading-relaxed font-medium">
+                                    <ReactMarkdown components={markdownComponents}>
+                                      {explanation}
+                                    </ReactMarkdown>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Socratic Chat */}
+                        {isSocraticActive ? (
+                          <Card className="rounded-[2.5rem] border-blue-500/20 bg-blue-500/[0.02] backdrop-blur-3xl overflow-hidden flex flex-col h-[500px] shadow-2xl">
+                            <CardHeader className="p-6 border-b border-white/5 flex flex-row items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400"><MessageSquare className="w-5 h-5" /></div>
+                                <h4 className="font-black font-display text-blue-400 uppercase tracking-widest text-xs">Socratic Tutor</h4>
+                              </div>
+                              <Button variant="ghost" size="icon" onClick={() => setIsSocraticActive(false)} className="rounded-full"><X className="w-4 h-4" /></Button>
+                            </CardHeader>
+                            <CardContent className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+                              {socraticHistory.map((msg, i) => (
+                                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                                  <div className={`max-w-[85%] rounded-2xl px-5 py-3 text-sm font-medium leading-relaxed ${msg.role === "user" ? "bg-primary text-white shadow-lg shadow-primary/10" : "bg-white/5 text-white/80 border border-white/5"}`}>
+                                    <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+                                  </div>
+                                </div>
+                              ))}
+                              {socraticMutation.isPending && (
+                                <div className="flex justify-start">
+                                  <div className="bg-white/5 rounded-2xl px-5 py-3 flex items-center gap-3">
+                                    <div className="flex gap-1">
+                                      <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                      <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                      <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                    </div>
+                                    <span className="text-xs font-black uppercase tracking-widest text-blue-400/50">Analyzing response...</span>
+                                  </div>
+                                </div>
+                              )}
+                            </CardContent>
+                            <div className="p-6 border-t border-white/5 bg-black/20">
+                              <div className="relative">
+                                <Textarea 
+                                  value={socraticInput}
+                                  onChange={(e) => setSocraticInput(e.target.value)}
+                                  placeholder="Respond to your tutor..."
+                                  className="pr-14 min-h-[80px] bg-white/[0.03] border-white/10 rounded-2xl p-4 focus:ring-blue-500/30"
+                                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSocraticSubmit(); }}}
+                                />
+                                <Button onClick={handleSocraticSubmit} disabled={!socraticInput.trim() || socraticMutation.isPending} className="absolute bottom-3 right-3 h-10 w-10 rounded-xl bg-blue-500 shadow-lg shadow-blue-500/20">
+                                  <Send className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ) : (
+                          <div className="flex flex-col gap-4">
+                            {!explanation && (
+                              <Button 
+                                variant="outline" 
+                                onClick={getExplanation} 
+                                disabled={explainMutation.isPending}
+                                className="h-20 rounded-[1.5rem] border-white/10 bg-white/[0.02] hover:bg-white/5 flex flex-col items-center justify-center gap-1 group transition-all"
+                              >
+                                <div className="flex items-center gap-2 text-primary group-hover:scale-110 transition-transform">
+                                  <Sparkles className="w-5 h-5" />
+                                  <span className="font-black uppercase tracking-widest text-xs">Deep-Dive Explanation</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter opacity-50">Generate comprehensive conceptual overview</span>
+                              </Button>
+                            )}
+                            
+                            {lastScore.score < 0.7 && lastScore.misconceptionType && lastScore.misconceptionType !== "NO_MISCONCEPTION" && (
+                              <Button 
+                                onClick={handleStartSocratic}
+                                className="h-20 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/10 flex flex-col items-center justify-center gap-1 group transition-all"
+                              >
+                                <div className="flex items-center gap-2 text-white group-hover:scale-110 transition-transform">
+                                  <MessageSquare className="w-5 h-5" />
+                                  <span className="font-black uppercase tracking-widest text-xs">Socratic Review Session</span>
+                                </div>
+                                <span className="text-[10px] text-white/50 font-bold uppercase tracking-tighter">Fix conceptual gaps through guided reasoning</span>
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex gap-2 mt-2">
-                        <Textarea
-                          value={socraticInput}
-                          onChange={(e) => setSocraticInput(e.target.value)}
-                          placeholder="Reply to the tutor..."
-                          rows={2}
-                          className="resize-none min-h-[60px]"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSocraticSubmit();
-                            }
-                          }}
-                        />
-                        <Button
-                          onClick={handleSocraticSubmit}
-                          disabled={
-                            !socraticInput.trim() || socraticMutation.isPending
-                          }
-                          className="h-auto"
-                          aria-label="Send message"
-                        >
-                          <Send className="w-4 h-4" />
-                        </Button>
+                      {/* Main Action Bar */}
+                      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 z-50">
+                        <div className="p-4 rounded-[2rem] bg-black/40 backdrop-blur-3xl border border-white/10 shadow-2xl flex gap-4">
+                          {lastScore.score < 0.6 && (
+                            <Button 
+                              variant="outline" 
+                              onClick={handleRetry} 
+                              className="flex-1 h-14 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-xs"
+                            >
+                              Retry Concept
+                            </Button>
+                          )}
+                          <Button 
+                            onClick={handleNext} 
+                            className="flex-[2] h-14 rounded-2xl bg-primary font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+                          >
+                            {currentConceptIndex < totalConcepts - 1 ? "Advance to Next Concept" : "Complete Study Session"}
+                            <ArrowRight className="w-5 h-5 ml-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 text-muted-foreground hover:text-foreground w-full"
-                        onClick={() => setIsSocraticActive(false)}
-                      >
-                        <X className="w-3 h-3 mr-1" /> Close Tutor
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Action buttons */}
-                <div className="flex gap-3">
-                  {lastScore.score < 0.7 &&
-                    !isSocraticActive &&
-                    lastScore.misconceptionType &&
-                    lastScore.misconceptionType !== "NO_MISCONCEPTION" && (
-                      <Button
-                        variant="default"
-                        onClick={handleStartSocratic}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-none"
-                        data-testid="button-socratic"
-                      >
-                        <MessageSquare className="w-4 h-4 mr-2" /> Start
-                        Socratic Review
-                      </Button>
-                    )}
-                  {lastScore.score < 0.6 && (
-                    <Button
-                      variant="outline"
-                      onClick={handleRetry}
-                      className="flex-1"
-                      data-testid="button-retry"
-                    >
-                      Try a Simpler Question
-                    </Button>
+                    </div>
                   )}
-                  <Button
-                    onClick={handleNext}
-                    className="flex-1"
-                    data-testid="button-next"
-                  >
-                    {currentConceptIndex < totalConcepts - 1 ? (
-                      lastScore.score < 0.4 ? (
-                        <>
-                          Review Again <ArrowRight className="w-4 h-4 ml-2" />
-                        </>
-                      ) : (
-                        <>
-                          Next Concept <ArrowRight className="w-4 h-4 ml-2" />
-                        </>
-                      )
-                    ) : (
-                      <>
-                        Complete Session{" "}
-                        <CheckCircle2 className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
 
+      {/* Exit Confirmation */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent className="border-border/60 bg-card/90 backdrop-blur-xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" /> End Session?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Are you sure you want to exit this learning session? Your progress
-              on mastered concepts will be saved, but you'll lose the current
-              momentum.
+        <AlertDialogContent className="rounded-[2.5rem] border-white/10 bg-black/90 backdrop-blur-3xl overflow-hidden ring-1 ring-white/10">
+          <AlertDialogHeader className="p-6">
+            <div className="w-16 h-16 rounded-3xl bg-rose-500/10 flex items-center justify-center mb-6 ring-1 ring-rose-500/30">
+              <AlertTriangle className="w-8 h-8 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-3xl font-black font-display tracking-tighter">End Session?</AlertDialogTitle>
+            <AlertDialogDescription className="text-lg text-white/60 font-medium">
+              Your current progress in this concept will be lost, but your overall mastery points will be saved.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-background/50">
-              Keep Learning
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => setLocation("/subjects")}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              Exit Session
-            </AlertDialogAction>
+          <AlertDialogFooter className="p-6 bg-white/[0.02] border-t border-white/5">
+            <AlertDialogCancel className="h-14 rounded-2xl bg-transparent border-white/10 font-black uppercase tracking-widest text-xs">Stay Focused</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setLocation("/subjects")} className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 font-black uppercase tracking-widest text-xs shadow-xl shadow-rose-600/20">End Session</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reflection Portal */}
+      <AnimatePresence>
+        {showReflection && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-xl">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-xl">
+              <Card className="rounded-[3rem] border-primary/30 bg-black/40 backdrop-blur-3xl shadow-3xl ring-1 ring-primary/20 overflow-hidden">
+                <CardContent className="p-12 text-center">
+                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-primary/20 ring-1 ring-primary/30">
+                    <Sparkles className="w-10 h-10 text-primary" />
+                  </div>
+                  <h3 className="text-4xl font-black font-display tracking-tighter mb-4 text-white">Breakthrough Moment!</h3>
+                  <p className="text-lg text-white/60 font-medium mb-10 leading-relaxed">
+                    You've shown a massive jump in understanding. What was the "Aha!" moment? Reflecting on this helps lock it into long-term memory.
+                  </p>
+                  <Textarea 
+                    value={reflectionText}
+                    onChange={(e) => setReflectionText(e.target.value)}
+                    placeholder="Describe your breakthrough..."
+                    className="mb-10 min-h-[160px] text-lg bg-white/5 border-white/10 rounded-[2rem] p-8 focus:ring-primary/40 text-white"
+                  />
+                  <div className="flex gap-4">
+                    <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs" onClick={() => setShowReflection(false)}>Skip</Button>
+                    <Button 
+                      className="flex-[2] h-14 rounded-2xl bg-primary font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+                      onClick={() => { if (currentConcept) reflectionMutation.mutate({ conceptId: currentConcept.id, content: reflectionText }); }}
+                      disabled={!reflectionText.trim() || reflectionMutation.isPending}
+                    >
+                      {reflectionMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Capture Breakthrough"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

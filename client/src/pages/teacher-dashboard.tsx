@@ -72,13 +72,13 @@ type Classroom = {
 function ScorePill({ score }: { score: number }) {
   const pct = Math.round(score * 100);
   const color = score >= 0.7
-    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
     : score >= 0.4
-    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20";
+    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+    : "bg-rose-500/10 text-rose-400 border-rose-500/20";
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${color}`}>
-      {pct}%
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${color}`}>
+      {pct}% Mastery
     </span>
   );
 }
@@ -91,11 +91,9 @@ function MisconceptionHeatmap() {
 
   if (isLoading) {
     return (
-      <Card className="border border-border/50 mb-8">
-        <CardContent className="py-12 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
     );
   }
 
@@ -105,20 +103,12 @@ function MisconceptionHeatmap() {
 
   if (heatmap.length === 0) {
     return (
-      <Card className="border border-border/50 mb-8">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Flame className="w-4 h-4 text-rose-500" /> Misconception Heatmap
-          </CardTitle>
-          <CardDescription>Classroom-wide misconception analysis across all concepts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-10 gap-3">
-            <Brain className="w-10 h-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground text-center">
-              No misconception data yet. As students answer questions,<br />their misconceptions will appear here.
-            </p>
-          </div>
+      <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+        <CardContent className="p-16 flex flex-col items-center justify-center gap-6 opacity-40">
+          <Brain className="w-16 h-16" />
+          <p className="text-xs font-black uppercase tracking-widest text-center leading-relaxed">
+            No diagnostic data available.<br />Waiting for conceptual interactions.
+          </p>
         </CardContent>
       </Card>
     );
@@ -127,104 +117,95 @@ function MisconceptionHeatmap() {
   const mcTypes = Object.keys(MISCONCEPTION_META);
 
   return (
-    <Card className="border border-rose-500/20 bg-gradient-to-br from-rose-500/5 via-background to-background mb-8 shadow-lg shadow-rose-500/5">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Flame className="w-4 h-4 text-rose-500" /> Misconception Heatmap
-          <Badge className="ml-auto bg-rose-500/10 text-rose-500 border-rose-500/20 text-[10px] font-black">
-            {totalMisconceptions} total
-          </Badge>
-        </CardTitle>
-        <CardDescription>Where your class is confused — aggregated across all students</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Summary bar */}
-        <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overall Distribution</p>
-          <div className="flex gap-3 flex-wrap">
-            {mcTypes.map(type => {
-              const count = summary[type] || 0;
-              if (count === 0) return null;
-              const meta = MISCONCEPTION_META[type];
-              const pct = Math.round((count / totalMisconceptions) * 100);
-              return (
-                <motion.div
-                  key={type}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${meta.border} ${meta.bg}`}
-                >
-                  <span className="text-lg leading-none">{meta.emoji}</span>
-                  <div>
-                    <div className={`text-xs font-bold ${meta.color}`}>{meta.label}</div>
-                    <div className="text-[10px] text-muted-foreground font-bold">{count} ({pct}%)</div>
-                  </div>
-                </motion.div>
-              );
-            })}
+    <Card className="rounded-[2.5rem] border-rose-500/10 bg-rose-500/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-rose-500/5 overflow-hidden">
+      <CardHeader className="p-8 pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+              <Flame className="w-5 h-5 text-rose-500" /> Cognitive Heatmap
+            </CardTitle>
+            <CardDescription className="text-white/40 font-medium">Aggregated conceptual confusion across all nodes</CardDescription>
           </div>
+          <Badge className="bg-rose-500/10 text-rose-400 border-none text-[10px] font-black uppercase tracking-widest py-1.5 px-4 rounded-full">
+            {totalMisconceptions} Flags
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-8 pt-4 space-y-12">
+        {/* Summary distribution */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {mcTypes.map(type => {
+            const count = summary[type] || 0;
+            if (count === 0) return null;
+            const meta = MISCONCEPTION_META[type];
+            const pct = Math.round((count / totalMisconceptions) * 100);
+            return (
+              <motion.div
+                key={type}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`p-4 rounded-3xl border ${meta.border} ${meta.bg} backdrop-blur-3xl flex flex-col items-center text-center`}
+              >
+                <span className="text-3xl mb-3">{meta.emoji}</span>
+                <p className={`text-[8px] font-black uppercase tracking-tighter ${meta.color} mb-1`}>{meta.label}</p>
+                <p className="text-xl font-black">{count}</p>
+                <p className="text-[10px] text-white/20 font-black uppercase">{pct}%</p>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Per-concept heatmap grid */}
-        <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">By Concept (sorted by severity)</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/40">
-                  <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground min-w-[160px]">Concept</th>
-                  {mcTypes.map(type => (
-                    <th key={type} className="text-center py-2 px-1.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground min-w-[50px]" title={MISCONCEPTION_META[type].label}>
-                      {MISCONCEPTION_META[type].emoji}
-                    </th>
-                  ))}
-                  <th className="text-center py-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/20">
-                {heatmap.slice(0, 10).map((entry, idx) => (
-                  <motion.tr
-                    key={entry.conceptId}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.03 }}
-                    className="hover:bg-muted/20 transition-colors"
-                  >
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{entry.conceptName}</span>
-                        <Badge variant="outline" className="text-[9px] py-0 shrink-0">{entry.subject}</Badge>
-                      </div>
-                    </td>
-                    {mcTypes.map(type => {
-                      const count = entry.misconceptions[type] || 0;
-                      if (count === 0) {
-                        return <td key={type} className="text-center py-2.5 px-1.5"><span className="text-muted-foreground/20 text-xs">—</span></td>;
-                      }
-                      // Heat intensity: higher count = more intense background
-                      const intensity = Math.min(1, count / 5);
-                      const meta = MISCONCEPTION_META[type];
-                      return (
-                        <td key={type} className="text-center py-2.5 px-1.5">
-                          <span
-                            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black ${meta.color} transition-all hover:scale-110`}
-                            style={{ backgroundColor: `color-mix(in srgb, currentColor ${Math.round(intensity * 15 + 5)}%, transparent)` }}
-                          >
-                            {count}
-                          </span>
-                        </td>
-                      );
-                    })}
-                    <td className="text-center py-2.5 px-2">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-black">
-                        {entry.total}
-                      </span>
-                    </td>
-                  </motion.tr>
+        {/* Detailed heatmap grid */}
+        <div className="overflow-x-auto rounded-3xl border border-white/5 bg-black/20">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/5">
+                <th className="text-left py-6 px-6 text-[10px] font-black uppercase tracking-widest text-white/20 min-w-[200px]">Conceptual Node</th>
+                {mcTypes.map(type => (
+                  <th key={type} className="text-center py-6 px-3 text-lg" title={MISCONCEPTION_META[type].label}>
+                    {MISCONCEPTION_META[type].emoji}
+                  </th>
                 ))}
-              </tbody>
-            </table>
-          </div>
+                <th className="text-center py-6 px-6 text-[10px] font-black uppercase tracking-widest text-white/20">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {heatmap.slice(0, 10).map((entry, idx) => (
+                <tr key={entry.conceptId} className="hover:bg-white/[0.01] transition-colors">
+                  <td className="py-5 px-6">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-black font-display text-sm uppercase tracking-tight">{entry.conceptName}</span>
+                      <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">{entry.subject}</span>
+                    </div>
+                  </td>
+                  {mcTypes.map(type => {
+                    const count = entry.misconceptions[type] || 0;
+                    if (count === 0) return <td key={type} className="text-center py-5 px-3 opacity-10 font-black text-xs">—</td>;
+                    const intensity = Math.min(1, count / 5);
+                    const meta = MISCONCEPTION_META[type];
+                    return (
+                      <td key={type} className="text-center py-5 px-3">
+                        <div 
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto text-sm font-black ${meta.color} shadow-lg`}
+                          style={{ 
+                            backgroundColor: `color-mix(in srgb, currentColor ${Math.round(intensity * 20 + 10)}%, transparent)`,
+                            boxShadow: `0 0 20px color-mix(in srgb, currentColor 10%, transparent)`
+                          }}
+                        >
+                          {count}
+                        </div>
+                      </td>
+                    );
+                  })}
+                  <td className="text-center py-5 px-6">
+                    <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto text-sm font-black">
+                      {entry.total}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </CardContent>
     </Card>
@@ -257,112 +238,101 @@ function InterventionQueue() {
     queryFn: async () => (await apiRequest("GET", "/api/teacher/interventions")).json(),
   });
 
-  if (isLoading) {
-    return (
-      <Card className="border border-border/50 mb-8">
-        <CardContent className="py-12 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        </CardContent>
-      </Card>
-    );
-  }
+  if (isLoading) return null;
 
   const queue = data?.queue || [];
   const topMc = data?.topMisconception;
   const stats = data?.stats || { atRisk: 0, total: 0 };
 
   return (
-    <Card className="border border-border/50 mb-8 overflow-hidden">
-      <CardHeader className="pb-3">
+    <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden mb-8">
+      <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" /> Intervention Queue
+            <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400" /> Intervention Queue
             </CardTitle>
-            <CardDescription>Students struggling with recurring misconceptions</CardDescription>
+            <CardDescription className="text-white/40 font-medium">Prioritized cognitive friction points requiring attention</CardDescription>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {stats.atRisk > 0 && (
-              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-bold gap-1">
-                <Flame className="w-3 h-3" /> {stats.atRisk} Critical
+              <Badge className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-black uppercase tracking-widest py-1.5 px-4 rounded-full gap-2">
+                <Flame className="w-4 h-4 animate-pulse" /> {stats.atRisk} Critical
               </Badge>
             )}
-            <Badge variant="outline" className="text-xs">
-              {stats.total} Students
+            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-white/10 py-1.5 px-4 rounded-full">
+              {stats.total} Total
             </Badge>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        {/* Top Misconception Alert */}
+      <CardContent className="p-8 pt-4">
+        {/* Top Mc Highlight */}
         {topMc && (
-          <div className="mb-4 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Brain className="w-5 h-5 text-amber-500" />
+          <div className="mb-8 p-6 rounded-3xl bg-amber-500/[0.03] border border-amber-500/10 flex items-center gap-6">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/10">
+              <Brain className="w-7 h-7 text-amber-400" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                Most Common Misconception
-              </p>
-              <p className="text-sm font-medium">
-                {topMc.label} — detected {topMc.count} times across your classrooms
+            <div className="flex-1">
+              <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Dominant Class Friction</p>
+              <p className="text-xl font-black font-display uppercase tracking-tight">
+                {topMc.label} <span className="text-white/20 ml-2">({topMc.count} Occurrences)</span>
               </p>
             </div>
+            <Button variant="outline" size="sm" className="rounded-xl border-amber-500/20 text-amber-400 hover:bg-amber-500/10 font-black uppercase tracking-widest text-[10px] h-10 px-6">
+              View Remediation
+            </Button>
           </div>
         )}
 
         {queue.length > 0 ? (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {queue.map((item, idx) => {
               const mc = MISCONCEPTION_META[item.lastMisconception];
               return (
                 <motion.div
                   key={`${item.studentId}-${item.conceptId}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.03 }}
-                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all hover:shadow-sm ${
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`p-6 rounded-[2rem] border backdrop-blur-3xl flex items-center gap-6 group transition-all hover:scale-[1.02] ${
                     item.priority === "critical"
-                      ? "bg-rose-500/5 border-rose-500/20"
-                      : "bg-amber-500/5 border-amber-500/20"
+                      ? "bg-rose-500/[0.03] border-rose-500/10"
+                      : "bg-amber-500/[0.03] border-amber-500/10"
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    item.priority === "critical" ? "bg-rose-500/10" : "bg-amber-500/10"
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
+                    item.priority === "critical" ? "bg-rose-500/10 text-rose-400" : "bg-amber-500/10 text-amber-400"
                   }`}>
-                    {item.priority === "critical"
-                      ? <Flame className="w-4 h-4 text-rose-500" />
-                      : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                    {item.priority === "critical" ? <Flame className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold truncate">{item.studentName}</p>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{item.subject}</Badge>
+                    <div className="flex items-center gap-3 mb-1">
+                      <p className="font-black font-display text-sm uppercase tracking-tight truncate">{item.studentName}</p>
+                      <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-white/5">{item.subject}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Struggling with <span className="font-semibold text-foreground">{item.conceptName}</span>
-                      {" "} · {item.attempts} attempts · avg {Math.round(item.avgScore * 100)}%
+                    <p className="text-xs text-white/40 font-medium">
+                      Confusion in <span className="text-white">{item.conceptName}</span>
                     </p>
                   </div>
                   {mc && (
-                    <Badge className={`${mc.bg} ${mc.color} border ${mc.border} text-[10px] font-bold shrink-0`}>
-                      {mc.emoji} {mc.label}
-                    </Badge>
+                    <div className="text-center shrink-0">
+                      <div className="text-2xl mb-1">{mc.emoji}</div>
+                      <p className={`text-[8px] font-black uppercase tracking-tighter ${mc.color}`}>{mc.label}</p>
+                    </div>
                   )}
                 </motion.div>
               );
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          <div className="flex flex-col items-center justify-center py-16 gap-6 opacity-40">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
+              <CheckCircle2 className="w-10 h-10 text-emerald-400" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">All Clear!</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                No students are currently flagged for intervention.
-              </p>
+              <p className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-1">Cohesion Optimal</p>
+              <p className="text-lg font-black font-display uppercase tracking-tight">No active interventions required</p>
             </div>
           </div>
         )}
@@ -567,7 +537,6 @@ export default function TeacherDashboard() {
   const totalInteractions = students?.reduce((acc, s) => acc + s.totalInteractions, 0) || 0;
   const totalMastered = students?.reduce((acc, s) => acc + s.masteryCount, 0) || 0;
 
-  // Chart data — top 8 students by avg score
   const chartData = (students || [])
     .slice()
     .sort((a, b) => b.avgScore - a.avgScore)
@@ -578,463 +547,578 @@ export default function TeacherDashboard() {
     }));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white selection:bg-primary/30 selection:text-primary-foreground overflow-x-hidden">
       <TutorialOverlay role="educator" />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-
-        {/* ── HEADER ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="mb-2 -ml-2">
-              <ArrowLeft className="w-4 h-4 mr-1" /> Home
-            </Button>
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-extrabold flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <GraduationCap className="w-6 h-6 text-primary" />
-                </div>
-                Educator Dashboard
-              </h1>
-            </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              Welcome back{student?.name ? `, ${student.name}` : ""}. Here's how your students are doing.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button 
-              className="w-full sm:w-auto bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-500/20 text-white"
-              onClick={() => setShowWizard(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" /> Assign Magic
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => logout()} aria-label="Logout">
-              <LogOut className="w-4 h-4 mr-2" /> Logout
-            </Button>
-          </div>
-        </div>
-
-        <AssignmentWizard 
-          open={showWizard} 
-          onOpenChange={setShowWizard} 
-          classrooms={classrooms || []} 
-        />
-
-        {/* ── STATS ROW ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: "Enrolled Students", value: students?.length || 0,   icon: Users,          color: "text-primary",       bg: "bg-primary/10" },
-            { label: "Class Avg Score",   value: `${Math.round(avgClassScore * 100)}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-            { label: "AI Interactions",   value: totalInteractions,        icon: Activity,       color: "text-blue-600",      bg: "bg-blue-500/10" },
-            { label: "Concepts Mastered", value: totalMastered,            icon: CheckCheck,     color: "text-violet-600",    bg: "bg-violet-500/10" },
-          ].map((stat, idx) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-            >
-              <Card className="glass-card border border-border/40 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                <CardContent className="pt-5 pb-4">
-                  <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                  <p className="text-xs text-muted-foreground font-medium mb-0.5">{stat.label}</p>
-                  <p className="text-2xl font-black">{stat.value}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          {/* ── CLASSROOMS ── */}
-          <div className="lg:col-span-1">
-            <Card className="glass-card border border-border/40 h-full">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">My Classrooms</CardTitle>
-                <CardDescription>Share the code with your students</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Create New</p>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="e.g. Bio 101 – Fall 2026"
-                        value={newClassName}
-                        onChange={e => setNewClassName(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
-                        className="text-sm bg-background/50"
-                      />
-                      <Button size="sm" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="shadow-lg shadow-primary/20 shrink-0" aria-label="Create classroom">
-                        {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Join Existing</p>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter 6-char code"
-                        value={joinCode}
-                        onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                        onKeyDown={e => e.key === "Enter" && handleJoinClassroom()}
-                        maxLength={6}
-                        className="text-sm bg-background/50 font-mono"
-                      />
-                      <Button variant="outline" size="sm" onClick={handleJoinClassroom} disabled={joining || joinCode.length !== 6} className="shrink-0">
-                        {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {classrooms && classrooms.length > 0 ? (
-                  <div className="space-y-3 pt-4 border-t border-border/40 mt-2">
-                    {classrooms.map((c) => (
-                      <div key={c.id} className="p-4 border border-border/40 rounded-2xl bg-muted/20 backdrop-blur-sm group hover:border-primary/30 transition-all">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{c.name}</p>
-                          <div className="flex items-center gap-2">
-                            {c.isOwner ? (
-                              <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-none">Owner</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px]">Joined</Badge>
-                            )}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => c.isOwner ? handleDeleteClassroom(c.id, c.name) : handleLeaveClassroom(c.id, c.name)}
-                              aria-label={c.isOwner ? "Delete classroom" : "Leave classroom"}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between bg-background/60 rounded-xl px-3 py-2 border border-border/30">
-                          <code className="text-xl font-black tracking-[0.3em] text-primary">{c.code}</code>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 px-3 text-xs gap-1.5 font-bold hover:bg-primary/10 transition-all"
-                              onClick={() => handleCopy(c.code)}
-                            >
-                              {copied === c.code ? <CheckCheck className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                              Copy
-                            </Button>
-                            {c.isOwner && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 px-3 text-xs gap-1.5 border-primary/40 hover:bg-primary hover:text-primary-foreground font-bold shadow-sm transition-all relative overflow-hidden group/btn"
-                                onClick={() => {
-                                  setLiveUpdates([]);
-                                  setActiveLiveRoom(c);
-                                }}
-                              >
-                                <div className="absolute inset-0 bg-primary/10 animate-pulse group-hover/btn:hidden" />
-                                <Activity className="w-4 h-4 relative z-10" />
-                                <span className="relative z-10">Go Live</span>
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
-                    <BookOpen className="w-10 h-10 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">No classrooms yet.<br />Create or join one above.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* ── CLASS PERFORMANCE CHART ── */}
-          <div className="lg:col-span-2">
-            <Card className="border border-border/50 h-full">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" /> Student Score Overview
-                </CardTitle>
-                <CardDescription>Average score per enrolled student</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={chartData} barCategoryGap="30%">
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={v => `${v}%`} />
-                      <Tooltip
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(240 6% 20%)", background: "hsl(240 10% 10%)" }}
-                        formatter={(v: number) => [`${v}%`, "Avg Score"]}
-                      />
-                      <Bar
-                        dataKey="score"
-                        fill="hsl(239 84% 67%)"
-                        radius={[6, 6, 0, 0]}
-                        barSize={32}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[220px] gap-3">
-                    <Users className="w-10 h-10 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground text-center">
-                      No students enrolled yet.<br />Create a classroom and share the code!
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* ── ASSIGNMENTS LIST ── */}
-        <Card className="border border-border/50 mb-8 overflow-hidden">
-          <CardHeader className="bg-muted/10 pb-4 border-b border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-primary" /> Active Assignments
-                </CardTitle>
-                <CardDescription className="mt-1">Assignments ready for grading</CardDescription>
-              </div>
-              <Button size="sm" onClick={() => setShowWizard(true)}>
-                <Plus className="w-4 h-4 mr-1" /> New
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border/50">
-              {assignments?.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
-                  <BookOpen className="w-8 h-8 opacity-50" />
-                  <p>No active assignments. Click "New" to create one.</p>
-                </div>
-              ) : (
-                assignments?.map(assignment => (
-                  <div key={assignment.id} className="p-4 flex items-center justify-between hover:bg-muted/5 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-5 h-5 text-violet-500" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold">{assignment.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {assignment.classroomName} • {assignment.pendingGrades} pending grades • {new Date(assignment.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleExportGrades(assignment.id, assignment.title)} className="border-violet-500/30 text-violet-600 hover:bg-violet-50">
-                        <Download className="w-4 h-4 mr-2" /> Export
-                      </Button>
-                      <Button onClick={() => setLocation(`/teacher/grade/${assignment.id}`)} className="bg-violet-600 hover:bg-violet-700 shadow-sm">
-                        SpeedGrader <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── INTERVENTION QUEUE ── */}
-        <InterventionQueue />
-
-        {/* ── MISCONCEPTION HEATMAP ── */}
-        <MisconceptionHeatmap />
-
-        {/* ── STUDENT ROSTER TABLE ── */}
-        <Card className="border border-border/50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" /> Student Roster
-            </CardTitle>
-            <CardDescription>Detailed performance breakdown for all enrolled students</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/50 bg-muted/30">
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Student</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Email</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Responses</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mastered</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Score</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/30">
-                  {students && students.length > 0 ? students.map((s, idx) => (
-                    <tr key={`${s.id}-${idx}`} className="hover:bg-muted/20 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <span className="text-xs font-bold text-primary">
-                              {s.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <span className="font-medium">{s.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-muted-foreground hidden sm:table-cell">{s.email}</td>
-                      <td className="px-5 py-4 text-center">
-                        <Badge variant="secondary" className="text-xs">{s.totalInteractions}</Badge>
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold">
-                          {s.masteryCount}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3 min-w-[140px]">
-                          <Progress
-                            value={s.avgScore * 100}
-                            className="h-2 flex-1 max-w-[80px]"
-                          />
-                          <ScorePill score={s.avgScore} />
-                        </div>
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan={5} className="px-5 py-12 text-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <Users className="w-10 h-10 text-muted-foreground/30" />
-                          <p className="text-muted-foreground text-sm">No students enrolled yet.</p>
-                          <p className="text-xs text-muted-foreground">Create a classroom above and share the join code with your students.</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
+      
+      {/* ── BACKGROUND AMBIANCE ── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[100px] rounded-full animate-pulse [animation-delay:2s]" />
       </div>
 
-      {/* ── LIVE SESSION OVERLAY ── */}
-      {activeLiveRoom && (
-        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm p-4 md:p-8 overflow-y-auto animate-in fade-in zoom-in duration-200">
-          <div className="max-w-5xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-primary animate-pulse" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight">Live Classroom Session</h2>
-                  <p className="text-sm text-muted-foreground">Class: <span className="font-semibold text-foreground">{activeLiveRoom.name}</span> • Code: <span className="font-mono text-primary font-bold">{activeLiveRoom.code}</span></p>
-                </div>
+      <div className="flex">
+        {/* ── SIDE NAVIGATION ── */}
+        <aside className="w-20 lg:w-72 h-screen sticky top-0 bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col items-center lg:items-stretch p-6 z-50">
+          <div className="flex items-center gap-3 px-2 mb-12">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <span className="hidden lg:block text-xl font-black font-display tracking-tighter">
+              EDULENS <span className="text-primary">PRO</span>
+            </span>
+          </div>
+
+          <nav className="flex-1 space-y-2">
+            {[
+              { icon: Activity, label: "Command Center", active: true },
+              { icon: Users, label: "Student Roster" },
+              { icon: BookOpen, label: "Course Materials" },
+              { icon: Brain, label: "AI Insights" },
+            ].map((item) => (
+              <button
+                key={item.label}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group ${
+                  item.active ? "bg-primary/10 text-primary" : "text-white/40 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <item.icon className={`w-5 h-5 ${item.active ? "text-primary" : "group-hover:scale-110 transition-transform"}`} />
+                <span className="hidden lg:block font-black uppercase tracking-widest text-[10px]">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="pt-6 border-t border-white/5 space-y-4">
+            <div className="hidden lg:block px-4 py-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Live Engine</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setActiveLiveRoom(null)} className="gap-2">
-                <LogOut className="w-4 h-4" /> End Live View
-              </Button>
+              <p className="text-[10px] text-white/40 font-bold leading-tight">AI Diagnostic Node Active</p>
+            </div>
+            
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-white/40 hover:text-rose-400 hover:bg-rose-400/5 transition-all group"
+            >
+              <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="hidden lg:block font-black uppercase tracking-widest text-[10px]">Terminate Session</span>
+            </button>
+          </div>
+        </aside>
+
+        {/* ── MAIN CONTENT ── */}
+        <main className="flex-1 min-w-0 p-8 lg:p-12">
+          <div className="max-w-7xl mx-auto space-y-12">
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div>
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest py-1 px-3 mb-4">
+                    Educator Portal v4.0
+                  </Badge>
+                  <h1 className="text-4xl lg:text-6xl font-black font-display tracking-tighter mb-4 uppercase">
+                    Command <span className="text-primary">Center</span>
+                  </h1>
+                  <p className="text-lg text-white/40 font-medium max-w-xl">
+                    Aggregated real-time pedagogical insights for {student?.name || "Educator"}. 
+                    Monitoring {students?.length || 0} active learning paths.
+                  </p>
+                </motion.div>
+              </div>
+
+              <div className="flex flex-wrap gap-4">
+                <Button 
+                  onClick={() => setShowWizard(true)}
+                  className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                >
+                  <Plus className="w-5 h-5 mr-3" /> Assign Learning Path
+                </Button>
+                <AssignmentWizard 
+                  open={showWizard} 
+                  onOpenChange={setShowWizard} 
+                  classrooms={classrooms || []} 
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Left Column: Live Activity Feed */}
-              <div className="md:col-span-2 space-y-4">
-                <Card className="border-primary/20 shadow-lg shadow-primary/5">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-primary" /> Live Student Responses
+            {/* ── STATS ROW ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: "Active Cohort", value: students?.length || 0, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+                { label: "Avg Class Mastery", value: `${Math.round(avgClassScore * 100)}%`, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                { label: "AI Diagnoses", value: totalInteractions, icon: Activity, color: "text-blue-400", bg: "bg-blue-500/10" },
+                { label: "Concepts Locked", value: totalMastered, icon: CheckCheck, color: "text-violet-400", bg: "bg-violet-500/10" },
+              ].map((stat, idx) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <Card className="rounded-3xl border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+                    <CardContent className="p-8">
+                      <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center mb-6`}>
+                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                      </div>
+                      <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-1">{stat.label}</p>
+                      <p className="text-4xl font-black font-display tracking-tight">{stat.value}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* ── CLASSROOMS ── */}
+              <div className="lg:col-span-1">
+                <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 h-full overflow-hidden">
+                  <CardHeader className="p-8 pb-4">
+                    <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                      <BookOpen className="w-5 h-5 text-primary" /> Learning Nodes
                     </CardTitle>
-                    <CardDescription>Streaming student answers as they arrive</CardDescription>
+                    <CardDescription className="text-white/40 font-medium">Manage and join classroom clusters</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {liveUpdates.length > 0 ? (
-                      <div className="space-y-4">
-                        {liveUpdates.map((update, idx) => (
-                          <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className={`p-4 rounded-xl border transition-all duration-500 ${
-                              update.isSocraticActive 
-                                ? "border-red-500/50 bg-red-500/5 shadow-[0_0_15px_rgba(239,68,68,0.1)] animate-pulse" 
-                                : "border-border/50 bg-muted/20"
-                            } flex flex-col gap-2`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold shrink-0">
-                                  {update.name.charAt(0)}
+                  <CardContent className="p-8 pt-0 space-y-8">
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-white/20 ml-1">Deploy New Node</p>
+                        <div className="flex gap-2 p-1.5 rounded-2xl bg-black/40 border border-white/5">
+                          <Input
+                            placeholder="Cluster Name..."
+                            value={newClassName}
+                            onChange={e => setNewClassName(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && handleCreateClassroom()}
+                            className="bg-transparent border-none focus-visible:ring-0 text-sm font-medium h-11"
+                          />
+                          <Button size="icon" onClick={handleCreateClassroom} disabled={creating || !newClassName.trim()} className="rounded-xl bg-primary shadow-lg shadow-primary/20 shrink-0 h-11 w-11">
+                            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-white/20 ml-1">Sync Existing</p>
+                        <div className="flex gap-2 p-1.5 rounded-2xl bg-black/40 border border-white/5">
+                          <Input
+                            placeholder="6-Digit Access Key"
+                            value={joinCode}
+                            onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                            onKeyDown={e => e.key === "Enter" && handleJoinClassroom()}
+                            maxLength={6}
+                            className="bg-transparent border-none focus-visible:ring-0 text-sm font-black tracking-[0.2em] h-11"
+                          />
+                          <Button variant="ghost" size="sm" onClick={handleJoinClassroom} disabled={joining || joinCode.length !== 6} className="rounded-xl hover:bg-white/5 shrink-0 px-4 h-11 text-[10px] font-black uppercase tracking-widest">
+                            {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : "Link"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {classrooms && classrooms.length > 0 ? (
+                      <div className="space-y-4 pt-8 border-t border-white/5">
+                        {classrooms.map((c) => (
+                          <div key={c.id} className="group p-6 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-primary/30 transition-all">
+                            <div className="flex items-center justify-between mb-6">
+                              <div>
+                                <p className="font-black font-display text-sm group-hover:text-primary transition-colors mb-1">{c.name}</p>
+                                <div className="flex items-center gap-2">
+                                  {c.isOwner ? (
+                                    <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase tracking-widest">Master Node</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-white/10">Connected</Badge>
+                                  )}
                                 </div>
-                                <span className="font-bold text-sm whitespace-nowrap">{update.name}</span>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">just answered</span>
-                                <Badge variant="outline" className="text-[10px] py-0 shrink-0">{update.concept}</Badge>
-                                {update.bloomLevel && (
-                                  <Badge className={`text-[10px] py-0 border-none shrink-0 ${BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.bg} ${BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.color}`}>
-                                    {BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.label}
-                                  </Badge>
-                                )}
-                                {update.isSocraticActive && (
-                                  <Badge className="bg-red-500 text-white text-[10px] py-0 px-1.5 animate-bounce">
-                                    INTERVENTION
-                                  </Badge>
-                                )}
                               </div>
-                              <ScorePill score={update.score} />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full text-white/20 hover:text-rose-400 hover:bg-rose-400/10"
+                                onClick={() => c.isOwner ? handleDeleteClassroom(c.id, c.name) : handleLeaveClassroom(c.id, c.name)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
-                            <p className="text-sm italic text-muted-foreground line-clamp-2">
-                              {update.isSocraticActive ? `“${update.socraticMessage || 'Starting Socratic review...'}”` : `“${update.feedback}”`}
-                            </p>
-                            {update.misconception && update.misconception !== "NO_MISCONCEPTION" && (
-                              <div className="mt-1 flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                                <AlertTriangle className="w-3 h-3" />
-                                Misconception: {update.misconception.replace(/_/g, " ")}
+                            <div className="flex items-center justify-between bg-black/40 rounded-2xl px-4 py-3 border border-white/5 shadow-inner">
+                              <code className="text-xl font-black tracking-[0.4em] text-primary">{c.code}</code>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-9 w-9 rounded-xl hover:bg-white/5 transition-all"
+                                  onClick={() => handleCopy(c.code)}
+                                >
+                                  {copied === c.code ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 opacity-40 group-hover:opacity-100" />}
+                                </Button>
+                                {c.isOwner && (
+                                  <Button
+                                    size="sm"
+                                    className="h-9 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-xl"
+                                    onClick={() => { setLiveUpdates([]); setActiveLiveRoom(c); }}
+                                  >
+                                    <Activity className="w-4 h-4 mr-2 text-primary" /> Live
+                                  </Button>
+                                )}
                               </div>
-                            )}
-                          </motion.div>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-                        <div className="w-12 h-12 rounded-full border-2 border-dashed border-muted-foreground/30 animate-spin" />
-                        <p className="text-sm text-muted-foreground">Waiting for students to join and respond...</p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center gap-4 opacity-40">
+                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
+                          <BookOpen className="w-8 h-8" />
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-widest">No Active Nodes</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Right Column: Instructions/Status */}
-              <div className="space-y-4">
-                <Card className="border border-border/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold">Session Info</CardTitle>
+              {/* ── CLASS PERFORMANCE CHART ── */}
+              <div className="lg:col-span-2">
+                <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 h-full overflow-hidden">
+                  <CardHeader className="p-8 pb-4">
+                    <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                      <TrendingUp className="w-5 h-5 text-primary" /> Performance Analytics
+                    </CardTitle>
+                    <CardDescription className="text-white/40 font-medium">Average mastery levels across active students</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground font-semibold uppercase">Instructions</p>
-                      <p className="text-sm leading-relaxed">Students joined to <span className="font-bold">{activeLiveRoom.name}</span> will automatically stream their responses to this view. Stay on this page to monitor comprehension in real-time.</p>
-                    </div>
-                    <div className="pt-4 border-t border-border/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase">Connection Status</span>
-                        <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 text-[10px]">
-                          Live Connected
-                        </Badge>
+                  <CardContent className="p-8 pt-0">
+                    {chartData.length > 0 ? (
+                      <div className="h-[300px] mt-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData} barCategoryGap="35%">
+                            <defs>
+                              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                              </linearGradient>
+                            </defs>
+                            <XAxis 
+                              dataKey="name" 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontWeight: 800 }} 
+                            />
+                            <YAxis 
+                              domain={[0, 100]} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontWeight: 800 }} 
+                              tickFormatter={v => `${v}%`} 
+                            />
+                            <Tooltip
+                              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                              contentStyle={{ 
+                                fontSize: 12, 
+                                borderRadius: 16, 
+                                border: "1px solid rgba(255,255,255,0.1)", 
+                                background: "rgba(0,0,0,0.8)",
+                                backdropFilter: "blur(12px)",
+                                fontWeight: 600
+                              }}
+                              formatter={(v: number) => [`${v}%`, "Mastery"]}
+                            />
+                            <Bar
+                              dataKey="score"
+                              fill="url(#barGradient)"
+                              radius={[12, 12, 4, 4]}
+                              barSize={40}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[300px] gap-4 opacity-40">
+                        <Users className="w-10 h-10" />
+                        <p className="text-xs font-black uppercase tracking-widest">No Performance Data</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            {/* ── ASSIGNMENTS LIST ── */}
+            <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+              <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                    <BookOpen className="w-5 h-5 text-primary" /> Active Deployments
+                  </CardTitle>
+                  <CardDescription className="text-white/40 font-medium">Instructional materials ready for evaluation</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowWizard(true)} className="rounded-full hover:bg-white/5">
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0 border-t border-white/5">
+                <div className="divide-y divide-white/5">
+                  {assignments?.length === 0 ? (
+                    <div className="p-16 text-center text-white/20 flex flex-col items-center justify-center gap-4">
+                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
+                        <BookOpen className="w-8 h-8" />
+                      </div>
+                      <p className="text-xs font-black uppercase tracking-widest">No Active Deployments</p>
+                    </div>
+                  ) : (
+                    assignments?.map(assignment => (
+                      <div key={assignment.id} className="p-8 flex flex-col md:flex-row items-center justify-between hover:bg-white/[0.01] transition-all gap-6">
+                        <div className="flex items-start gap-6">
+                          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 shadow-lg shadow-primary/10">
+                            <Sparkles className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-black font-display tracking-tight mb-1 uppercase">{assignment.title}</h4>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <Badge className="bg-white/5 text-white/50 border-white/10 text-[8px] font-black uppercase tracking-widest">{assignment.classroomName}</Badge>
+                              <Badge className="bg-amber-500/10 text-amber-400 border-none text-[8px] font-black uppercase tracking-widest">{assignment.pendingGrades} Action Items</Badge>
+                              <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">Deployed {new Date(assignment.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-4 w-full md:w-auto">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleExportGrades(assignment.id, assignment.title)} 
+                            className="flex-1 h-12 px-6 rounded-xl text-white/40 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-[10px]"
+                          >
+                            <Download className="w-4 h-4 mr-2" /> Export
+                          </Button>
+                          <Button 
+                            onClick={() => setLocation(`/teacher/grade/${assignment.id}`)} 
+                            className="flex-1 h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                          >
+                            SpeedGrader <ArrowRight className="w-4 h-4 ml-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ── INTERVENTION QUEUE ── */}
+            <InterventionQueue />
+
+            {/* ── MISCONCEPTION HEATMAP ── */}
+            <MisconceptionHeatmap />
+
+            {/* ── STUDENT ROSTER TABLE ── */}
+            <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+              <CardHeader className="p-8 pb-4">
+                <CardTitle className="text-lg font-black font-display uppercase tracking-widest flex items-center gap-3">
+                  <Users className="w-5 h-5 text-primary" /> Personnel Registry
+                </CardTitle>
+                <CardDescription className="text-white/40 font-medium">Granular performance metrics for all active learners</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 border-t border-white/5">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/[0.01]">
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20">Learner</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20 hidden sm:table-cell">Identity</th>
+                        <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-white/20">Engagements</th>
+                        <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-white/20">Mastery Lock</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-white/20">Efficiency Index</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {students && students.length > 0 ? students.map((s, idx) => (
+                        <tr key={`${s.id}-${idx}`} className="hover:bg-white/[0.01] transition-colors group">
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                <span className="text-sm font-black text-primary">
+                                  {s.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <span className="font-black font-display uppercase tracking-tight">{s.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 text-white/40 font-medium hidden sm:table-cell">{s.email}</td>
+                          <td className="px-8 py-6 text-center">
+                            <Badge className="bg-white/5 text-white/60 border-white/10 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                              {s.totalInteractions}
+                            </Badge>
+                          </td>
+                          <td className="px-8 py-6 text-center">
+                            <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black">
+                              {s.masteryCount}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-6 min-w-[200px]">
+                              <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden ring-1 ring-white/5">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${s.avgScore * 100}%` }}
+                                  className={`h-full ${s.avgScore >= 0.7 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : s.avgScore >= 0.4 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`}
+                                />
+                              </div>
+                              <ScorePill score={s.avgScore} />
+                            </div>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={5} className="px-8 py-20 text-center">
+                            <div className="flex flex-col items-center gap-6 opacity-40">
+                              <Users className="w-16 h-16" />
+                              <div className="space-y-2">
+                                <p className="text-xs font-black uppercase tracking-widest">No Registered Learners</p>
+                                <p className="text-[10px] font-medium max-w-xs mx-auto">Create a classroom and share the deployment code to begin population.</p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      )}
+        </main>
+      </div>
+
+      {/* ── LIVE SESSION OVERLAY ── */}
+      <AnimatePresence>
+        {activeLiveRoom && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-3xl p-8 overflow-y-auto"
+          >
+            <div className="max-w-6xl mx-auto space-y-12">
+              <div className="flex items-center justify-between border-b border-white/5 pb-12">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                    <Activity className="w-8 h-8 text-primary animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black font-display tracking-tighter uppercase">Live Engine <span className="text-primary">Stream</span></h2>
+                    <p className="text-white/40 font-black uppercase tracking-widest text-[10px] mt-2">
+                      Node: <span className="text-white">{activeLiveRoom.name}</span> • Sync Key: <span className="text-primary tracking-[0.2em]">{activeLiveRoom.code}</span>
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setActiveLiveRoom(null)} 
+                  className="h-14 px-8 rounded-2xl text-white/40 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-xs"
+                >
+                  <LogOut className="w-5 h-5 mr-3" /> Terminate Stream
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                {/* Activity Feed */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between px-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Packet Stream (Real-Time)</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Synchronized</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {liveUpdates.length > 0 ? (
+                      liveUpdates.map((update, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className={`p-8 rounded-[2.5rem] border backdrop-blur-3xl transition-all duration-500 group ${
+                            update.isSocraticActive 
+                              ? "border-rose-500/30 bg-rose-500/[0.05] shadow-[0_0_30px_rgba(239,68,68,0.1)]" 
+                              : "border-white/5 bg-white/[0.02]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xs font-black text-primary">
+                                {update.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-black font-display uppercase tracking-tight">{update.name}</p>
+                                <p className="text-[8px] text-white/20 font-black uppercase tracking-widest">Transaction Recorded</p>
+                              </div>
+                            </div>
+                            <ScorePill score={update.score} />
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className="bg-white/5 text-white/40 border-white/10 text-[8px] font-black uppercase tracking-widest px-3 py-1">{update.concept}</Badge>
+                              {update.bloomLevel && (
+                                <Badge className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 border-none ${BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.bg} ${BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.color}`}>
+                                  {BLOOMS_MAP[update.bloomLevel.trim().toUpperCase()]?.label}
+                                </Badge>
+                              )}
+                              {update.isSocraticActive && (
+                                <Badge className="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 animate-bounce">
+                                  Intervention Active
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <p className="text-lg font-medium text-white/80 italic leading-relaxed">
+                              "{update.isSocraticActive ? (update.socraticMessage || 'Starting Socratic review...') : update.feedback}"
+                            </p>
+
+                            {update.misconception && update.misconception !== "NO_MISCONCEPTION" && (
+                              <div className="pt-4 border-t border-white/5 flex items-center gap-3 text-[10px] font-black text-amber-400 uppercase tracking-widest">
+                                <AlertTriangle className="w-4 h-4" />
+                                Logic Error: {update.misconception.replace(/_/g, " ")}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="py-32 flex flex-col items-center justify-center gap-8 opacity-20">
+                        <div className="w-20 h-20 rounded-full border-4 border-dashed border-white/20 animate-spin" />
+                        <p className="text-xs font-black uppercase tracking-[0.2em]">Awaiting Inbound Packets...</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info Panel */}
+                <div className="space-y-8">
+                  <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-2xl ring-1 ring-white/5 overflow-hidden">
+                    <CardHeader className="p-8 pb-4">
+                      <CardTitle className="text-lg font-black font-display uppercase tracking-widest">Status Console</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-8 pt-0 space-y-6">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Operational Protocol</p>
+                        <p className="text-sm font-medium leading-relaxed text-white/60">
+                          Real-time telemetry from <span className="text-white font-black">{activeLiveRoom.name}</span>. 
+                          All conceptual engagements are processed via the AI Diagnostic Node before streaming.
+                        </p>
+                      </div>
+                      <div className="pt-6 border-t border-white/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Uplink Status</span>
+                          <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[8px] font-black uppercase tracking-widest">Established</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

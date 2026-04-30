@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
+  Brain,
   Dna,
   Calculator,
   Landmark,
@@ -205,215 +206,240 @@ export default function SubjectSelection() {
   const reviewDueCount = reviewDueConcepts.length;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
+    <div className="min-h-screen bg-background selection:bg-primary/20 premium-gradient overflow-hidden">
+      {/* ── BACKGROUND ELEMENTS ── */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+      </div>
+
+      {/* ── PREMIUM NAV ── */}
+      <nav className="nav-glass relative z-50">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setLocation("/")}>
+            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+              <Brain className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <span className="font-display font-black text-2xl tracking-tight bg-gradient-to-r from-foreground via-foreground to-foreground/50 bg-clip-text text-transparent">
+              EduLens <span className="text-primary">AI</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm font-bold text-muted-foreground">Session Active</span>
+            </div>
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => setLocation("/")}
-              className="mb-2 -ml-2"
+              size="icon"
+              onClick={() => logout()}
+              className="w-10 h-10 rounded-2xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all"
             >
-              <ArrowLeft className="w-4 h-4 mr-1" /> Back
-            </Button>
-            <h1 className="text-xl font-bold">Choose a Subject</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Hi {student.name}! Pick a subject to start your learning session.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocation("/graph")}
-              data-testid="button-knowledge-graph"
-            >
-              <BookOpen className="w-4 h-4 mr-1" /> Knowledge Graph
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocation("/dashboard")}
-              data-testid="button-dashboard"
-            >
-              Dashboard
+              <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </div>
+      </nav>
 
-        {classrooms && classrooms.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-primary" /> My Classrooms
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-12">
+        {/* ── HEADER ── */}
+        <header className="mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+          >
+            <div>
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-1 mb-4 text-xs font-black uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5" /> Student Hub
+              </div>
+              <h1 className="text-5xl font-black tracking-tight font-display">
+                What will you <span className="text-primary">master</span> today?
+              </h1>
+              <p className="text-muted-foreground text-lg mt-3 font-medium">
+                Welcome back, <span className="text-foreground font-bold">{student.name}</span>. Your adaptive learning path is ready.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/graph")}
+                className="h-14 px-8 rounded-2xl border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all font-bold group"
+              >
+                <BookOpen className="w-5 h-5 mr-3 text-primary group-hover:scale-110 transition-transform" /> 
+                Knowledge Graph
+              </Button>
+              <Button
+                onClick={() => setLocation("/dashboard")}
+                className="h-14 px-8 rounded-2xl bg-primary shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all font-black"
+              >
+                My Dashboard
+              </Button>
+            </div>
+          </motion.div>
+        </header>
+
+        <div className="grid lg:grid-cols-3 gap-10">
+          {/* ── LEFT COL: SUBJECTS ── */}
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-3 font-display">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-primary" />
+              </div>
+              Available Disciplines
             </h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {classrooms.map((c) => (
-                <Card key={c.id} className="border border-border/60">
-                  <CardContent className="py-4 px-5">
-                    <h3 className="font-bold">{c.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Code: {c.code}
-                    </p>
-                  </CardContent>
-                </Card>
+            
+            <div className="grid sm:grid-cols-2 gap-6">
+              {subjects.map((subject, idx) => (
+                <motion.div
+                  key={subject.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                >
+                  <Card
+                    className="premium-card cursor-pointer group h-full bg-white/[0.01] hover:bg-white/[0.03] border-white/5 hover:border-primary/30 transition-all duration-500"
+                    onClick={() => startSession(subject.name)}
+                  >
+                    <CardContent className="p-8">
+                      <div className={`w-14 h-14 rounded-2xl ${subject.iconBg} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg`}>
+                        <subject.icon className={`w-7 h-7 ${subject.color.split(" ").slice(1).join(" ")}`} />
+                      </div>
+                      <div className="mb-4">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-2xl font-bold font-display group-hover:text-primary transition-colors leading-none">
+                            {subject.name}
+                          </h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground font-bold leading-relaxed">
+                          {subject.desc}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
+                        <Badge variant="secondary" className="bg-primary/5 text-primary/70 border-primary/10 text-[10px] font-black tracking-widest uppercase">
+                          Adaptive Modules
+                        </Badge>
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                          <ChevronRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </div>
-        )}
 
-        {/* ── SPACED REPETITION REVIEW DUE ── */}
-        {reviewDueCount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
-            <Card className="border border-amber-500/30 bg-amber-500/5 shadow-lg shadow-amber-500/5">
-              <CardContent className="py-4 px-5 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5 text-amber-500 animate-pulse" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-sm text-amber-600 dark:text-amber-400">
-                    Spaced Repetition Review
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    You have{" "}
-                    <strong className="text-foreground">
-                      {reviewDueCount}
-                    </strong>{" "}
-                    concept{reviewDueCount !== 1 ? "s" : ""} due for review.
-                    Practice now to strengthen your memory!
-                  </p>
-                </div>
-                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-xs font-black shrink-0">
-                  {reviewDueCount} Due
-                </Badge>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        <div className="grid gap-4">
-          {subjects.map((subject, idx) => (
-            <motion.div
-              key={subject.name}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.05 }}
-            >
-              <Card
-                className="glass-card border border-border/40 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-0.5"
-                onClick={() => startSession(subject.name)}
-                data-testid={`card-subject-${subject.name.toLowerCase()}`}
-              >
-                <CardContent className="py-6 px-6 flex items-center gap-5">
-                  <div
-                    className={`w-14 h-14 rounded-2xl ${subject.iconBg} flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform`}
-                  >
-                    <subject.icon
-                      className={`w-7 h-7 ${subject.color.split(" ").slice(1).join(" ")}`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
-                        {subject.name}
-                      </h3>
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] uppercase font-black tracking-widest bg-primary/5 text-primary/70 border-primary/10"
-                      >
-                        5 Concepts
-                      </Badge>
+          {/* ── RIGHT COL: ACTIONS & STATS ── */}
+          <div className="space-y-8">
+            {/* Review Card */}
+            {reviewDueCount > 0 && (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                <Card className="rounded-[2.5rem] border-amber-500/20 bg-amber-500/5 backdrop-blur-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+                  <CardContent className="p-8 relative z-10">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+                        <Clock className="w-6 h-6 text-amber-500 animate-pulse" />
+                      </div>
+                      <h3 className="font-display font-black text-xl text-amber-500">Practice Due</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      {subject.desc}
+                    <p className="text-sm font-bold text-muted-foreground mb-8 leading-relaxed">
+                      Your memory of <span className="text-foreground">{reviewDueCount} concepts</span> is fading. Practice now to ensure long-term mastery.
                     </p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                    <ChevronRight className="w-5 h-5" />
+                    <Button className="w-full h-14 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black shadow-lg shadow-amber-500/20">
+                      Start Review Session
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Dynamic Generation */}
+            <div>
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3 font-display">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+                AI Generator
+              </h2>
+              <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-xl overflow-hidden">
+                <CardContent className="p-8">
+                  <p className="text-sm font-bold text-muted-foreground mb-6 leading-relaxed">
+                    Type any topic to generate a custom AI-powered learning session.
+                  </p>
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="e.g., Quantum Computing"
+                      value={newTopic}
+                      onChange={(e) => setNewTopic(e.target.value)}
+                      className="h-14 rounded-2xl bg-white/5 border-white/5 focus:bg-white/10 transition-all font-bold px-6"
+                    />
+                    <Button
+                      onClick={handleGenerateConcept}
+                      disabled={isGenerating || !newTopic.trim()}
+                      className="w-full h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-foreground font-black border border-white/10"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        "Generate Concept"
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
-          ))}
-        </div>
+            </div>
 
-        <div className="mt-8 grid md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              Dynamic Knowledge Expansion
-            </h2>
-            <Card className="border border-primary/20 bg-primary/5">
-              <CardContent className="py-5 px-5">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Want to learn something not on the list? Type any topic below,
-                  and our AI will generate a custom learning concept for you on
-                  the fly.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Input
-                    placeholder="e.g., Quantum Physics, Black Holes, AI..."
-                    value={newTopic}
-                    onChange={(e) => setNewTopic(e.target.value)}
-                    className="flex-1 bg-background"
-                  />
-                  <Button
-                    onClick={handleGenerateConcept}
-                    disabled={isGenerating || !newTopic.trim()}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" /> Generate & Learn
-                      </>
-                    )}
-                  </Button>
+            {/* Classroom */}
+            <div>
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3 font-display">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" /> Join Classroom
-            </h2>
-            <Card className="border border-border/60 bg-muted/20 h-full">
-              <CardContent className="py-5 px-5 flex flex-col justify-center h-full">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Have a code from your teacher? Join their classroom here.
-                </p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter 6-char code"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                    className="font-mono text-center uppercase bg-background"
-                  />
-                  <Button
-                    onClick={handleJoinClassroom}
-                    disabled={isJoining || joinCode.length !== 6}
-                    className="shrink-0"
-                  >
-                    {isJoining ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Join"
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                Classroom
+              </h2>
+              <Card className="rounded-[2.5rem] border-white/5 bg-white/[0.02] backdrop-blur-xl">
+                <CardContent className="p-8">
+                  <div className="flex gap-3">
+                    <Input
+                      placeholder="6-CHAR CODE"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      maxLength={6}
+                      className="h-14 rounded-2xl bg-white/5 border-white/5 text-center font-mono font-black tracking-widest px-6"
+                    />
+                    <Button
+                      onClick={handleJoinClassroom}
+                      disabled={isJoining || joinCode.length !== 6}
+                      className="h-14 w-14 rounded-2xl bg-primary p-0 shadow-lg shadow-primary/20"
+                    >
+                      {isJoining ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Plus className="w-6 h-6" />
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {classrooms && classrooms.length > 0 && (
+                    <div className="mt-8 space-y-3">
+                      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Active Classrooms</p>
+                      {classrooms.map((c) => (
+                        <div key={c.id} className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
+                          <span className="text-sm font-bold">{c.name}</span>
+                          <Badge className="bg-primary/10 text-primary border-none font-mono">{c.code}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

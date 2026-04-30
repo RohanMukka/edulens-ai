@@ -16,7 +16,7 @@ import type { MasteryScore, Concept, Classroom } from "@shared/schema";
 import {
   ArrowLeft, BookOpen, Target, TrendingUp, Clock, Loader2, Award,
   AlertTriangle, Dna, Calculator, Landmark, Sparkles, Flame, Trophy,
-  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote, CalendarDays, Bell, CheckSquare, MessageCircle
+  Brain, Network, LogOut, ArrowRight, CheckCircle2, Lock, Code, Atom, FlaskConical, Users, Trash2, Quote, CalendarDays, Bell, CheckSquare, MessageCircle, ChevronRight
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -239,573 +239,369 @@ export default function Dashboard() {
   const hasActivity = (stats?.totalInteractions || 0) > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background selection:bg-primary/20 premium-gradient overflow-hidden pb-20">
       <TutorialOverlay role="student" />
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      
+      {/* ── BACKGROUND ELEMENTS ── */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+      </div>
 
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         {/* ── HEADER ── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/subjects")} className="-ml-2">
-              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+        <header className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+          <div className="flex items-center gap-6">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/subjects")} 
+              className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/10 transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-1 mb-2 text-xs font-black uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5" /> Performance Hub
+              </div>
+              <h1 className="text-4xl font-black tracking-tight font-display">Student Command Center</h1>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+            <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} className="h-11 px-6 rounded-xl border-white/5 bg-white/[0.02] hover:bg-white/5 font-bold shrink-0">
+              <Network className="w-4 h-4 mr-2 text-primary" /> Graph
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setLocation("/forums")} className="h-11 px-6 rounded-xl border-white/5 bg-white/[0.02] hover:bg-white/5 font-bold shrink-0">
+              <MessageCircle className="w-4 h-4 mr-2 text-blue-400" /> Forums
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setLocation("/scheduler")} className="h-11 px-6 rounded-xl border-white/5 bg-white/[0.02] hover:bg-white/5 font-bold shrink-0">
+              <CalendarDays className="w-4 h-4 mr-2 text-emerald-400" /> Scheduler
+            </Button>
+            <Button size="sm" onClick={() => setLocation("/subjects")} className="h-11 px-6 rounded-xl bg-primary shadow-lg shadow-primary/20 font-black shrink-0">
+              <BookOpen className="w-4 h-4 mr-2" /> Start Learning
             </Button>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
-            <Button variant="outline" size="sm" onClick={() => setLocation("/graph")} className="shrink-0">
-              <Network className="w-4 h-4 mr-1.5" /> Graph
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/forums")} className="shrink-0 border-blue-500/30 text-blue-600 hover:bg-blue-500/10">
-              <MessageCircle className="w-4 h-4 mr-1.5" /> Forums
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setLocation("/scheduler")} className="shrink-0 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10">
-              <CalendarDays className="w-4 h-4 mr-1.5" /> Scheduler
-            </Button>
-            <Button size="sm" onClick={() => setLocation("/subjects")} className="shrink-0">
-              <BookOpen className="w-4 h-4 mr-1.5" /> Continue Learning
-            </Button>
-          </div>
-        </div>
+        </header>
 
         {/* ── HERO BANNER ── */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-primary/10 via-background to-violet-500/5 p-8 mb-8">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
-
-            {/* Progress ring */}
-            <div className="relative shrink-0">
-              <ProgressRing pct={overallPct} size={130} stroke={10} color="hsl(239 84% 67%)" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-black">{overallPct}%</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Avg Score</span>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-3xl p-10 mb-10 shadow-2xl"
+        >
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -mr-64 -mt-64 pointer-events-none" />
+          
+          <div className="flex flex-col lg:flex-row items-center gap-12 relative z-10">
+            {/* Progress ring with inner glow */}
+            <div className="relative shrink-0 group">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full group-hover:bg-primary/30 transition-all duration-700" />
+              <div className="relative bg-black/40 rounded-full p-2">
+                <ProgressRing pct={overallPct} size={180} stroke={14} color="hsl(var(--primary))" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-5xl font-black font-display tracking-tighter">{overallPct}%</span>
+                  <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 opacity-50">Mastery Index</span>
+                </div>
               </div>
             </div>
 
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground font-medium mb-1">Welcome back,</p>
-              <h1 className="text-4xl font-extrabold tracking-tight mb-3">{student.name}</h1>
-              <div className="flex flex-wrap gap-3">
-                {stats?.currentStreak ? (
-                  <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 rounded-full px-3 py-1.5 text-sm text-orange-600 dark:text-orange-400 font-bold animate-pulse">
-                    <Flame className="w-4 h-4 fill-orange-500" />
-                    <span>{stats.currentStreak} Day Streak</span>
+            <div className="flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-4">
+                <Flame className="w-4 h-4 fill-primary" /> Active Learning Streak
+              </div>
+              <h2 className="text-5xl font-black tracking-tighter mb-6 font-display">
+                You're on a <span className="text-primary">{stats?.currentStreak || 1} day</span> roll, <br />
+                keep pushing limits.
+              </h2>
+              
+              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+                <div className="px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10"><Trophy className="w-5 h-5 text-primary" /></div>
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Mastered</p>
+                    <p className="font-display font-black text-lg leading-none">{masteredCount} <span className="text-sm font-bold text-muted-foreground/50">/ {totalCount}</span></p>
                   </div>
-                ) : null}
-                <div className="flex items-center gap-2 bg-background/60 border border-border/50 rounded-full px-3 py-1.5 text-sm">
-                  <Award className="w-4 h-4 text-primary" />
-                  <span><strong>{masteredCount}</strong> / {totalCount} concepts mastered</span>
                 </div>
-                <div className="flex items-center gap-2 bg-background/60 border border-border/50 rounded-full px-3 py-1.5 text-sm">
-                  <Clock className="w-4 h-4 text-emerald-500" />
-                  <span><strong>{stats?.totalSessions || 0}</strong> sessions</span>
+                <div className="px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-500/10"><Clock className="w-5 h-5 text-emerald-400" /></div>
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Time Spent</p>
+                    <p className="font-display font-black text-lg leading-none">{stats?.totalSessions || 0} <span className="text-sm font-bold text-muted-foreground/50">Sessions</span></p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 bg-background/60 border border-border/50 rounded-full px-3 py-1.5 text-sm">
-                  <Target className="w-4 h-4 text-amber-500" />
-                  <span><strong>{stats?.totalInteractions || 0}</strong> responses</span>
+                <div className="px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/10"><Target className="w-5 h-5 text-amber-400" /></div>
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Reasoning</p>
+                    <p className="font-display font-black text-lg leading-none">{stats?.totalInteractions || 0} <span className="text-sm font-bold text-muted-foreground/50">Interactions</span></p>
+                  </div>
                 </div>
-                {stats?.classPercentile !== null && stats?.classPercentile !== undefined && (
-                  <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-full px-3 py-1.5 text-sm text-primary font-semibold animate-in fade-in slide-in-from-left-2 duration-700">
-                    <Trophy className="w-4 h-4" />
-                    <span>
-                      {stats.classPercentile >= 95 ? "Class Leader" : 
-                       stats.classPercentile >= 90 ? "Top 10% of class" :
-                       stats.classPercentile >= 75 ? "Top 25% of class" :
-                       `Top ${100 - stats.classPercentile}% of class`}
-                    </span>
+                {stats?.classPercentile !== null && (
+                  <div className="px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/20"><Award className="w-5 h-5 text-primary" /></div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none mb-1">Class Standing</p>
+                      <p className="font-display font-black text-lg leading-none">Top {100 - stats!.classPercentile}%</p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── TROPHY CASE ── */}
-        <Card className="border border-border/50 mb-8 overflow-hidden bg-card/40 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-amber-500" /> Trophy Case
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {displayBadges.map(badge => (
-                <div key={badge.name} className={`flex flex-col items-center p-4 rounded-xl border transition-all ${badge.earned ? "bg-background/80 border-border/50 shadow-sm" : "bg-muted/10 border-border/20 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"}`}>
-                  <div className={`w-12 h-12 rounded-full ${badge.bg} flex items-center justify-center mb-3`}>
-                    <badge.icon className={`w-6 h-6 ${badge.color}`} />
-                  </div>
-                  <p className="text-xs font-bold text-center mb-1">{badge.name}</p>
-                  <p className="text-[9px] text-muted-foreground text-center leading-tight">{badge.desc}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── SUBJECT BREAKDOWN ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {subjectBreakdown.map(({ subject, mastered, total, avg, meta }) => {
+        <div className="grid lg:grid-cols-4 gap-8 mb-10">
+          {/* ── STAT CARDS ── */}
+          {subjectBreakdown.map(({ subject, mastered, total, avg, meta }, idx) => {
             const Icon = meta.icon;
             const pct = Math.round(avg * 100);
             return (
-              <Card key={subject} className="border border-border/50 hover:border-primary/20 transition-colors">
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 rounded-xl ${meta.bg} flex items-center justify-center shrink-0`}>
-                      <Icon className={`w-5 h-5 ${meta.color}`} />
+              <motion.div
+                key={subject}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+              >
+                <Card className="premium-card h-full bg-white/[0.01] hover:bg-white/[0.03] border-white/5 hover:border-primary/30 transition-all duration-500 group">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className={`w-12 h-12 rounded-2xl ${meta.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        <Icon className={`w-6 h-6 ${meta.color}`} />
+                      </div>
+                      <div className="text-right">
+                        <span className="text-3xl font-black font-display tracking-tight" style={{ color: meta.ring }}>{pct}%</span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold">{subject}</h3>
-                      <p className="text-xs text-muted-foreground">{mastered}/{total} mastered</p>
+                    <h3 className="font-display font-bold text-lg mb-1">{subject}</h3>
+                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-4">
+                      {mastered} / {total} Mastered
+                    </p>
+                    <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                        className="absolute h-full rounded-full" 
+                        style={{ backgroundColor: meta.ring }}
+                      />
                     </div>
-                    <div className="ml-auto">
-                      <span className="text-2xl font-black" style={{ color: meta.ring }}>{pct}%</span>
-                    </div>
-                  </div>
-                  <Progress value={pct} className="h-2" />
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
         </div>
 
-        {/* ── CHARTS ── */}
-        <div className="grid md:grid-cols-2 gap-5 mb-8">
-          <Card className="border border-border/50">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Brain className="w-4 h-4 text-primary" /> Subject Mastery Radar
-              </CardTitle>
+        <div className="grid lg:grid-cols-2 gap-10 mb-10">
+          {/* ── RADAR CHART ── */}
+          <Card className="rounded-[2rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden group">
+            <CardHeader className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10"><Brain className="w-5 h-5 text-primary" /></div>
+                <CardTitle className="text-xl font-display font-bold">Subject Mastery Balance</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="pb-4">
+            <CardContent className="p-8">
               {radarData.some(d => d.mastery > 0) ? (
-                <ResponsiveContainer width="100%" height={220}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="hsl(240 6% 20%)" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <Radar dataKey="mastery" stroke="hsl(239 84% 67%)" fill="hsl(239 84% 67%)" fillOpacity={0.25} />
-                  </RadarChart>
-                </ResponsiveContainer>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar 
+                        dataKey="mastery" 
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))" 
+                        fillOpacity={0.3} 
+                        strokeWidth={2}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-[220px] gap-3">
-                  <Brain className="w-10 h-10 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground text-center">Complete some concepts to see your radar chart.</p>
-                  <Button size="sm" variant="outline" onClick={() => setLocation("/subjects")}>
-                    Start Learning <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                  </Button>
+                <div className="h-[300px] flex flex-col items-center justify-center gap-4 text-center">
+                  <Brain className="w-12 h-12 text-muted-foreground/20" />
+                  <p className="text-sm text-muted-foreground font-bold">Complete some sessions to unlock your radar visualization.</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="border border-border/50">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" /> Concept Progress
-              </CardTitle>
+          {/* ── COGNITIVE GROWTH ── */}
+          <Card className="rounded-[2rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden group">
+            <CardHeader className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-violet-500/10"><TrendingUp className="w-5 h-5 text-violet-400" /></div>
+                <CardTitle className="text-xl font-display font-bold">Cognitive Depth Index</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="pb-4">
-              {barData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={barData} layout="vertical">
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={v => `${v}%`} />
-                    <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(240 6% 20%)", background: "hsl(240 10% 10%)" }}
-                      formatter={(v: number) => [`${v}%`, "Mastery"]}
-                    />
-                    <Bar dataKey="mastery" fill="hsl(239 84% 67%)" radius={[0, 4, 4, 0]} barSize={14} />
-                  </BarChart>
-                </ResponsiveContainer>
+            <CardContent className="p-8">
+              {stats?.recentInteractions && stats.recentInteractions.length > 0 ? (
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart 
+                      data={(stats.recentInteractions).map((i, idx) => ({
+                        index: idx + 1,
+                        level: BLOOMS_VALUE_MAP[i.bloomsLevel?.trim().toUpperCase() || 'UNDERSTANDING'] || 2,
+                        label: i.bloomsLevel || 'Understanding'
+                      }))}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <XAxis hide />
+                      <YAxis 
+                        stroke="rgba(255,255,255,0.3)" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false}
+                        domain={[1, 6]}
+                        ticks={[1, 2, 3, 4, 5, 6]}
+                        tickFormatter={(val) => BLOOMS_LABEL_MAP[val]?.charAt(0) + BLOOMS_LABEL_MAP[val]?.slice(1).toLowerCase()}
+                      />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl">
+                                <p className="font-black text-primary uppercase tracking-widest text-[10px] mb-1">{payload[0].payload.label}</p>
+                                <p className="text-white font-bold text-sm">Interaction #{payload[0].payload.index}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="level" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={4} 
+                        dot={{ fill: 'hsl(var(--primary))', r: 5, strokeWidth: 3, stroke: 'black' }} 
+                        activeDot={{ r: 8, strokeWidth: 0 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-[220px] gap-3">
-                  <TrendingUp className="w-10 h-10 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground text-center">No data yet. Answer some questions to track progress!</p>
-                  <Button size="sm" variant="outline" onClick={() => setLocation("/subjects")}>
-                    Start Learning <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                  </Button>
+                <div className="h-[300px] flex flex-col items-center justify-center gap-4 text-center">
+                  <TrendingUp className="w-12 h-12 text-muted-foreground/20" />
+                  <p className="text-sm text-muted-foreground font-bold">Answer questions to track your Bloom's Taxonomy progression.</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* ── COGNITIVE GROWTH ── */}
-        <Card className="border border-border/50 mb-8 overflow-hidden group">
-          <CardHeader className="pb-2 pt-6 px-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-primary" /> Cognitive Growth Tracker
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">Visualization of your depth of understanding over time (Bloom's Taxonomy).</p>
+        <div className="grid lg:grid-cols-3 gap-10">
+          {/* Misconceptions */}
+          <div className="lg:col-span-2">
+            <h2 className="text-2xl font-black mb-6 flex items-center gap-3 font-display">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
               </div>
-              <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] uppercase font-bold tracking-widest px-2">Live Diagnostics</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="pb-6 px-6 pt-2">
-            {stats?.recentInteractions && stats.recentInteractions.length > 0 ? (
-              <div className="h-[220px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={(stats.recentInteractions).map((i, idx) => ({
-                      index: idx + 1,
-                      level: BLOOMS_VALUE_MAP[i.bloomsLevel?.trim().toUpperCase() || 'UNDERSTANDING'] || 2,
-                      label: i.bloomsLevel || 'Understanding'
-                    }))}
-                    margin={{ left: 35, right: 10, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted)/0.3)" vertical={false} />
-                    <XAxis 
-                      dataKey="index" 
-                      stroke="hsl(var(--muted-foreground))" 
-                      fontSize={10} 
-                      tickLine={false} 
-                      axisLine={false}
-                      label={{ value: 'Response History (Last 20)', position: 'insideBottom', offset: -5, fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))" 
-                      fontSize={10} 
-                      tickLine={false} 
-                      axisLine={false}
-                      domain={[1, 6]}
-                      ticks={[1, 2, 3, 4, 5, 6]}
-                      tickFormatter={(val) => BLOOMS_LABEL_MAP[val]?.charAt(0) + BLOOMS_LABEL_MAP[val]?.slice(1).toLowerCase()}
-                    />
-                    <Tooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-popover/90 backdrop-blur-md border border-border p-3 rounded-xl shadow-2xl text-xs ring-1 ring-primary/20">
-                              <p className="font-black text-primary uppercase tracking-tighter mb-1">{payload[0].payload.label}</p>
-                              <p className="text-muted-foreground text-[10px]">Interaction #{payload[0].payload.index}</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Line 
-                      type="stepAfter" 
-                      dataKey="level" 
-                      stroke="hsl(239 84% 67%)" 
-                      strokeWidth={3} 
-                      dot={{ fill: 'hsl(239 84% 67%)', r: 4, strokeWidth: 2, stroke: 'white' }} 
-                      activeDot={{ r: 6, strokeWidth: 0 }}
-                      animationDuration={2000}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[220px] gap-3">
-                <Brain className="w-10 h-10 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground text-center">Answer questions to visualize your cognitive progression.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* ── RECURRING MISCONCEPTIONS ── */}
-        <Card className="border border-border/50 mb-8 bg-amber-500/5">
-          <CardHeader className="pb-2 pt-5">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Brain className="w-4 h-4 text-amber-500" /> Recurring Patterns
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">AI-detected recurring cognitive gaps across your learning sessions.</p>
-          </CardHeader>
-          <CardContent className="pb-6">
-            {misconceptionHistory && misconceptionHistory.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <AnimatePresence>
-                  {misconceptionHistory.map((m, idx) => (
-                    <motion.div
-                      key={m.type}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className="p-4 rounded-2xl bg-background/60 border border-amber-500/20 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl">
-                          {m.emoji}
+              Detected Cognitive Gaps
+            </h2>
+            <Card className="rounded-[2rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden">
+              <CardContent className="p-8">
+                {misconceptionHistory && misconceptionHistory.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    {misconceptionHistory.map((m, idx) => (
+                      <motion.div
+                        key={m.type}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-all group"
+                      >
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="text-4xl group-hover:scale-125 transition-transform">{m.emoji}</div>
+                          <div>
+                            <h4 className="font-display font-black text-lg leading-none mb-1">{m.label}</h4>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/70">Flagged {m.count} times</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-bold text-sm">{m.label}</h4>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Detected {m.count} times</p>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Seen in:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {m.concepts.slice(0, 3).map((c) => (
-                            <Badge key={c} variant="outline" className="text-[9px] py-0 px-1 bg-amber-500/5 border-amber-500/20">{c}</Badge>
+                        <div className="flex flex-wrap gap-2">
+                          {m.concepts.map(c => (
+                            <Badge key={c} variant="outline" className="bg-white/5 border-white/5 text-[10px] font-bold text-muted-foreground">{c}</Badge>
                           ))}
-                          {m.concepts.length > 3 && <span className="text-[9px] text-muted-foreground">+{m.concepts.length - 3} more</span>}
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 gap-2">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500/50" />
-                <p className="text-sm text-muted-foreground text-center">
-                  {hasActivity ? "No recurring misconceptions detected. Keep up the consistent reasoning! 🎉" : "Start your first session to begin tracking your learning patterns."}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center">
+                    <CheckCircle2 className="w-16 h-16 text-emerald-500/30 mx-auto mb-6" />
+                    <h3 className="text-xl font-bold font-display mb-2">Clear Reasoning Detected</h3>
+                    <p className="text-muted-foreground font-medium">No recurring misconceptions found. Your conceptual models are solid!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* ── CLASS CALENDAR & ALERTS ── */}
-        <div className="grid md:grid-cols-3 gap-5 mb-8">
-          <div className="md:col-span-2">
-            <Card className="border border-border/50 h-full overflow-hidden">
-              <CardHeader className="pb-3 pt-5 border-b border-border/40 bg-muted/20">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-primary" /> Upcoming Assignments
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">Track your deadlines and pending tasks across all classrooms.</p>
-              </CardHeader>
+          {/* Assignments */}
+          <div>
+            <h2 className="text-2xl font-black mb-6 flex items-center gap-3 font-display">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <CalendarDays className="w-6 h-6 text-primary" />
+              </div>
+              Deadlines
+            </h2>
+            <Card className="rounded-[2rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden">
               <CardContent className="p-0">
-                <div className="divide-y divide-border/40">
-                  {(!assignments || assignments.length === 0) ? (
-                    <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
-                      <BookOpen className="w-8 h-8 opacity-50" />
-                      <p>You have no active assignments. Enjoy your free time!</p>
-                    </div>
-                  ) : (
-                    assignments.map((sa: any) => (
-                      <div key={sa.id} className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4 relative overflow-hidden group">
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${sa.status === 'pending' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${sa.status === 'pending' ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`}>
-                          {sa.status === 'pending' ? <AlertTriangle className="w-5 h-5 text-rose-500" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                {(!assignments || assignments.length === 0) ? (
+                  <div className="p-12 text-center">
+                    <BookOpen className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest">No active tasks</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/5">
+                    {assignments.map((sa: any) => (
+                      <div key={sa.id} className="p-6 hover:bg-white/[0.03] transition-all flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${sa.status === 'pending' ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`}>
+                          {sa.status === 'pending' ? <Clock className="w-6 h-6 text-rose-500" /> : <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-bold text-sm">{sa.assignment.title}</h4>
-                            <Badge variant="outline" className={`text-[10px] ${sa.status === 'pending' ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' : 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5'}`}>
-                              {sa.status === 'pending' ? 'Pending' : 'Completed'}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">{sa.classroomName}</p>
+                          <h4 className="font-display font-bold text-base leading-tight mb-1">{sa.assignment.title}</h4>
+                          <p className="text-xs text-muted-foreground font-bold">{sa.classroomName}</p>
                         </div>
-                        <Button size="sm" variant="outline" disabled={sa.status !== 'pending'} className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all">
-                          {sa.status === 'pending' ? 'Start' : 'Review'}
-                        </Button>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground/30" />
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Alerts Panel */}
-          <div className="md:col-span-1">
-            <Card className="border border-border/50 bg-gradient-to-br from-background to-amber-500/5 h-full">
-              <CardHeader className="pb-3 pt-5 border-b border-border/40">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-amber-500" /> System Alerts
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-                  <p className="font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" /> Deadline Extended
-                  </p>
-                  <p className="text-xs text-muted-foreground">Your teacher has granted an adaptive extension for the "Cell Structure" essay. New due date is Friday.</p>
-                </div>
-                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm">
-                  <p className="font-bold text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-1.5">
-                    <CheckSquare className="w-3.5 h-3.5" /> Assignment Graded
-                  </p>
-                  <p className="text-xs text-muted-foreground">"Newton's Laws" has been graded! You scored 92%. Review your feedback.</p>
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* ── LEARNING REFLECTIONS ── */}
-        <Card className="border border-border/50 mb-8 overflow-hidden">
-          <CardHeader className="pb-2 pt-5 border-b border-border/40 bg-muted/20">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Quote className="w-4 h-4 text-primary" /> Learning Artifacts
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Metacognitive reflections captured during your moments of breakthrough.</p>
-          </CardHeader>
-          <CardContent className="p-0">
-            {reflections && reflections.length > 0 ? (
-              <div className="divide-y divide-border/40 max-h-[400px] overflow-y-auto no-scrollbar">
-                {reflections.map((r, idx) => (
-                  <motion.div 
-                    key={r.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="p-5 hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 text-[10px]">{r.conceptName}</Badge>
-                      <span className="text-[10px] text-muted-foreground">{new Date(r.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-sm italic text-foreground/80 leading-relaxed">"{r.content}"</p>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-60">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <Quote className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground text-center px-6">
-                  Reflections are captured when you make significant progress on a concept. Keep learning to build your artifact library!
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="grid md:grid-cols-2 gap-5 mb-8">
-          {/* ── WEAK AREAS ── */}
-          <Card className="border border-border/50">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500" /> Areas to Improve
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-5">
-              {stats?.weakAreas && stats.weakAreas.length > 0 ? (
-                <div className="space-y-4">
-                  {stats.weakAreas.map(area => (
-                    <div key={area.conceptId} data-testid={`weak-area-${area.conceptId}`}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-medium">{area.name}</span>
-                        <span className="text-xs font-bold text-amber-500">{Math.round(area.score * 100)}%</span>
-                      </div>
-                      <Progress value={area.score * 100} className="h-2" />
-                    </div>
-                  ))}
-                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => setLocation("/subjects")}>
-                    Practice These <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 gap-2">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-500/50" />
-                  <p className="text-sm text-muted-foreground text-center">
-                    {hasActivity ? "No weak areas detected — great work! 🎉" : "Complete some concepts to see where you need improvement."}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── RECENT SESSIONS ── */}
-          <Card className="border border-border/50">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-primary" /> Recent Sessions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-5">
-              {stats?.recentSessions && stats.recentSessions.length > 0 ? (
-                <div className="space-y-2">
-                  {stats.recentSessions.map((s: any) => (
-                    <div key={s.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors" data-testid={`session-${s.id}`}>
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-2 h-2 rounded-full ${s.endedAt ? "bg-emerald-500" : "bg-amber-500"}`} />
-                        <Badge variant="secondary" className="text-xs">{s.subject}</Badge>
-                        <span className="text-xs text-muted-foreground">{new Date(s.startedAt).toLocaleDateString()}</span>
-                      </div>
-                      {s.endedAt ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs border-0">Completed</Badge>
-                      ) : (
-                        <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs border-0">In Progress</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 gap-2">
-                  <Clock className="w-10 h-10 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground">No sessions yet. Start your first session!</p>
-                  <Button size="sm" variant="outline" onClick={() => setLocation("/subjects")}>
-                    Start Now <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ── CLASSROOM STATUS ── */}
-        {classrooms && classrooms.length > 0 && (
-          <Card className="border border-border/50 mb-8 bg-emerald-500/5">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-500" /> Joined Classrooms
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-5">
-              <div className="flex flex-wrap gap-3">
-                {classrooms.map(c => (
-                  <div key={c.id} className="flex items-center gap-2 bg-background/60 border border-emerald-500/20 rounded-xl px-4 py-2 group">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-sm font-bold">{c.name}</span>
-                    <Badge variant="outline" className="text-[10px] uppercase tracking-tighter opacity-70">{c.code}</Badge>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleLeaveClassroom(c.id, c.name)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ── TROPHY CASE ── */}
-        <Card className="border border-border/50 bg-gradient-to-r from-amber-500/5 via-background to-background">
-          <CardHeader className="pb-2 pt-5">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-amber-500" /> Trophy Case
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-5">
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {allBadgeDefs.map((badge, i) => (
-                <div
-                  key={i}
-                  className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${
-                    badge.earned
-                      ? "border-border/50 bg-card hover:border-primary/20"
-                      : "border-border/20 bg-muted/10 opacity-40 grayscale"
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${badge.earned ? badge.bg : "bg-muted"}`}>
-                    {badge.earned
-                      ? <badge.icon className={`w-6 h-6 ${badge.color}`} />
-                      : <Lock className="w-5 h-5 text-muted-foreground" />
-                    }
-                  </div>
-                  <span className="font-semibold text-[11px] leading-tight mb-0.5">{badge.name}</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">{badge.desc}</span>
-                </div>
-              ))}
+        {/* Trophy Case Redesign */}
+        <div className="mt-20">
+          <h2 className="text-2xl font-black mb-8 flex items-center gap-3 font-display">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <Trophy className="w-6 h-6 text-amber-500" />
             </div>
-          </CardContent>
-        </Card>
-
-      </div>
+            Trophy Case
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            {displayBadges.map((badge, idx) => (
+              <motion.div
+                key={badge.name}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                className={`flex flex-col items-center p-6 rounded-[2rem] border transition-all duration-500 ${badge.earned ? "bg-white/[0.03] border-white/10 shadow-2xl shadow-primary/5" : "bg-white/[0.01] border-white/5 opacity-40 grayscale"}`}
+              >
+                <div className={`w-16 h-16 rounded-full ${badge.bg} flex items-center justify-center mb-4 ${badge.earned ? "animate-float" : ""}`}>
+                  <badge.icon className={`w-8 h-8 ${badge.color}`} />
+                </div>
+                <h4 className="text-sm font-black font-display text-center mb-1 leading-none">{badge.name}</h4>
+                <p className="text-[10px] text-muted-foreground font-bold text-center leading-tight uppercase tracking-tighter">{badge.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
