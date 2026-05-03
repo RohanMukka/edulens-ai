@@ -11,7 +11,7 @@ Most EdTech platforms test recognition (picking the right choice). EduLens tests
 
 ### 🧠 Bloom's Taxonomy Cognitive Classification
 
-Every student response is analyzed by our **Llama 3.1-8b** engine to classify the student's cognitive depth according to Bloom's Taxonomy:
+Every student response is analyzed by my **Llama 3.1-8b** engine to classify the student's cognitive depth according to Bloom's Taxonomy:
 
 - **Remembering**: Can they recall the basic facts?
 - **Understanding**: Can they explain the "why" and "how" in their own words?
@@ -19,7 +19,7 @@ Every student response is analyzed by our **Llama 3.1-8b** engine to classify th
 
 ### 🔄 Spaced Repetition (SM-2 Algorithm)
 
-EduLens doesn't just teach; it ensures you remember. We've implemented the **SuperMemo-2 (SM-2) algorithm** to calculate optimal review intervals based on mastery scores, ease factors, and repetitions.
+EduLens doesn't just teach; it ensures you remember. I've implemented the **SuperMemo-2 (SM-2) algorithm** to calculate optimal review intervals based on mastery scores, ease factors, and repetitions.
 
 ---
 
@@ -78,7 +78,7 @@ graph TD
 
 1. **The Mini-Lesson**: AI generates a concise, high-impact lesson on a specific concept.
 2. **The Open-Ended Challenge**: Instead of a quiz, the student is asked to explain the concept in their own words.
-3. **The Cognitive Audit**: Our NLP pipeline scores the response, identifies knowledge gaps, and classifies the cognitive level.
+3. **The Cognitive Audit**: My NLP pipeline scores the response, identifies knowledge gaps, and classifies the cognitive level.
 4. **Adaptive Branching**:
    - **Struggling?** The AI generates a simpler question and provides remediation.
    - **Excelling?** The AI advances the student to the next complexity level.
@@ -122,7 +122,7 @@ Use these to explore the platform without creating an account:
 
 ## 🧪 AI Validation & Scientific Rigor
 
-We don't just "use AI"—we validate it. EduLens AI features an automated validation suite that benchmarks our diagnostic engine against human-graded student responses.
+I don't just "use AI"—I validate it. EduLens AI features an automated validation suite that benchmarks my diagnostic engine against human-graded student responses.
 
 ### 📊 Diagnostic Accuracy (Llama-3.1-8b)
 
@@ -133,7 +133,7 @@ We don't just "use AI"—we validate it. EduLens AI features an automated valida
 | **Avg Feedback Latency**             | **3.2s**     |
 | **Safety Filter (Gatekeeper)**       | **Active**   |
 
-Our **Gatekeeper Agent** ensures that plagiarized or off-topic responses are caught before they reach the gradebook, while our **Cognitive Scorer** analyzes responses across 6 misconception types and 4 Bloom's levels.
+My **Gatekeeper Agent** ensures that plagiarized or off-topic responses are caught before they reach the gradebook, while my **Cognitive Scorer** analyzes responses across 6 misconception types and 4 Bloom's levels.
 
 > [!TIP]
 > Run the validation suite yourself: `npx tsx script/validate_ai.ts`
